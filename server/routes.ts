@@ -384,32 +384,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let importedCount = 0;
       let errors: string[] = [];
 
+      // Кэш отделов для оптимизации
+      const departmentCache = new Map<string, number>();
+      const existingDepartments = await storage.getDepartments();
+      existingDepartments.forEach(dept => departmentCache.set(dept.name, dept.id));
+      let createdDepartments = 0;
+
       for (const row of data as any[]) {
         try {
-          // Определяем тип импорта по наличию столбцов
           if (row['ФИО'] && row['Должность']) {
+            let departmentId = 1; // По умолчанию администрация
+            
+            // Обработка отдела - создание если не существует
+            if (row['Отдел']) {
+              const departmentName = String(row['Отдел']).trim();
+              
+              if (departmentCache.has(departmentName)) {
+                departmentId = departmentCache.get(departmentName)!;
+              } else {
+                // Создаем новый отдел
+                const newDepartment = await storage.createDepartment({ name: departmentName });
+                departmentCache.set(departmentName, newDepartment.id);
+                departmentId = newDepartment.id;
+                createdDepartments++;
+              }
+            }
+
             const employeeData = {
-              fullName: row['ФИО'],
-              position: row['Должность'],
-              grade: row['Грейд'] || '',
-              departmentId: 1, // По умолчанию администрация
-              passportSeries: row['Серия паспорта'] || null,
-              passportNumber: row['Номер паспорта'] || null,
-              passportIssuedBy: row['Кем выдан'] || null,
-              passportDate: row['Дата выдачи'] || null,
-              address: row['Адрес прописки'] || null,
+              fullName: String(row['ФИО']).trim(),
+              position: String(row['Должность']).trim(),
+              grade: row['Грейд'] ? String(row['Грейд']).trim() : 'Junior',
+              departmentId,
+              passportSeries: row['Серия паспорта'] ? String(row['Серия паспорта']).trim() : null,
+              passportNumber: row['Номер паспорта'] ? String(row['Номер паспорта']).trim() : null,
+              passportIssuedBy: row['Кем выдан'] ? String(row['Кем выдан']).trim() : null,
+              passportDate: row['Дата выдачи'] ? String(row['Дата выдачи']).trim() : null,
+              address: row['Адрес прописки'] ? String(row['Адрес прописки']).trim() : null,
             };
 
             await storage.createEmployee(employeeData);
             importedCount++;
           }
         } catch (error) {
-          errors.push(`Ошибка импорта строки: ${JSON.stringify(row)}`);
+          console.error("Ошибка импорта строки:", error);
+          errors.push(`Ошибка импорта: ${row['ФИО'] || 'неизвестный сотрудник'}`);
         }
       }
 
       res.json({ 
-        message: `Импортировано ${importedCount} сотрудников`, 
+        message: `Импортировано ${importedCount} сотрудников${createdDepartments > 0 ? `, создано ${createdDepartments} отделов` : ''}`, 
         errors: errors.length > 0 ? errors : null 
       });
     } catch (error) {
