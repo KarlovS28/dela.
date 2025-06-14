@@ -32,10 +32,13 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
   const [isEditingEquipment, setIsEditingEquipment] = useState(false);
   const [editData, setEditData] = useState<Partial<EmployeeWithEquipment>>({});
 
-  const { data: employee, isLoading } = useQuery<EmployeeWithEquipment>({
+  const { data: employee, isLoading, error } = useQuery<EmployeeWithEquipment>({
     queryKey: ["/api/employees", employeeId],
     enabled: open && !!employeeId,
   });
+
+  // Отладочная информация
+  console.log("Employee Card:", { employeeId, open, employee, isLoading, error });
 
   const updateEmployeeMutation = useMutation({
     mutationFn: async (data: Partial<EmployeeWithEquipment>) => {
