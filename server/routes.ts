@@ -6,6 +6,7 @@ import { z } from "zod";
 import session from "express-session";
 import MemoryStore from "memorystore";
 import * as XLSX from "xlsx";
+import multer from "multer";
 
 // Extend session interface
 declare module 'express-session' {
@@ -16,6 +17,9 @@ declare module 'express-session' {
 }
 
 const MemoryStoreSession = MemoryStore(session);
+
+// Настройка multer для загрузки файлов
+const upload = multer({ storage: multer.memoryStorage() });
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Session middleware
@@ -359,6 +363,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Export employees public error:", error);
       res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Маршруты импорта Excel файлов
+  app.post('/api/import/employees', requireAuth, requireRole(['admin']), upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Файл не найден" });
+      }
+
+      const workbook = XLSX.read(req.file.buffer);
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json(worksheet);
+
+      let importedCount = 0;
+      let errors: string[] = [];
+
+      for (const row of data as any[]) {
+        try {
+          // Определяем тип импорта по наличию столбцов
+          if (row['ФИО'] && row['Должность']) {
+            const employeeData = {
+              fullName: row['ФИО'],
+              position: row['Должность'],
+              grade: row['Грейд'] || '',
+              departmentId: 1, // По умолчанию администрация
+              passportSeries: row['Серия паспорта'] || null,
+              passportNumber: row['Номер паспорта'] || null,
+              passportIssuedBy: row['Кем выдан'] || null,
+              passportDate: row['Дата выдачи'] || null,
+              address: row['Адрес прописки'] || null,
+            };
+
+            await storage.createEmployee(employeeData);
+            importedCount++;
+          }
+        } catch (error) {
+          errors.push(`Ошибка импорта строки: ${JSON.stringify(row)}`);
+        }
+      }
+
+      res.json({ 
+        message: `Импортировано ${importedCount} сотрудников`, 
+        errors: errors.length > 0 ? errors : null 
+      });
+    } catch (error) {
+      console.error("Import employees error:", error);
+      res.status(500).json({ message: "Ошибка импорта" });
+    }
+  });
+
+  app.post('/api/import/equipment', requireAuth, requireRole(['admin']), upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Файл не найден" });
+      }
+
+      const workbook = XLSX.read(req.file.buffer);
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json(worksheet);
+
+      let importedCount = 0;
+      let errors: string[] = [];
+
+      for (const row of data as any[]) {
+        try {
+          if (row['Наименование имущества'] && row['Инвентарный номер']) {
+            // Поиск сотрудника по ФИО
+            const employees = await storage.getEmployees();
+            const employee = employees.find(emp => emp.fullName === row['ФИО сотрудника']);
+
+            const equipmentData = {
+              name: row['Наименование имущества'],
+              inventoryNumber: row['Инвентарный номер'],
+              cost: row['Стоимость имущества'] || '0',
+              employeeId: employee?.id || null,
+            };
+
+            await storage.createEquipment(equipmentData);
+            importedCount++;
+          }
+        } catch (error) {
+          errors.push(`Ошибка импорта оборудования: ${JSON.stringify(row)}`);
+        }
+      }
+
+      res.json({ 
+        message: `Импортировано ${importedCount} единиц оборудования`, 
+        errors: errors.length > 0 ? errors : null 
+      });
+    } catch (error) {
+      console.error("Import equipment error:", error);
+      res.status(500).json({ message: "Ошибка импорта оборудования" });
     }
   });
 
