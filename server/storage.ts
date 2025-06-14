@@ -103,10 +103,13 @@ export class MemStorage implements IStorage {
         photoUrl: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&h=100&fit=crop&crop=face",
         passportSeries: "1234",
         passportNumber: "567890",
+        passportIssuedBy: "РОВД Центрального района г. Москвы",
         passportDate: "01.01.2020",
         address: "г. Москва, ул. Примерная, д. 1, кв. 1",
-        orderNumber: "№123 от 01.01.2023",
-        responsibilityActNumber: "№456 от 01.01.2023"
+        orderNumber: "№123",
+        orderDate: "01.01.2023",
+        responsibilityActNumber: "№456",
+        responsibilityActDate: "01.01.2023"
       },
       {
         fullName: "Петрова Петра Петровна",
@@ -121,12 +124,15 @@ export class MemStorage implements IStorage {
         grade: "Senior",
         departmentId: 6,
         photoUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
-        passportSeries: "1234",
-        passportNumber: "567890",
-        passportDate: "01.01.2020",
-        address: "г. Москва, ул. Примерная, д. 1, кв. 1",
-        orderNumber: "№123 от 01.01.2023",
-        responsibilityActNumber: "№456 от 01.01.2023"
+        passportSeries: "5678",
+        passportNumber: "123456",
+        passportIssuedBy: "РОВД Северного района г. Москвы",
+        passportDate: "15.03.2019",
+        address: "г. Москва, ул. Разработчиков, д. 42, кв. 15",
+        orderNumber: "№789",
+        orderDate: "15.06.2022",
+        responsibilityActNumber: "№012",
+        responsibilityActDate: "15.06.2022"
       }
     ];
 
@@ -251,10 +257,13 @@ export class MemStorage implements IStorage {
       photoUrl: insertEmployee.photoUrl || null,
       passportSeries: insertEmployee.passportSeries || null,
       passportNumber: insertEmployee.passportNumber || null,
+      passportIssuedBy: insertEmployee.passportIssuedBy || null,
       passportDate: insertEmployee.passportDate || null,
       address: insertEmployee.address || null,
       orderNumber: insertEmployee.orderNumber || null,
+      orderDate: insertEmployee.orderDate || null,
       responsibilityActNumber: insertEmployee.responsibilityActNumber || null,
+      responsibilityActDate: insertEmployee.responsibilityActDate || null,
       isArchived: false,
       createdAt: new Date(),
     };

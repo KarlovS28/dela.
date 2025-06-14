@@ -121,11 +121,35 @@
 - **Port Configuration**: Flexible port assignment for deployment
 - **CORS**: Configured for cross-origin requests in development
 
+## Recent Changes
+
+### Excel Export/Import System (June 14, 2025)
+- ✓ Добавлена система экспорта данных в Excel (3 шаблона)
+- ✓ Шаблон инвентаризации: ФИО, наименование имущества, инвентарный номер, стоимость
+- ✓ Шаблон данных сотрудников: ФИО, паспортные данные, должность, грейд, отдел
+- ✓ Шаблон без личных данных: ФИО, должность, грейд, отдел
+- ✓ API маршруты для экспорта: `/api/export/inventory`, `/api/export/employees`, `/api/export/employees-public`
+
+### Enhanced Employee Card (June 14, 2025)
+- ✓ Расширенная карточка сотрудника с полными паспортными данными
+- ✓ Кликабельные фото сотрудников для открытия карточки
+- ✓ Таблица акта материальной ответственности
+- ✓ Кнопка "Печать" для акта материальной ответственности
+- ✓ Кнопка "Увольнение" с автоматической печатью документов
+- ✓ Архивирование сотрудника при увольнении
+
+### Database Schema Updates (June 14, 2025)
+- ✓ Добавлены поля: passportIssuedBy, orderDate, responsibilityActDate
+- ✓ Обновлены типы данных для поддержки всех необходимых полей
+- ✓ Примеры данных с полной информацией о сотрудниках
+
 ## Changelog
 
 ```
 Changelog:
 - June 14, 2025. Initial setup
+- June 14, 2025. Excel export/import system implementation
+- June 14, 2025. Enhanced employee card with full passport data and print functionality
 ```
 
 ## User Preferences
