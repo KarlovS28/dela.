@@ -139,10 +139,35 @@
 - ✓ Архивирование сотрудника при увольнении
 - ✓ Генерация профессиональных DOCX документов
 
+### Excel Import System (June 14, 2025)
+- ✓ Функциональность импорта Excel файлов с автоматическим заполнением данных
+- ✓ API маршруты: `/api/import/employees`, `/api/import/equipment`
+- ✓ Поддержка импорта сотрудников и оборудования из Excel
+- ✓ Валидация и обработка ошибок при импорте
+
+### DOCX Document Generation (June 14, 2025)
+- ✓ Генерация профессиональных DOCX документов
+- ✓ Акт материальной ответственности (API: `/api/docx/responsibility-act/:id`)
+- ✓ Обходной лист при увольнении (API: `/api/docx/termination-checklist/:id`)
+- ✓ Интеграция с карточкой сотрудника для автоматической печати
+
+### Employee Management Modal (June 14, 2025)
+- ✓ Модальное окно добавления сотрудников
+- ✓ Полная форма с паспортными данными и документами
+- ✓ Валидация формы с помощью Zod
+- ✓ Интеграция с API для создания сотрудников
+
 ### Database Schema Updates (June 14, 2025)
 - ✓ Добавлены поля: passportIssuedBy, orderDate, responsibilityActDate
 - ✓ Обновлены типы данных для поддержки всех необходимых полей
 - ✓ Примеры данных с полной информацией о сотрудниках
+
+### Documentation & Deployment (June 14, 2025)
+- ✓ Подробный README.md с инструкциями по установке
+- ✓ Конфигурация nginx для продакшена
+- ✓ PM2 конфигурация для автоматического деплоя
+- ✓ Скрипт автоматического деплоя deploy.sh
+- ✓ Русские комментарии во всех файлах кода
 
 ## Changelog
 
@@ -151,6 +176,11 @@ Changelog:
 - June 14, 2025. Initial setup
 - June 14, 2025. Excel export/import system implementation
 - June 14, 2025. Enhanced employee card with full passport data and print functionality
+- June 14, 2025. Added Excel import functionality for automated data population
+- June 14, 2025. Implemented DOCX document generation for responsibility acts and termination checklists
+- June 14, 2025. Created comprehensive employee management modal with full form validation
+- June 14, 2025. Added deployment configuration with nginx, PM2, and automated deploy scripts
+- June 14, 2025. Enhanced codebase with Russian comments and documentation
 ```
 
 ## User Preferences
