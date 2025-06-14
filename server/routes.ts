@@ -5,6 +5,7 @@ import { insertUserSchema, insertEmployeeSchema, insertEquipmentSchema } from "@
 import { z } from "zod";
 import session from "express-session";
 import MemoryStore from "memorystore";
+import * as XLSX from "xlsx";
 
 // Extend session interface
 declare module 'express-session' {
@@ -245,6 +246,187 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Equipment deleted successfully" });
     } catch (error) {
       console.error("Delete equipment error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Excel Export routes
+  app.get('/api/export/inventory', requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const employees = await storage.getEmployees();
+      const data: any[] = [];
+      let index = 1;
+      
+      for (const employee of employees) {
+        if (employee.isArchived) continue;
+        const equipment = await storage.getEquipmentByEmployee(employee.id);
+        
+        if (equipment.length === 0) {
+          data.push({
+            '№ п/п': index++,
+            'ФИО сотрудника': employee.fullName,
+            'Наименование имущества': '',
+            'Инвентарный номер': '',
+            'Стоимость имущества': ''
+          });
+        } else {
+          equipment.forEach(item => {
+            data.push({
+              '№ п/п': index++,
+              'ФИО сотрудника': employee.fullName,
+              'Наименование имущества': item.name,
+              'Инвентарный номер': item.inventoryNumber,
+              'Стоимость имущества': item.cost
+            });
+          });
+        }
+      }
+      
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Инвентаризация');
+      
+      const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+      
+      res.setHeader('Content-Disposition', 'attachment; filename=inventory.xlsx');
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.send(buffer);
+    } catch (error) {
+      console.error("Export inventory error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.get('/api/export/employees', requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const employees = await storage.getEmployees();
+      const departments = await storage.getDepartments();
+      const departmentMap = new Map(departments.map(d => [d.id, d.name]));
+      
+      const data = employees
+        .filter(emp => !emp.isArchived)
+        .map(employee => ({
+          'ФИО': employee.fullName,
+          'Серия паспорта': employee.passportSeries || '',
+          'Номер паспорта': employee.passportNumber || '',
+          'Кем выдан': employee.passportIssuedBy || '',
+          'Дата выдачи': employee.passportDate || '',
+          'Адрес прописки': employee.address || '',
+          'Должность': employee.position,
+          'Грейд': employee.grade,
+          'Отдел': departmentMap.get(employee.departmentId!) || ''
+        }));
+      
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Сотрудники');
+      
+      const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+      
+      res.setHeader('Content-Disposition', 'attachment; filename=employees.xlsx');
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.send(buffer);
+    } catch (error) {
+      console.error("Export employees error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.get('/api/export/employees-public', requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const employees = await storage.getEmployees();
+      const departments = await storage.getDepartments();
+      const departmentMap = new Map(departments.map(d => [d.id, d.name]));
+      
+      const data = employees
+        .filter(emp => !emp.isArchived)
+        .map(employee => ({
+          'ФИО': employee.fullName,
+          'Должность': employee.position,
+          'Грейд': employee.grade,
+          'Отдел': departmentMap.get(employee.departmentId!) || ''
+        }));
+      
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Сотрудники');
+      
+      const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+      
+      res.setHeader('Content-Disposition', 'attachment; filename=employees-public.xlsx');
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.send(buffer);
+    } catch (error) {
+      console.error("Export employees public error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Print routes for employee termination
+  app.get('/api/print/employee/:id/equipment', requireAuth, requireRole(['admin', 'accountant']), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const employee = await storage.getEmployee(id);
+      if (!employee) {
+        return res.status(404).json({ message: "Employee not found" });
+      }
+      
+      const equipment = await storage.getEquipmentByEmployee(id);
+      const data = equipment.map((item, index) => ({
+        '№ п/п': index + 1,
+        'Наименование имущества': item.name,
+        'Инвентарный номер': item.inventoryNumber,
+        'Стоимость': item.cost
+      }));
+      
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.sheet_add_aoa(wb, [['Список закрепленной техники'], [`ФИО: ${employee.fullName}`], ['']], { origin: 'A1' });
+      XLSX.utils.book_append_sheet(wb, ws, 'Техника сотрудника');
+      
+      const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+      
+      res.setHeader('Content-Disposition', `attachment; filename=equipment-${employee.fullName}.xlsx`);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.send(buffer);
+    } catch (error) {
+      console.error("Print employee equipment error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.get('/api/print/employee/:id/termination', requireAuth, requireRole(['admin', 'accountant']), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const employee = await storage.getEmployee(id);
+      if (!employee) {
+        return res.status(404).json({ message: "Employee not found" });
+      }
+      
+      const currentDate = new Date().toLocaleDateString('ru-RU');
+      const data = [{
+        'ОБХОДНОЙ ЛИСТ': '',
+        '': '',
+        '  ': '',
+        '   ': ''
+      }, {
+        'ФИО': employee.fullName,
+        'Должность': employee.position,
+        'Отдел': employee.department?.name || '',
+        'Дата увольнения': currentDate
+      }];
+      
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Обходной лист');
+      
+      const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+      
+      res.setHeader('Content-Disposition', `attachment; filename=termination-${employee.fullName}.xlsx`);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.send(buffer);
+    } catch (error) {
+      console.error("Print termination document error:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });

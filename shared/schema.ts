@@ -29,10 +29,13 @@ export const employees = pgTable("employees", {
   photoUrl: text("photo_url"),
   passportSeries: text("passport_series"),
   passportNumber: text("passport_number"),
+  passportIssuedBy: text("passport_issued_by"),
   passportDate: text("passport_date"),
   address: text("address"),
   orderNumber: text("order_number"),
+  orderDate: text("order_date"),
   responsibilityActNumber: text("responsibility_act_number"),
+  responsibilityActDate: text("responsibility_act_date"),
   isArchived: boolean("is_archived").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
