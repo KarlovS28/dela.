@@ -44,7 +44,13 @@ export const getQueryFn: <T>(options: {
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      queryFn: getQueryFn({ on401: "throw" }),
+      queryFn: ({ queryKey }) => {
+        // For auth endpoint, return null on 401 instead of throwing
+        if (queryKey[0] === "/api/auth/me") {
+          return getQueryFn({ on401: "returnNull" })({ queryKey });
+        }
+        return getQueryFn({ on401: "throw" })({ queryKey });
+      },
       refetchInterval: false,
       refetchOnWindowFocus: false,
       staleTime: Infinity,
