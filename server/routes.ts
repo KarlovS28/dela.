@@ -1,10 +1,18 @@
-import type { Express } from "express";
+import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertUserSchema, insertEmployeeSchema, insertEquipmentSchema } from "@shared/schema";
 import { z } from "zod";
 import session from "express-session";
 import MemoryStore from "memorystore";
+
+// Extend session interface
+declare module 'express-session' {
+  interface SessionData {
+    userId: number;
+    userRole: string;
+  }
+}
 
 const MemoryStoreSession = MemoryStore(session);
 
@@ -26,14 +34,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Authentication middleware
   const requireAuth = (req: any, res: any, next: any) => {
-    if (!req.session?.userId) {
+    if (!req.session.userId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
     next();
   };
 
   const requireRole = (roles: string[]) => (req: any, res: any, next: any) => {
-    if (!req.session?.userRole || !roles.includes(req.session.userRole)) {
+    if (!req.session.userRole || !roles.includes(req.session.userRole)) {
       return res.status(403).json({ message: "Forbidden" });
     }
     next();
@@ -103,7 +111,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/auth/me', requireAuth, async (req, res) => {
     try {
-      const user = await storage.getUser(req.session.userId);
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "No user ID in session" });
+      }
+      
+      const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }

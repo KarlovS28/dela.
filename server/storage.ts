@@ -243,8 +243,18 @@ export class MemStorage implements IStorage {
   async createEmployee(insertEmployee: InsertEmployee): Promise<Employee> {
     const id = this.currentEmployeeId++;
     const employee: Employee = {
-      ...insertEmployee,
       id,
+      fullName: insertEmployee.fullName,
+      position: insertEmployee.position,
+      grade: insertEmployee.grade,
+      departmentId: insertEmployee.departmentId || null,
+      photoUrl: insertEmployee.photoUrl || null,
+      passportSeries: insertEmployee.passportSeries || null,
+      passportNumber: insertEmployee.passportNumber || null,
+      passportDate: insertEmployee.passportDate || null,
+      address: insertEmployee.address || null,
+      orderNumber: insertEmployee.orderNumber || null,
+      responsibilityActNumber: insertEmployee.responsibilityActNumber || null,
       isArchived: false,
       createdAt: new Date(),
     };
@@ -286,8 +296,11 @@ export class MemStorage implements IStorage {
   async createEquipment(insertEquipment: InsertEquipment): Promise<Equipment> {
     const id = this.currentEquipmentId++;
     const equipment: Equipment = {
-      ...insertEquipment,
       id,
+      name: insertEquipment.name,
+      inventoryNumber: insertEquipment.inventoryNumber,
+      cost: insertEquipment.cost,
+      employeeId: insertEquipment.employeeId ?? null,
       createdAt: new Date(),
     };
     this.equipment.set(id, equipment);
