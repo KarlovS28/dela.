@@ -7,11 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { canEditEmployee, canArchiveEmployee } from "@/lib/auth-utils";
-import { Edit, PrinterCheck, UserMinus } from "lucide-react";
+import { Edit, PrinterCheck, UserMinus, User, Calendar, MapPin, FileText, Briefcase } from "lucide-react";
 import type { EmployeeWithEquipment } from "@shared/schema";
 
 interface EmployeeCardProps {
@@ -25,6 +27,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
+  const [isEditingEquipment, setIsEditingEquipment] = useState(false);
   const [editData, setEditData] = useState<Partial<EmployeeWithEquipment>>({});
 
   const { data: employee, isLoading } = useQuery<EmployeeWithEquipment>({
@@ -41,6 +44,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
       queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId] });
       queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
       setIsEditing(false);
+      setEditData({});
       toast({
         title: "Успешно",
         description: "Данные сотрудника обновлены",
@@ -94,11 +98,81 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
     }
   };
 
-  const handlePrint = () => {
-    toast({
-      title: "Печать",
-      description: "Функция печати будет реализована в следующей версии",
-    });
+  const handlePrintResponsibility = () => {
+    // Печать акта о материальной ответственности
+    window.print();
+  };
+
+  const handlePrintEquipment = async () => {
+    try {
+      const response = await fetch(`/api/print/employee/${employeeId}/equipment`, {
+        method: 'GET',
+        credentials: 'include'
+      });
+
+      if (!response.ok) throw new Error('Ошибка печати');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `техника-${employee?.fullName || 'сотрудник'}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Печать завершена",
+        description: "Список техники сотрудника скачан",
+      });
+    } catch (error) {
+      toast({
+        title: "Ошибка печати",
+        description: "Не удалось распечатать список техники",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handlePrintTermination = async () => {
+    try {
+      const response = await fetch(`/api/print/employee/${employeeId}/termination`, {
+        method: 'GET',
+        credentials: 'include'
+      });
+
+      if (!response.ok) throw new Error('Ошибка печати');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `увольнение-${employee?.fullName || 'сотрудник'}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Печать завершена",
+        description: "Обходной лист скачан",
+      });
+    } catch (error) {
+      toast({
+        title: "Ошибка печати",
+        description: "Не удалось распечатать обходной лист",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleTermination = async () => {
+    if (window.confirm("Вы уверены, что хотите уволить этого сотрудника? Будут распечатаны все необходимые документы.")) {
+      await handlePrintEquipment();
+      await handlePrintTermination();
+      archiveEmployeeMutation.mutate();
+    }
   };
 
   if (isLoading || !employee) {
@@ -317,13 +391,13 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
         
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-4 justify-center">
-          <Button onClick={handlePrint} className="bg-green-600 hover:bg-green-700">
+          <Button onClick={handlePrintResponsibility} className="bg-green-600 hover:bg-green-700">
             <PrinterCheck className="w-4 h-4 mr-2" />
             Печать
           </Button>
           {canArchive && (
             <Button 
-              onClick={handleArchive} 
+              onClick={handleTermination} 
               variant="destructive"
               disabled={archiveEmployeeMutation.isPending}
             >
