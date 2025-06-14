@@ -1,3 +1,6 @@
+// Основной файл маршрутизации API для системы управления сотрудниками
+// Содержит все API endpoints для аутентификации, управления сотрудниками, отделами, оборудованием
+// Включает функции экспорта/импорта Excel, генерации DOCX документов
 import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
@@ -5,8 +8,9 @@ import { insertUserSchema, insertEmployeeSchema, insertEquipmentSchema } from "@
 import { z } from "zod";
 import session from "express-session";
 import MemoryStore from "memorystore";
-import * as XLSX from "xlsx";
-import multer from "multer";
+import * as XLSX from "xlsx"; // Библиотека для работы с Excel файлами
+import multer from "multer"; // Middleware для загрузки файлов
+import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType } from "docx"; // Библиотека для создания DOCX документов
 
 // Extend session interface
 declare module 'express-session' {
@@ -524,6 +528,316 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.send(buffer);
     } catch (error) {
       console.error("Print termination document error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Маршруты для генерации DOCX документов
+  app.get('/api/docx/responsibility-act/:id', requireAuth, requireRole(['admin', 'accountant']), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const employee = await storage.getEmployee(id);
+      if (!employee) {
+        return res.status(404).json({ message: "Employee not found" });
+      }
+
+      // Создание документа DOCX для акта материальной ответственности
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children: [
+            // Заголовок документа
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "АКТ О МАТЕРИАЛЬНОЙ ОТВЕТСТВЕННОСТИ",
+                  bold: true,
+                  size: 28,
+                }),
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 400 },
+            }),
+            
+            // Информация о сотруднике
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `ФИО: ${employee.fullName}`,
+                  size: 24,
+                }),
+              ],
+              spacing: { after: 200 },
+            }),
+            
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `Должность: ${employee.position}`,
+                  size: 24,
+                }),
+              ],
+              spacing: { after: 200 },
+            }),
+            
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `Отдел: ${employee.department?.name || 'Не указан'}`,
+                  size: 24,
+                }),
+              ],
+              spacing: { after: 400 },
+            }),
+            
+            // Таблица с оборудованием
+            new Table({
+              width: {
+                size: 100,
+                type: WidthType.PERCENTAGE,
+              },
+              rows: [
+                // Заголовок таблицы
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "№", bold: true })] })],
+                      width: { size: 10, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Наименование", bold: true })] })],
+                      width: { size: 50, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Инв. номер", bold: true })] })],
+                      width: { size: 20, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Стоимость", bold: true })] })],
+                      width: { size: 20, type: WidthType.PERCENTAGE },
+                    }),
+                  ],
+                }),
+                // Строки с оборудованием
+                ...employee.equipment.map((item, index) => new TableRow({
+                  children: [
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: (index + 1).toString() })] })],
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: item.name })] })],
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: item.inventoryNumber })] })],
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: item.cost })] })],
+                    }),
+                  ],
+                })),
+              ],
+            }),
+            
+            // Подписи
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `\n\nДата составления: ${new Date().toLocaleDateString('ru-RU')}`,
+                  size: 24,
+                }),
+              ],
+              spacing: { before: 400 },
+            }),
+            
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "\n\nПодпись сотрудника: _________________",
+                  size: 24,
+                }),
+              ],
+              spacing: { before: 200 },
+            }),
+            
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "\nПодпись ответственного лица: _________________",
+                  size: 24,
+                }),
+              ],
+              spacing: { before: 200 },
+            }),
+          ],
+        }],
+      });
+
+      const buffer = await Packer.toBuffer(doc);
+      
+      res.setHeader('Content-Disposition', `attachment; filename=act-${employee.fullName}.docx`);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      res.send(buffer);
+    } catch (error) {
+      console.error("Generate responsibility act error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.get('/api/docx/termination-checklist/:id', requireAuth, requireRole(['admin', 'accountant']), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const employee = await storage.getEmployee(id);
+      if (!employee) {
+        return res.status(404).json({ message: "Employee not found" });
+      }
+
+      // Создание обходного листа при увольнении
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children: [
+            // Заголовок
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "ОБХОДНОЙ ЛИСТ",
+                  bold: true,
+                  size: 32,
+                }),
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 400 },
+            }),
+            
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "при увольнении сотрудника",
+                  size: 24,
+                }),
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 600 },
+            }),
+            
+            // Информация о сотруднике
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `ФИО: ${employee.fullName}`,
+                  size: 24,
+                  bold: true,
+                }),
+              ],
+              spacing: { after: 200 },
+            }),
+            
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `Должность: ${employee.position}`,
+                  size: 24,
+                }),
+              ],
+              spacing: { after: 200 },
+            }),
+            
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `Отдел: ${employee.department?.name || 'Не указан'}`,
+                  size: 24,
+                }),
+              ],
+              spacing: { after: 200 },
+            }),
+            
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `Дата увольнения: ${new Date().toLocaleDateString('ru-RU')}`,
+                  size: 24,
+                }),
+              ],
+              spacing: { after: 600 },
+            }),
+            
+            // Таблица обходного листа
+            new Table({
+              width: {
+                size: 100,
+                type: WidthType.PERCENTAGE,
+              },
+              rows: [
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "№", bold: true })] })],
+                      width: { size: 5, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Подразделение/Отдел", bold: true })] })],
+                      width: { size: 40, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Отметка о сдаче", bold: true })] })],
+                      width: { size: 25, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Подпись ответственного", bold: true })] })],
+                      width: { size: 30, type: WidthType.PERCENTAGE },
+                    }),
+                  ],
+                }),
+                
+                // Стандартные пункты обходного листа
+                ...[
+                  "IT отдел - сдача оборудования",
+                  "Бухгалтерия - расчет",
+                  "Кадровая служба - документы",
+                  "Материально ответственное лицо",
+                  "Служба безопасности - пропуск",
+                  "Библиотека - книги и материалы"
+                ].map((item, index) => new TableRow({
+                  children: [
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: (index + 1).toString() })] })],
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: item })] })],
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "" })] })],
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "" })] })],
+                    }),
+                  ],
+                })),
+              ],
+            }),
+            
+            // Заключительная подпись
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "\n\nРуководитель кадровой службы: _________________ \n\nДата: _____________",
+                  size: 24,
+                }),
+              ],
+              spacing: { before: 600 },
+            }),
+          ],
+        }],
+      });
+
+      const buffer = await Packer.toBuffer(doc);
+      
+      res.setHeader('Content-Disposition', `attachment; filename=checklist-${employee.fullName}.docx`);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      res.send(buffer);
+    } catch (error) {
+      console.error("Generate termination checklist error:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });

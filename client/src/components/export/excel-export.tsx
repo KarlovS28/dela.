@@ -1,3 +1,6 @@
+// Компонент экспорта и импорта Excel файлов
+// Поддерживает 3 типа экспорта: инвентаризация, данные сотрудников, публичные данные
+// Включает функциональность импорта для автоматического заполнения базы данных
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

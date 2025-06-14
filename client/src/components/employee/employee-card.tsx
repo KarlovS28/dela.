@@ -1,3 +1,5 @@
+// Компонент карточки сотрудника - отображает детальную информацию о сотруднике
+// Включает паспортные данные, таблицу оборудования, кнопки печати и увольнения
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -98,9 +100,37 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
     }
   };
 
-  const handlePrintResponsibility = () => {
-    // Печать акта о материальной ответственности
-    window.print();
+  const handlePrintResponsibility = async () => {
+    try {
+      // Генерация DOCX акта материальной ответственности
+      const response = await fetch(`/api/docx/responsibility-act/${employeeId}`, {
+        method: 'GET',
+        credentials: 'include'
+      });
+
+      if (!response.ok) throw new Error('Ошибка генерации документа');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `акт-ответственности-${employee?.fullName || 'сотрудник'}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Документ создан",
+        description: "Акт материальной ответственности сгенерирован",
+      });
+    } catch (error) {
+      toast({
+        title: "Ошибка создания документа",
+        description: "Не удалось создать акт материальной ответственности",
+        variant: "destructive",
+      });
+    }
   };
 
   const handlePrintEquipment = async () => {
@@ -137,31 +167,32 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
 
   const handlePrintTermination = async () => {
     try {
-      const response = await fetch(`/api/print/employee/${employeeId}/termination`, {
+      // Генерация DOCX обходного листа при увольнении
+      const response = await fetch(`/api/docx/termination-checklist/${employeeId}`, {
         method: 'GET',
         credentials: 'include'
       });
 
-      if (!response.ok) throw new Error('Ошибка печати');
+      if (!response.ok) throw new Error('Ошибка генерации обходного листа');
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `увольнение-${employee?.fullName || 'сотрудник'}.xlsx`;
+      a.download = `обходной-лист-${employee?.fullName || 'сотрудник'}.docx`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
       toast({
-        title: "Печать завершена",
-        description: "Обходной лист скачан",
+        title: "Документ создан",
+        description: "Обходной лист сгенерирован",
       });
     } catch (error) {
       toast({
-        title: "Ошибка печати",
-        description: "Не удалось распечатать обходной лист",
+        title: "Ошибка создания документа",
+        description: "Не удалось создать обходной лист",
         variant: "destructive",
       });
     }
