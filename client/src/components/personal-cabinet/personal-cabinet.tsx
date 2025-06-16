@@ -56,6 +56,8 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
         return "Системный администратор";
       case "accountant":
         return "Бухгалтер";
+      case "office-manager":
+        return "Офис-менеджер";
       default:
         return role;
     }
@@ -70,32 +72,77 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
     passwordForm.reset();
   };
 
-  const handleDownloadTemplates = () => {
-    toast({
-      title: "Функция в разработке",
-      description: "Скачивание шаблонов будет реализовано в следующей версии",
-    });
+  // Обновленная функция экспорта инвентаризации с полными данными
+  const handleExportInventory = async () => {
+    try {
+      setIsExporting(true);
+      const response = await fetch('/api/export/inventory-full', {
+        method: 'GET',
+        credentials: 'include'
+      });
+
+      if (!response.ok) throw new Error('Ошибка экспорта');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'инвентаризация.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Экспорт завершен",
+        description: "Файл инвентаризации загружен",
+      });
+    } catch (error) {
+      toast({
+        title: "Ошибка экспорта",
+        description: "Не удалось экспортировать данные",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
   };
 
-  const handleImportData = () => {
-    toast({
-      title: "Функция в разработке",
-      description: "Импорт данных будет реализован в следующей версии",
-    });
-  };
+  // Функция импорта файлов
+  const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-  const handleExportData = () => {
-    toast({
-      title: "Функция в разработке",
-      description: "Экспорт данных будет реализован в следующей версии",
-    });
-  };
+    try {
+      setIsImporting(true);
+      const formData = new FormData();
+      formData.append('file', file);
 
-  const handleManageTemplates = () => {
-    toast({
-      title: "Функция в разработке",
-      description: "Управление шаблонами будет реализовано в следующей версии",
-    });
+      const response = await apiRequest('POST', '/api/import/employees', formData);
+      const result = await response.json();
+
+      queryClient.invalidateQueries({ queryKey: ['/api/departments'] });
+
+      toast({
+        title: "Импорт завершен",
+        description: result.message,
+      });
+
+      if (result.errors && result.errors.length > 0) {
+        console.warn("Ошибки импорта:", result.errors);
+      }
+    } catch (error) {
+      toast({
+        title: "Ошибка импорта",
+        description: "Не удалось импортировать файл",
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
 
   if (!user) return null;
@@ -186,47 +233,78 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
             </CardContent>
           </Card>
           
-          {/* Admin Features */}
+          {/* Export/Import Data */}
           {canManageData && (
             <Card>
               <CardHeader>
-                <CardTitle>Административные функции</CardTitle>
+                <CardTitle>Экспорт и импорт данных</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <CardContent className="space-y-4">
+                {/* Export Section */}
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Экспорт</h4>
                   <Button
                     variant="outline"
-                    className="flex items-center space-x-3 h-auto p-4"
-                    onClick={handleDownloadTemplates}
+                    className="w-full justify-start"
+                    onClick={handleExportInventory}
+                    disabled={isExporting}
                   >
-                    <Download className="text-primary" />
-                    <span>Скачать шаблоны</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="flex items-center space-x-3 h-auto p-4"
-                    onClick={handleImportData}
-                  >
-                    <Upload className="text-primary" />
-                    <span>Импорт данных</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="flex items-center space-x-3 h-auto p-4"
-                    onClick={handleExportData}
-                  >
-                    <FileSpreadsheet className="text-primary" />
-                    <span>Экспорт данных</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="flex items-center space-x-3 h-auto p-4"
-                    onClick={handleManageTemplates}
-                  >
-                    <FileText className="text-primary" />
-                    <span>Управление шаблонами</span>
+                    <FileSpreadsheet className="mr-2 h-4 w-4" />
+                    {isExporting ? "Экспорт..." : "Инвентаризация (полные данные)"}
                   </Button>
                 </div>
+
+                <Separator />
+
+                {/* Import Section */}
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Импорт</h4>
+                  <div className="space-y-2">
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isImporting}
+                    >
+                      <Upload className="mr-2 h-4 w-4" />
+                      {isImporting ? "Импорт..." : "Загрузить файл Excel"}
+                    </Button>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleImportFile}
+                      accept=".xlsx,.xls"
+                      className="hidden"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Поддерживаются файлы с колонками: ФИО, Должность, Грейд, Отдел, Паспортные данные
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Archive Access */}
+          {canViewArchive(user.role) && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Архив сотрудников</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => {
+                    toast({
+                      title: "Функция в разработке",
+                      description: "Архив сотрудников будет реализован в следующей версии",
+                    });
+                  }}
+                >
+                  <Archive className="mr-2 h-4 w-4" />
+                  Просмотр архива уволенных сотрудников
+                </Button>
               </CardContent>
             </Card>
           )}

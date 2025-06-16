@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/layout/header";
 import { DepartmentSection } from "@/components/department/department-section";
-import { ExcelExport } from "@/components/export/excel-export";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { DepartmentWithEmployees } from "@shared/schema";
 
@@ -28,10 +27,6 @@ export default function Home() {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <ExcelExport />
-        </div>
-        
         {isLoading ? (
           <div className="space-y-12">
             {Array.from({ length: 5 }).map((_, i) => (

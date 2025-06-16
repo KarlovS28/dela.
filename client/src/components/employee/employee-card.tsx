@@ -48,7 +48,20 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
           <DialogHeader>
             <DialogTitle>Ошибка загрузки</DialogTitle>
           </DialogHeader>
-          <p>Не удалось загрузить данные сотрудника</p>
+          <p>Не удалось загрузить данные сотрудника. Проверьте соединение и обновите страницу.</p>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (!employee && !isLoading) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Сотрудник не найден</DialogTitle>
+          </DialogHeader>
+          <p>Данные сотрудника недоступны</p>
         </DialogContent>
       </Dialog>
     );

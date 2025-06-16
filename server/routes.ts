@@ -187,9 +187,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Role-based permissions
       const userRole = req.session.userRole;
-      if (userRole === 'sysadmin') {
-        // Sysadmin can only update equipment-related fields
-        const allowedFields = ['fullName', 'position', 'grade', 'departmentId', 'photoUrl'];
+      if (userRole === 'sysadmin' || userRole === 'office-manager') {
+        // Sysadmin and office-manager can only update basic fields, no personal data
+        const allowedFields = ['fullName', 'position', 'departmentId', 'photoUrl'];
         const filteredData = Object.keys(updateData)
           .filter(key => allowedFields.includes(key))
           .reduce((obj, key) => ({ ...obj, [key]: updateData[key] }), {});
@@ -366,6 +366,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.send(buffer);
     } catch (error) {
       console.error("Export employees public error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Полный экспорт инвентаризации с ролевыми ограничениями
+  app.get('/api/export/inventory-full', requireAuth, requireRole(['admin', 'accountant']), async (req, res) => {
+    try {
+      const employees = await storage.getEmployees();
+      const departments = await storage.getDepartments();
+      const departmentMap = new Map(departments.map(d => [d.id, d.name]));
+      const userRole = req.session.userRole;
+      
+      const data = [];
+      
+      for (const employee of employees.filter(emp => !emp.isArchived)) {
+        const equipment = await storage.getEquipmentByEmployee(employee.id);
+        
+        // Базовые данные для всех ролей
+        const baseData = {
+          'ФИО': employee.fullName,
+          'Должность': employee.position,
+          'Отдел': departmentMap.get(employee.departmentId!) || ''
+        };
+        
+        // Полные данные только для админа и бухгалтера
+        if (['admin', 'accountant'].includes(userRole!)) {
+          Object.assign(baseData, {
+            'Грейд': employee.grade,
+            'Серия паспорта': employee.passportSeries || '',
+            'Номер паспорта': employee.passportNumber || '',
+            'Кем выдан': employee.passportIssuedBy || '',
+            'Дата выдачи': employee.passportDate || '',
+            'Адрес прописки': employee.address || ''
+          });
+        }
+        
+        // Добавляем данные об оборудовании
+        if (equipment.length > 0) {
+          equipment.forEach((item, index) => {
+            const rowData = index === 0 ? { ...baseData } : {};
+            Object.assign(rowData, {
+              'Наименование имущества': item.name,
+              'Инвентарный номер': item.inventoryNumber,
+              'Стоимость': item.cost
+            });
+            data.push(rowData);
+          });
+        } else {
+          // Сотрудник без оборудования
+          data.push({
+            ...baseData,
+            'Наименование имущества': '',
+            'Инвентарный номер': '',
+            'Стоимость': ''
+          });
+        }
+      }
+      
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Инвентаризация');
+      
+      const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+      
+      res.setHeader('Content-Disposition', 'attachment; filename=inventory-full.xlsx');
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.send(buffer);
+    } catch (error) {
+      console.error("Export inventory full error:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
