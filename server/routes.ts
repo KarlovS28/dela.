@@ -526,6 +526,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const data = XLSX.utils.sheet_to_json(worksheet);
 
       let importedCount = 0;
+      let equipmentCount = 0;
       let errors: string[] = [];
 
       // Кэш отделов для оптимизации
@@ -533,6 +534,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const existingDepartments = await storage.getDepartments();
       existingDepartments.forEach(dept => departmentCache.set(dept.name, dept.id));
       let createdDepartments = 0;
+
+      // Кэш сотрудников для добавления оборудования
+      const employeeCache = new Map<string, number>();
 
       for (const row of data as any[]) {
         try {
@@ -554,20 +558,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             }
 
-            const employeeData = {
-              fullName: String(row['ФИО']).trim(),
-              position: String(row['Должность']).trim(),
-              grade: row['Грейд'] ? String(row['Грейд']).trim() : 'Junior',
-              departmentId,
-              passportSeries: row['Серия паспорта'] ? String(row['Серия паспорта']).trim() : null,
-              passportNumber: row['Номер паспорта'] ? String(row['Номер паспорта']).trim() : null,
-              passportIssuedBy: row['Кем выдан'] ? String(row['Кем выдан']).trim() : null,
-              passportDate: row['Дата выдачи'] ? String(row['Дата выдачи']).trim() : null,
-              address: row['Адрес прописки'] ? String(row['Адрес прописки']).trim() : null,
-            };
+            const fullName = String(row['ФИО']).trim();
+            let employeeId = employeeCache.get(fullName);
 
-            await storage.createEmployee(employeeData);
-            importedCount++;
+            // Создаем сотрудника только если его еще нет
+            if (!employeeId) {
+              const employeeData = {
+                fullName,
+                position: String(row['Должность']).trim(),
+                grade: row['Грейд'] ? String(row['Грейд']).trim() : 'Junior',
+                departmentId,
+                passportSeries: row['Серия паспорта'] ? String(row['Серия паспорта']).trim() : null,
+                passportNumber: row['Номер паспорта'] ? String(row['Номер паспорта']).trim() : null,
+                passportIssuedBy: row['Кем выдан'] ? String(row['Кем выдан']).trim() : null,
+                passportDate: row['Дата выдачи'] ? String(row['Дата выдачи']).trim() : null,
+                address: row['Адрес прописки'] ? String(row['Адрес прописки']).trim() : null,
+                orderNumber: row['Номер приказа'] ? String(row['Номер приказа']).trim() : null,
+                orderDate: row['Дата приказа'] ? String(row['Дата приказа']).trim() : null,
+                responsibilityActNumber: row['Номер акта мат. ответственности'] ? String(row['Номер акта мат. ответственности']).trim() : null,
+                responsibilityActDate: row['Дата акта мат. ответственности'] ? String(row['Дата акта мат. ответственности']).trim() : null,
+              };
+
+              const employee = await storage.createEmployee(employeeData);
+              employeeId = employee.id;
+              employeeCache.set(fullName, employeeId);
+              importedCount++;
+            }
+
+            // Добавляем оборудование, если оно указано
+            if (row['Наименование имущества'] && row['Инвентарный номер']) {
+              const equipmentData = {
+                name: String(row['Наименование имущества']).trim(),
+                inventoryNumber: String(row['Инвентарный номер']).trim(),
+                cost: row['Стоимость'] ? String(row['Стоимость']).trim() : '0',
+                employeeId,
+              };
+
+              await storage.createEquipment(equipmentData);
+              equipmentCount++;
+            }
           }
         } catch (error) {
           console.error("Ошибка импорта строки:", error);
@@ -576,7 +605,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json({ 
-        message: `Импортировано ${importedCount} сотрудников${createdDepartments > 0 ? `, создано ${createdDepartments} отделов` : ''}`, 
+        message: `Импортировано ${importedCount} сотрудников${equipmentCount > 0 ? `, ${equipmentCount} единиц оборудования` : ''}${createdDepartments > 0 ? `, создано ${createdDepartments} отделов` : ''}`, 
         errors: errors.length > 0 ? errors : null 
       });
     } catch (error) {
