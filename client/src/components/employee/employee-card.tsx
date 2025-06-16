@@ -30,6 +30,12 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [isEditingEquipment, setIsEditingEquipment] = useState(false);
+  const [showAddEquipment, setShowAddEquipment] = useState(false);
+  const [newEquipment, setNewEquipment] = useState({ 
+    name: '', 
+    inventoryNumber: '', 
+    cost: undefined as number | undefined 
+  });
   const [editData, setEditData] = useState<Partial<EmployeeWithEquipment>>({});
 
   const { data: employee, isLoading, error } = useQuery<EmployeeWithEquipment>({
@@ -257,6 +263,49 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
       const formData = new FormData();
       formData.append("photo", file);
       photoUploadMutation.mutate(formData);
+    }
+  };
+
+  // Мутация для добавления оборудования
+  const addEquipmentMutation = useMutation({
+    mutationFn: async (equipmentData: { name: string; inventoryNumber: string; cost?: number }) => {
+      const response = await fetch("/api/equipment", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...equipmentData,
+          employeeId: employeeId
+        }),
+      });
+      if (!response.ok) {
+        throw new Error("Ошибка добавления оборудования");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Оборудование добавлено",
+        description: "Новое оборудование успешно добавлено сотруднику",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId] });
+      setShowAddEquipment(false);
+      setNewEquipment({ name: '', inventoryNumber: '', cost: undefined });
+    },
+    onError: () => {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось добавить оборудование",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAddEquipment = () => {
+    if (newEquipment.name && newEquipment.inventoryNumber) {
+      addEquipmentMutation.mutate(newEquipment);
     }
   };
 
@@ -490,9 +539,61 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
         {/* Material Responsibility Table */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="text-lg">Акт о материальной ответственности</CardTitle>
+            <CardTitle className="text-lg flex items-center justify-between">
+              Акт о материальной ответственности
+              {canEdit && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAddEquipment(!showAddEquipment)}
+                >
+                  {showAddEquipment ? 'Отмена' : 'Добавить оборудование'}
+                </Button>
+              )}
+            </CardTitle>
           </CardHeader>
           <CardContent>
+            {showAddEquipment && (
+              <div className="mb-4 p-4 border rounded-lg space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="equipment-name">Наименование</Label>
+                    <Input
+                      id="equipment-name"
+                      value={newEquipment.name}
+                      onChange={(e) => setNewEquipment({...newEquipment, name: e.target.value})}
+                      placeholder="Введите название оборудования"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="equipment-inventory">Инвентарный номер</Label>
+                    <Input
+                      id="equipment-inventory"
+                      value={newEquipment.inventoryNumber}
+                      onChange={(e) => setNewEquipment({...newEquipment, inventoryNumber: e.target.value})}
+                      placeholder="Введите инвентарный номер"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="equipment-cost">Стоимость (руб.)</Label>
+                    <Input
+                      id="equipment-cost"
+                      type="number"
+                      value={newEquipment.cost || ''}
+                      onChange={(e) => setNewEquipment({...newEquipment, cost: e.target.value ? parseFloat(e.target.value) : undefined})}
+                      placeholder="Введите стоимость"
+                    />
+                  </div>
+                </div>
+                <Button
+                  onClick={handleAddEquipment}
+                  disabled={!newEquipment.name || !newEquipment.inventoryNumber || addEquipmentMutation.isPending}
+                >
+                  {addEquipmentMutation.isPending ? 'Добавление...' : 'Добавить оборудование'}
+                </Button>
+              </div>
+            )}
+            
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
