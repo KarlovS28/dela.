@@ -254,6 +254,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
         },
         body: JSON.stringify({
           ...equipmentData,
+          cost: equipmentData.cost ? equipmentData.cost.toString() : undefined,
           employeeId: employeeId
         }),
       });

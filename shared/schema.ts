@@ -45,7 +45,7 @@ export const equipment = pgTable("equipment", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   inventoryNumber: text("inventory_number").notNull().unique(),
-  cost: text("cost").notNull(),
+  cost: text("cost"),
   employeeId: integer("employee_id").references(() => employees.id),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -71,6 +71,9 @@ export const insertEmployeeSchema = createInsertSchema(employees).omit({
 export const insertEquipmentSchema = createInsertSchema(equipment).omit({
   id: true,
   createdAt: true,
+}).extend({
+  cost: z.string().optional(),
+  employeeId: z.number(),
 });
 
 // Types

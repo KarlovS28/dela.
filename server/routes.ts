@@ -595,14 +595,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const employees = await storage.getEmployees();
             const employee = employees.find(emp => emp.fullName === row['ФИО сотрудника']);
 
-            const equipmentData = {
-              name: row['Наименование имущества'],
-              inventoryNumber: row['Инвентарный номер'],
-              cost: row['Стоимость имущества'] || '0',
-              employeeId: employee?.id || null,
-            };
+            if (employee?.id) {
+              const equipmentData = {
+                name: row['Наименование имущества'],
+                inventoryNumber: row['Инвентарный номер'],
+                cost: row['Стоимость имущества'] || '0',
+                employeeId: employee.id,
+              };
 
-            await storage.createEquipment(equipmentData);
+              await storage.createEquipment(equipmentData);
+            }
             importedCount++;
           }
         } catch (error) {
