@@ -37,36 +37,6 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
     enabled: open && !!employeeId,
   });
 
-  // Отладочная информация
-  console.log("Employee Card:", { employeeId, open, employee, isLoading, error });
-
-  if (error) {
-    console.error("Employee fetch error:", error);
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Ошибка загрузки</DialogTitle>
-          </DialogHeader>
-          <p>Не удалось загрузить данные сотрудника. Проверьте соединение и обновите страницу.</p>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  if (!employee && !isLoading) {
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Сотрудник не найден</DialogTitle>
-          </DialogHeader>
-          <p>Данные сотрудника недоступны</p>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
   const updateEmployeeMutation = useMutation({
     mutationFn: async (data: Partial<EmployeeWithEquipment>) => {
       const response = await apiRequest("PUT", `/api/employees/${employeeId}`, data);
@@ -250,6 +220,50 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
 
   const canEdit = user && canEditEmployee(user.role);
   const canArchive = user && canArchiveEmployee(user.role);
+
+  // Отладочная информация
+  console.log("Employee Card:", { employeeId, open, employee, isLoading, error });
+
+  // Обработка состояний загрузки и ошибок
+  if (error) {
+    console.error("Employee fetch error:", error);
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ошибка загрузки</DialogTitle>
+          </DialogHeader>
+          <p>Не удалось загрузить данные сотрудника. Проверьте соединение и обновите страницу.</p>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Загрузка...</DialogTitle>
+          </DialogHeader>
+          <p>Загрузка данных сотрудника...</p>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (!employee) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Сотрудник не найден</DialogTitle>
+          </DialogHeader>
+          <p>Данные сотрудника недоступны</p>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

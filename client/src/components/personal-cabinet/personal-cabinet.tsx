@@ -118,7 +118,11 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await apiRequest('POST', '/api/import/employees', formData);
+      const response = await fetch('/api/import/employees', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData
+      });
       const result = await response.json();
 
       queryClient.invalidateQueries({ queryKey: ['/api/departments'] });

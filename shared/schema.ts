@@ -54,6 +54,8 @@ export const equipment = pgTable("equipment", {
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
+}).extend({
+  role: z.enum(["admin", "sysadmin", "accountant", "office-manager"]),
 });
 
 export const insertDepartmentSchema = createInsertSchema(departments).omit({
