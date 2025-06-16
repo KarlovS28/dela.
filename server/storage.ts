@@ -335,6 +335,7 @@ export class MemStorage implements IStorage {
       inventoryNumber: insertEquipment.inventoryNumber,
       characteristics: insertEquipment.characteristics || null,
       cost: insertEquipment.cost,
+      category: insertEquipment.category || 'Техника',
       employeeId: insertEquipment.employeeId ?? null,
       createdAt: new Date(),
     };

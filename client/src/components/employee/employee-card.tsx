@@ -25,6 +25,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
   const [isUploading, setIsUploading] = useState(false);
   const [editingSection, setEditingSection] = useState<string | null>(null);
   const [editData, setEditData] = useState<any>({});
+  const [showAddEquipment, setShowAddEquipment] = useState(false);
   const [newEquipment, setNewEquipment] = useState({ name: '', inventoryNumber: '', characteristics: '', cost: '', category: 'Техника' });
   const [editingEquipment, setEditingEquipment] = useState<number | null>(null);
   const [editEquipmentData, setEditEquipmentData] = useState({ name: '', inventoryNumber: '', characteristics: '', cost: '', category: 'Техника' });
@@ -92,7 +93,11 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ ...equipmentData, employeeId }),
+        body: JSON.stringify({ 
+          ...equipmentData, 
+          employeeId,
+          category: equipmentData.category || 'Техника'
+        }),
       });
 
       if (!response.ok) {
@@ -127,7 +132,10 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          category: data.category || 'Техника'
+        }),
       });
 
       if (!response.ok) {
@@ -223,6 +231,19 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
 
   const archiveEmployee = useMutation({
     mutationFn: async () => {
+      // Сначала перемещаем все оборудование на склад
+      if (employee?.equipment) {
+        for (const item of employee.equipment) {
+          await fetch(`/api/equipment/${item.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ employeeId: null }),
+          });
+        }
+      }
+
+      // Затем архивируем сотрудника
       const response = await fetch(`/api/employees/${employeeId}/archive`, {
         method: "POST",
         credentials: "include",
@@ -236,10 +257,11 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/warehouse/equipment"] });
       onOpenChange(false);
       toast({
         title: "Успешно",
-        description: "Сотрудник перемещен в архив",
+        description: "Сотрудник перемещен в архив, техника перемещена на склад",
       });
     },
     onError: (error) => {
@@ -327,7 +349,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
       inventoryNumber: equipment.inventoryNumber,
       characteristics: equipment.characteristics || '',
       cost: equipment.cost,
-      category: equipment.category
+      category: equipment.category || 'Техника'
     });
   };
 

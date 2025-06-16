@@ -343,7 +343,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Warehouse routes
-  app.get('/api/warehouse/equipment', requireAuth, requireRole(['admin', 'sysadmin', 'office-manager']), async (req, res) => {
+  app.get('/api/warehouse/equipment', requireAuth, requireRole(['admin', 'sysadmin', 'office-manager', 'accountant']), async (req, res) => {
     try {
       const warehouseEquipment = await storage.getWarehouseEquipment();
       res.json(warehouseEquipment);
