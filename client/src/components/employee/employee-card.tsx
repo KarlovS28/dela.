@@ -43,6 +43,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
     enabled: open && !!employeeId,
   });
 
+  // Все мутации должны быть объявлены до условного рендеринга
   const updateEmployeeMutation = useMutation({
     mutationFn: async (data: Partial<EmployeeWithEquipment>) => {
       const response = await apiRequest("PUT", `/api/employees/${employeeId}`, data);
@@ -212,21 +213,6 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
     }
   };
 
-  if (isLoading || !employee) {
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-4xl">
-          <div className="flex items-center justify-center h-96">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  const canEdit = user && canEditEmployee(user.role);
-  const canArchive = user && canArchiveEmployee(user.role);
-
   // Мутация для загрузки фотографий
   const photoUploadMutation = useMutation({
     mutationFn: async (formData: FormData) => {
@@ -256,15 +242,6 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
       });
     },
   });
-
-  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const formData = new FormData();
-      formData.append("photo", file);
-      photoUploadMutation.mutate(formData);
-    }
-  };
 
   // Мутация для добавления оборудования
   const addEquipmentMutation = useMutation({
@@ -303,11 +280,35 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
     },
   });
 
+  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const formData = new FormData();
+      formData.append("photo", file);
+      photoUploadMutation.mutate(formData);
+    }
+  };
+
   const handleAddEquipment = () => {
     if (newEquipment.name && newEquipment.inventoryNumber) {
       addEquipmentMutation.mutate(newEquipment);
     }
   };
+
+  if (isLoading || !employee) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-4xl">
+          <div className="flex items-center justify-center h-96">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  const canEdit = user && canEditEmployee(user.role);
+  const canArchive = user && canArchiveEmployee(user.role);
 
   // Отладочная информация
   console.log("Employee Card:", { employeeId, open, employee, isLoading, error });

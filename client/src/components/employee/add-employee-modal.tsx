@@ -41,6 +41,8 @@ interface AddEmployeeModalProps {
 
 export function AddEmployeeModal({ departmentId, children }: AddEmployeeModalProps) {
   const [open, setOpen] = useState(false);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -69,15 +71,53 @@ export function AddEmployeeModal({ departmentId, children }: AddEmployeeModalPro
     },
   });
 
+  const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setPhotoFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPhotoPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   // Мутация для создания сотрудника
   const createEmployeeMutation = useMutation({
     mutationFn: async (data: AddEmployeeFormData) => {
-      const employeeData = {
-        ...data,
-        departmentId: parseInt(data.departmentId),
-      };
-      const response = await apiRequest("POST", "/api/employees", employeeData);
-      return response.json();
+      // Сначала создаем сотрудника
+      const response = await fetch("/api/employees", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...data,
+          departmentId: parseInt(data.departmentId),
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error("Ошибка создания сотрудника");
+      }
+      
+      const employee = await response.json();
+      
+      // Если есть фото, загружаем его
+      if (photoFile && employee.id) {
+        const formData = new FormData();
+        formData.append("photo", photoFile);
+        
+        await fetch(`/api/employees/${employee.id}/photo`, {
+          method: "POST",
+          credentials: "include",
+          body: formData,
+        });
+      }
+      
+      return employee;
     },
     onSuccess: () => {
       // Обновляем кэш данных
@@ -92,6 +132,8 @@ export function AddEmployeeModal({ departmentId, children }: AddEmployeeModalPro
       // Закрываем модал и сбрасываем форму
       setOpen(false);
       form.reset();
+      setPhotoFile(null);
+      setPhotoPreview(null);
     },
     onError: (error: any) => {
       toast({
