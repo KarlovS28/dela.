@@ -221,6 +221,45 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
   const canEdit = user && canEditEmployee(user.role);
   const canArchive = user && canArchiveEmployee(user.role);
 
+  // Мутация для загрузки фотографий
+  const photoUploadMutation = useMutation({
+    mutationFn: async (formData: FormData) => {
+      const response = await fetch(`/api/employees/${employeeId}/photo`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      if (!response.ok) {
+        throw new Error("Ошибка загрузки фото");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Фото обновлено",
+        description: "Фотография сотрудника успешно обновлена",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
+    },
+    onError: () => {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось загрузить фотографию",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const formData = new FormData();
+      formData.append("photo", file);
+      photoUploadMutation.mutate(formData);
+    }
+  };
+
   // Отладочная информация
   console.log("Employee Card:", { employeeId, open, employee, isLoading, error });
 
@@ -278,7 +317,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
         {/* Employee Header */}
         <div className="flex flex-col md:flex-row gap-6 mb-6">
           {/* Employee Photo */}
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 relative">
             <Avatar className="w-32 h-32 border-4 border-primary">
               <AvatarImage 
                 src={employee.photoUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face"} 
@@ -288,6 +327,25 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                 {employee.fullName.split(" ").map(n => n[0]).join("")}
               </AvatarFallback>
             </Avatar>
+            {canEditEmployee(user?.role || '') && (
+              <div className="absolute -bottom-2 -right-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 w-8 p-0 bg-white"
+                  onClick={() => document.getElementById(`photo-upload-${employee.id}`)?.click()}
+                >
+                  <Edit className="h-3 w-3" />
+                </Button>
+                <input
+                  id={`photo-upload-${employee.id}`}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handlePhotoUpload}
+                />
+              </div>
+            )}
           </div>
           
           {/* Employee Info */}

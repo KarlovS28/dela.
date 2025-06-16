@@ -258,6 +258,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Загрузка фотографии сотрудника
+  app.post('/api/employees/:id/photo', requireAuth, requireRole(['admin', 'accountant']), upload.single('photo'), async (req, res) => {
+    try {
+      const employeeId = parseInt(req.params.id);
+      if (!req.file) {
+        return res.status(400).json({ message: "Файл не найден" });
+      }
+
+      // В реальном приложении здесь была бы загрузка в облачное хранилище
+      // Для демонстрации сохраняем как base64
+      const photoBuffer = req.file.buffer;
+      const photoBase64 = `data:${req.file.mimetype};base64,${photoBuffer.toString('base64')}`;
+      
+      const updatedEmployee = await storage.updateEmployee(employeeId, {
+        photoUrl: photoBase64
+      });
+
+      res.json(updatedEmployee);
+    } catch (error) {
+      console.error('Photo upload error:', error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Excel Export routes
   app.get('/api/export/inventory', requireAuth, requireRole(['admin']), async (req, res) => {
     try {
