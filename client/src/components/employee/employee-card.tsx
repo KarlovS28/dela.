@@ -876,8 +876,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                         <AlertDialogCancel>Отменить</AlertDialogCancel>
                         <AlertDialogAction 
                           onClick={() => {
-                            // Сначала открываем документы
-                            window.open(`/api/docx/termination-checklist/${employee.id}`, '_blank');
+                            // Открываем только список имущества
                             window.open(`/api/print/employee/${employee.id}/equipment`, '_blank');
                             // Затем архивируем
                             setTimeout(() => archiveEmployee.mutate(), 1000);
