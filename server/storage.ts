@@ -31,6 +31,7 @@ export interface IStorage {
   // Employee operations
   getEmployees(): Promise<Employee[]>;
   getEmployee(id: number): Promise<EmployeeWithEquipment | undefined>;
+  getArchivedEmployees(): Promise<EmployeeWithEquipment[]>;
   createEmployee(employee: InsertEmployee): Promise<Employee>;
   updateEmployee(id: number, employee: Partial<InsertEmployee>): Promise<Employee>;
   deleteEmployee(id: number): Promise<void>;
@@ -244,6 +245,25 @@ export class MemStorage implements IStorage {
       equipment,
       department
     };
+  }
+
+  async getArchivedEmployees(): Promise<EmployeeWithEquipment[]> {
+    const archivedEmployees = Array.from(this.employees.values()).filter(emp => emp.isArchived);
+    
+    const employeesWithEquipment = await Promise.all(
+      archivedEmployees.map(async emp => {
+        const equipment = await this.getEquipmentByEmployee(emp.id);
+        const department = emp.departmentId ? this.departments.get(emp.departmentId) : undefined;
+        
+        return {
+          ...emp,
+          equipment,
+          department
+        };
+      })
+    );
+
+    return employeesWithEquipment;
   }
 
   async createEmployee(insertEmployee: InsertEmployee): Promise<Employee> {

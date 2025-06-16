@@ -166,6 +166,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/employees/archived', requireAuth, requireRole(['admin', 'accountant']), async (req, res) => {
+    try {
+      const archivedEmployees = await storage.getArchivedEmployees();
+      res.json(archivedEmployees);
+    } catch (error) {
+      console.error("Get archived employees error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.post('/api/employees', requireAuth, requireRole(['admin', 'sysadmin']), async (req, res) => {
     try {
       const employeeData = insertEmployeeSchema.parse(req.body);
