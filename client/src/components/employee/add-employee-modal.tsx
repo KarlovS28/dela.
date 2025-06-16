@@ -392,6 +392,79 @@ export function AddEmployeeModal({ departmentId, children }: AddEmployeeModalPro
                   )}
                 />
               </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="passportSeries"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Серия паспорта</FormLabel>
+                    <FormCon</FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="passportNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Номер паспорта</FormLabel>
+                    <FormControl>
+                      <Input placeholder="123456" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="passportIssuedBy"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Кем выдан</FormLabel>
+                  <FormControl>
+                    <Input placeholder="ОВД района..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="passportDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Дата выдачи паспорта</FormLabel>
+                    <FormControl>
+                      <Input placeholder="01.01.2010" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Адрес прописки</FormLabel>
+                    <FormControl>
+                        <Input placeholder="01.01.2023" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
             <FormField

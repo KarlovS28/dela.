@@ -150,6 +150,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Employee routes
+  app.get('/api/employees/archived', requireAuth, requireRole(['admin', 'accountant']), async (req, res) => {
+    try {
+      const archivedEmployees = await storage.getArchivedEmployees();
+      res.json(archivedEmployees);
+    } catch (error) {
+      console.error("Get archived employees error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.get('/api/employees/:id', requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -646,7 +656,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
       
-      res.setHeader('Content-Disposition', `attachment; filename=equipment-${employee.fullName}.xlsx`);
+      res.setHeader('Content-Disposition', `attachment; filename=equipment-${encodeURIComponent(employee.fullName)}.xlsx`);
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.send(buffer);
     } catch (error) {
@@ -682,7 +692,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
       
-      res.setHeader('Content-Disposition', `attachment; filename=termination-${employee.fullName}.xlsx`);
+      res.setHeader('Content-Disposition', `attachment; filename=termination-${encodeURIComponent(employee.fullName)}.xlsx`);
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.send(buffer);
     } catch (error) {
@@ -833,7 +843,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const buffer = await Packer.toBuffer(doc);
       
-      res.setHeader('Content-Disposition', `attachment; filename=act-${employee.fullName}.docx`);
+      res.setHeader('Content-Disposition', `attachment; filename=act-${encodeURIComponent(employee.fullName)}.docx`);
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       res.send(buffer);
     } catch (error) {
@@ -992,7 +1002,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const buffer = await Packer.toBuffer(doc);
       
-      res.setHeader('Content-Disposition', `attachment; filename=checklist-${employee.fullName}.docx`);
+      res.setHeader('Content-Disposition', `attachment; filename=checklist-${encodeURIComponent(employee.fullName)}.docx`);
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       res.send(buffer);
     } catch (error) {

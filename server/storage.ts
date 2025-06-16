@@ -15,6 +15,7 @@ import {
   type EmployeeWithEquipment,
 } from "@shared/schema";
 import bcrypt from "bcrypt";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -35,6 +36,7 @@ export interface IStorage {
   updateEmployee(id: number, employee: Partial<InsertEmployee>): Promise<Employee>;
   deleteEmployee(id: number): Promise<void>;
   archiveEmployee(id: number): Promise<Employee>;
+  getArchivedEmployees(): Promise<EmployeeWithEquipment[]>;
 
   // Equipment operations
   getEquipment(): Promise<Equipment[]>;
@@ -138,7 +140,7 @@ export class MemStorage implements IStorage {
 
     for (const emp of sampleEmployees) {
       const employee = await this.createEmployee(emp);
-      
+
       // Add equipment for developers
       if (emp.position.includes("Developer")) {
         await this.createEquipment({
@@ -182,7 +184,7 @@ export class MemStorage implements IStorage {
   async authenticateUser(email: string, password: string): Promise<User | null> {
     const user = await this.getUserByEmail(email);
     if (!user) return null;
-    
+
     const isValid = await bcrypt.compare(password, user.password);
     return isValid ? user : null;
   }
@@ -199,7 +201,7 @@ export class MemStorage implements IStorage {
     for (const dept of departments) {
       const deptEmployees = Array.from(this.employees.values())
         .filter(emp => emp.departmentId === dept.id && !emp.isArchived);
-      
+
       const employeesWithEquipment = await Promise.all(
         deptEmployees.map(async emp => ({
           ...emp,
@@ -290,6 +292,25 @@ export class MemStorage implements IStorage {
 
   async archiveEmployee(id: number): Promise<Employee> {
     return this.updateEmployee(id, { isArchived: true });
+  }
+
+  async getArchivedEmployees(): Promise<EmployeeWithEquipment[]> {
+    const archivedEmployees = Array.from(this.employees.values()).filter(emp => emp.isArchived === true);
+
+    const result: EmployeeWithEquipment[] = [];
+
+    for (const emp of archivedEmployees) {
+      const equipment = await this.getEquipmentByEmployee(emp.id);
+      const department = emp.departmentId ? this.departments.get(emp.departmentId) : undefined;
+
+      result.push({
+        ...emp,
+        department: department,
+        equipment: equipment
+      });
+    }
+
+    return result;
   }
 
   // Equipment operations
