@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Save, X, Trash2 } from "lucide-react";
+import { Plus, Edit, Save, X, Trash2, Filter } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import type { Equipment } from "@shared/schema";
 
@@ -21,8 +22,9 @@ interface WarehouseProps {
 export function Warehouse({ open, onOpenChange }: WarehouseProps) {
   const [showAddItem, setShowAddItem] = useState(false);
   const [editingItem, setEditingItem] = useState<number | null>(null);
-  const [newItem, setNewItem] = useState({ name: '', inventoryNumber: '', characteristics: '', cost: '' });
-  const [editData, setEditData] = useState({ name: '', inventoryNumber: '', characteristics: '', cost: '' });
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'Техника' | 'Мебель'>('all');
+  const [newItem, setNewItem] = useState({ name: '', inventoryNumber: '', characteristics: '', cost: '', category: 'Техника' });
+  const [editData, setEditData] = useState({ name: '', inventoryNumber: '', characteristics: '', cost: '', category: 'Техника' });
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -51,7 +53,7 @@ export function Warehouse({ open, onOpenChange }: WarehouseProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ ...itemData, employeeId: null }),
+        body: JSON.stringify({ ...itemData, employeeId: null, category: itemData.category || 'Техника' }),
       });
 
       if (!response.ok) {
@@ -149,7 +151,8 @@ export function Warehouse({ open, onOpenChange }: WarehouseProps) {
       name: item.name,
       inventoryNumber: item.inventoryNumber,
       characteristics: item.characteristics || '',
-      cost: item.cost || ''
+      cost: item.cost || '',
+      category: (item as any).category || 'Техника'
     });
   };
 
@@ -161,8 +164,14 @@ export function Warehouse({ open, onOpenChange }: WarehouseProps) {
 
   const handleCancelEdit = () => {
     setEditingItem(null);
-    setEditData({ name: '', inventoryNumber: '', characteristics: '', cost: '' });
+    setEditData({ name: '', inventoryNumber: '', characteristics: '', cost: '', category: 'Техника' });
   };
+
+  // Фильтрация оборудования по категории
+  const filteredItems = warehouseItems?.filter(item => {
+    if (categoryFilter === 'all') return true;
+    return (item as any).category === categoryFilter;
+  }) || [];
 
   if (isLoading) {
     return (
@@ -184,7 +193,22 @@ export function Warehouse({ open, onOpenChange }: WarehouseProps) {
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
-            Склад ({warehouseItems?.length || 0} единиц)
+            <div className="flex items-center gap-4">
+              <span>Склад ({filteredItems.length} из {warehouseItems?.length || 0} единиц)</span>
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4" />
+                <Select value={categoryFilter} onValueChange={(value: 'all' | 'Техника' | 'Мебель') => setCategoryFilter(value)}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Все</SelectItem>
+                    <SelectItem value="Техника">Техника</SelectItem>
+                    <SelectItem value="Мебель">Мебель</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             <Button
               size="sm"
               variant="outline"
@@ -236,6 +260,18 @@ export function Warehouse({ open, onOpenChange }: WarehouseProps) {
                       placeholder="Стоимость"
                     />
                   </div>
+                  <div>
+                    <Label>Категория</Label>
+                    <Select value={newItem.category} onValueChange={(value: 'Техника' | 'Мебель') => setNewItem({ ...newItem, category: value })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Техника">Техника</SelectItem>
+                        <SelectItem value="Мебель">Мебель</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div className="flex gap-2 mt-4">
                   <Button
@@ -248,7 +284,7 @@ export function Warehouse({ open, onOpenChange }: WarehouseProps) {
                     variant="outline"
                     onClick={() => {
                       setShowAddItem(false);
-                      setNewItem({ name: '', inventoryNumber: '', characteristics: '', cost: '' });
+                      setNewItem({ name: '', inventoryNumber: '', characteristics: '', cost: '', category: 'Техника' });
                     }}
                   >
                     Отменить
@@ -264,12 +300,13 @@ export function Warehouse({ open, onOpenChange }: WarehouseProps) {
               <CardTitle>Оборудование на складе</CardTitle>
             </CardHeader>
             <CardContent>
-              {warehouseItems && warehouseItems.length > 0 ? (
+              {filteredItems && filteredItems.length > 0 ? (
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Наименование</TableHead>
                       <TableHead>Инв. номер</TableHead>
+                      <TableHead>Категория</TableHead>
                       <TableHead className="hidden sm:table-cell">Характеристики</TableHead>
                       <TableHead className="hidden sm:table-cell">Стоимость</TableHead>
                       <TableHead>Статус</TableHead>
@@ -277,7 +314,7 @@ export function Warehouse({ open, onOpenChange }: WarehouseProps) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {warehouseItems.map((item) => (
+                    {filteredItems.map((item) => (
                       <TableRow key={item.id}>
                         {editingItem === item.id ? (
                           <>
@@ -292,6 +329,17 @@ export function Warehouse({ open, onOpenChange }: WarehouseProps) {
                                 value={editData.inventoryNumber}
                                 onChange={(e) => setEditData({ ...editData, inventoryNumber: e.target.value })}
                               />
+                            </TableCell>
+                            <TableCell>
+                              <Select value={editData.category} onValueChange={(value: 'Техника' | 'Мебель') => setEditData({ ...editData, category: value })}>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Техника">Техника</SelectItem>
+                                  <SelectItem value="Мебель">Мебель</SelectItem>
+                                </SelectContent>
+                              </Select>
                             </TableCell>
                             <TableCell className="hidden sm:table-cell">
                               <Input
@@ -323,6 +371,11 @@ export function Warehouse({ open, onOpenChange }: WarehouseProps) {
                           <>
                             <TableCell className="text-xs sm:text-sm">{item.name}</TableCell>
                             <TableCell className="text-xs sm:text-sm">{item.inventoryNumber}</TableCell>
+                            <TableCell className="text-xs sm:text-sm">
+                              <Badge variant={(item as any).category === 'Техника' ? 'default' : 'secondary'}>
+                                {(item as any).category || 'Техника'}
+                              </Badge>
+                            </TableCell>
                             <TableCell className="hidden sm:table-cell text-xs sm:text-sm">{item.characteristics || '-'}</TableCell>
                             <TableCell className="hidden sm:table-cell text-xs sm:text-sm">{item.cost || '-'}</TableCell>
                             <TableCell>

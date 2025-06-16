@@ -25,10 +25,9 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
   const [isUploading, setIsUploading] = useState(false);
   const [editingSection, setEditingSection] = useState<string | null>(null);
   const [editData, setEditData] = useState<any>({});
-  const [newEquipment, setNewEquipment] = useState({ name: '', inventoryNumber: '', characteristics: '', cost: '' });
-  const [showAddEquipment, setShowAddEquipment] = useState(false);
+  const [newEquipment, setNewEquipment] = useState({ name: '', inventoryNumber: '', characteristics: '', cost: '', category: 'Техника' });
   const [editingEquipment, setEditingEquipment] = useState<number | null>(null);
-  const [editEquipmentData, setEditEquipmentData] = useState({ name: '', inventoryNumber: '', characteristics: '', cost: '' });
+  const [editEquipmentData, setEditEquipmentData] = useState({ name: '', inventoryNumber: '', characteristics: '', cost: '', category: 'Техника' });
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -105,7 +104,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId] });
       queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
-      setNewEquipment({ name: '', inventoryNumber: '', characteristics: '', cost: '' });
+      setNewEquipment({ name: '', inventoryNumber: '', characteristics: '', cost: '', category: 'Техника' });
       setShowAddEquipment(false);
       toast({
         title: "Успешно",
@@ -141,7 +140,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
       queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId] });
       queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
       setEditingEquipment(null);
-      setEditEquipmentData({ name: '', inventoryNumber: '', characteristics: '', cost: '' });
+      setEditEquipmentData({ name: '', inventoryNumber: '', characteristics: '', cost: '', category: 'Техника' });
       toast({
         title: "Успешно",
         description: "Имущество обновлено. Акт материальной ответственности автоматически обновлен.",
@@ -327,7 +326,8 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
       name: equipment.name,
       inventoryNumber: equipment.inventoryNumber,
       characteristics: equipment.characteristics || '',
-      cost: equipment.cost
+      cost: equipment.cost,
+      category: equipment.category
     });
   };
 
@@ -339,7 +339,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
 
   const handleCancelEditEquipment = () => {
     setEditingEquipment(null);
-    setEditEquipmentData({ name: '', inventoryNumber: '', characteristics: '', cost: '' });
+    setEditEquipmentData({ name: '', inventoryNumber: '', characteristics: '', cost: '', category: 'Техника' });
   };
 
   const canEdit = user && ['admin', 'accountant'].includes(user.role);
@@ -718,6 +718,17 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                       placeholder="Стоимость"
                     />
                   </div>
+                    <div>
+                        <Label>Категория</Label>
+                        <select
+                            className="border rounded px-2 py-1"
+                            value={newEquipment.category}
+                            onChange={(e) => setNewEquipment({ ...newEquipment, category: e.target.value })}
+                        >
+                            <option value="Техника">Техника</option>
+                            <option value="Мебель">Мебель</option>
+                        </select>
+                    </div>
                   <div className="md:col-span-2 flex gap-2">
                     <Button
                       size="sm"
@@ -731,7 +742,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                       variant="outline"
                       onClick={() => {
                         setShowAddEquipment(false);
-                        setNewEquipment({ name: '', inventoryNumber: '', characteristics: '', cost: '' });
+                        setNewEquipment({ name: '', inventoryNumber: '', characteristics: '', cost: '', category: 'Техника' });
                       }}
                     >
                       Отменить
@@ -748,6 +759,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                       <TableHead>Инв. номер</TableHead>
                       <TableHead className="hidden sm:table-cell">Характеристики</TableHead>
                       <TableHead className="hidden sm:table-cell">Стоимость</TableHead>
+                      <TableHead>Категория</TableHead>
                       {canEditEquipment && <TableHead>Действия</TableHead>}
                     </TableRow>
                   </TableHeader>
@@ -780,6 +792,16 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                                 onChange={(e) => setEditEquipmentData({ ...editEquipmentData, cost: e.target.value })}
                               />
                             </TableCell>
+                                                        <TableCell>
+                                <select
+                                    className="border rounded px-2 py-1"
+                                    value={editEquipmentData.category}
+                                    onChange={(e) => setEditEquipmentData({ ...editEquipmentData, category: e.target.value })}
+                                >
+                                    <option value="Техника">Техника</option>
+                                    <option value="Мебель">Мебель</option>
+                                </select>
+                            </TableCell>
                             {canEditEquipment && (
                               <TableCell>
                                 <div className="flex gap-2">
@@ -799,6 +821,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                             <TableCell className="text-xs sm:text-sm">{item.inventoryNumber}</TableCell>
                             <TableCell className="hidden sm:table-cell text-xs sm:text-sm">{item.characteristics || '-'}</TableCell>
                             <TableCell className="hidden sm:table-cell text-xs sm:text-sm">{item.cost}</TableCell>
+                                                        <TableCell className="text-xs sm:text-sm">{item.category}</TableCell>
                             {canEditEquipment && (
                               <TableCell>
                                 <div className="flex gap-2">

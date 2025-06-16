@@ -47,6 +47,7 @@ export const equipment = pgTable("equipment", {
   inventoryNumber: text("inventory_number").notNull().unique(),
   characteristics: text("characteristics"),
   cost: text("cost"),
+  category: text("category").notNull().default("Техника"), // Техника или Мебель
   employeeId: integer("employee_id").references(() => employees.id),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -75,7 +76,8 @@ export const insertEquipmentSchema = createInsertSchema(equipment).omit({
 }).extend({
   characteristics: z.string().optional(),
   cost: z.string().optional(),
-  employeeId: z.number(),
+  category: z.enum(["Техника", "Мебель"]).default("Техника"),
+  employeeId: z.number().optional(),
 });
 
 // Types

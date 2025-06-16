@@ -362,8 +362,8 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
             </Card>
           )}
 
-          {/* Склад - для администраторов и офис-менеджеров */}
-          {(user?.role === 'admin' || user?.role === 'sysadmin' || user?.role === 'office-manager') && (
+          {/* Склад - для администраторов, бухгалтеров и офис-менеджеров */}
+          {(user?.role === 'admin' || user?.role === 'sysadmin' || user?.role === 'office-manager' || user?.role === 'accountant') && (
             <Card>
               <CardHeader>
                 <CardTitle>Склад</CardTitle>
