@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -26,9 +25,9 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
   const [isUploading, setIsUploading] = useState(false);
   const [editingSection, setEditingSection] = useState<string | null>(null);
   const [editData, setEditData] = useState<any>({});
-  const [newEquipment, setNewEquipment] = useState({ name: '', inventoryNumber: '', cost: '' });
+  const [newEquipment, setNewEquipment] = useState({ name: '', inventoryNumber: '', characteristics: '', cost: '' });
   const [showAddEquipment, setShowAddEquipment] = useState(false);
-  
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -40,11 +39,11 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
       const response = await fetch(`/api/employees/${employeeId}`, {
         credentials: "include",
       });
-      
+
       if (!response.ok) {
         throw new Error("Failed to fetch employee");
       }
-      
+
       return response.json() as Promise<EmployeeWithEquipment>;
     },
     enabled: !!employeeId && open,
@@ -104,7 +103,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId] });
       queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
-      setNewEquipment({ name: '', inventoryNumber: '', cost: '' });
+      setNewEquipment({ name: '', inventoryNumber: '', characteristics: '', cost: '' });
       setShowAddEquipment(false);
       toast({
         title: "Успешно",
@@ -592,13 +591,13 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
             </CardHeader>
             <CardContent>
               {showAddEquipment && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-4 border rounded">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded">
                   <div>
                     <Label>Наименование</Label>
                     <Input
                       value={newEquipment.name}
                       onChange={(e) => setNewEquipment({ ...newEquipment, name: e.target.value })}
-                      placeholder="Название имущества"
+                      placeholder="Наименование"
                     />
                   </div>
                   <div>
@@ -606,7 +605,15 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                     <Input
                       value={newEquipment.inventoryNumber}
                       onChange={(e) => setNewEquipment({ ...newEquipment, inventoryNumber: e.target.value })}
-                      placeholder="Инв. номер"
+                      placeholder="Инвентарный номер"
+                    />
+                  </div>
+                  <div>
+                    <Label>Характеристики</Label>
+                    <Input
+                      value={newEquipment.characteristics || ''}
+                      onChange={(e) => setNewEquipment({ ...newEquipment, characteristics: e.target.value })}
+                      placeholder="Описание характеристик"
                     />
                   </div>
                   <div>
@@ -617,7 +624,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                       placeholder="Стоимость"
                     />
                   </div>
-                  <div className="md:col-span-3 flex gap-2">
+                  <div className="md:col-span-2 flex gap-2">
                     <Button
                       size="sm"
                       onClick={() => addEquipment.mutate(newEquipment)}
@@ -630,7 +637,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                       variant="outline"
                       onClick={() => {
                         setShowAddEquipment(false);
-                        setNewEquipment({ name: '', inventoryNumber: '', cost: '' });
+                        setNewEquipment({ name: '', inventoryNumber: '', characteristics: '', cost: '' });
                       }}
                     >
                       Отменить
@@ -704,7 +711,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                     <FileText className="w-4 h-4 mr-2" />
                     Акт мат. ответственности
                   </Button>
-                  
+
                   <Button
                     onClick={() => window.open(`/api/print/employee/${employee.id}/equipment`, '_blank')}
                     variant="outline"

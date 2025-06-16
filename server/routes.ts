@@ -350,6 +350,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             'ФИО сотрудника': employee.fullName,
             'Наименование имущества': '',
             'Инвентарный номер': '',
+            'Характеристики': '',
             'Стоимость имущества': ''
           });
         } else {
@@ -360,6 +361,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               'ФИО сотрудника': equipmentIndex === 0 ? employee.fullName : '', // ФИО только в первой строке
               'Наименование имущества': item.name,
               'Инвентарный номер': item.inventoryNumber,
+              'Характеристики': item.characteristics || '',
               'Стоимость имущества': item.cost
             });
           });
@@ -511,6 +513,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             Object.assign(rowData, {
               'Наименование имущества': item.name,
               'Инвентарный номер': item.inventoryNumber,
+              'Характеристики': item.characteristics || '',
               'Стоимость': item.cost
             });
             data.push(rowData);
@@ -521,6 +524,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ...baseData,
             'Наименование имущества': '',
             'Инвентарный номер': '',
+            'Характеристики': '',
             'Стоимость': ''
           });
         }
@@ -617,6 +621,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const equipmentData = {
                 name: String(row['Наименование имущества']).trim(),
                 inventoryNumber: String(row['Инвентарный номер']).trim(),
+                characteristics: row['Характеристики'] ? String(row['Характеристики']).trim() : undefined,
                 cost: row['Стоимость'] || row['Стоимость имущества'] ? String(row['Стоимость'] || row['Стоимость имущества']).trim() : '0',
                 employeeId,
               };
@@ -702,6 +707,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         '№ п/п': index + 1,
         'Наименование имущества': item.name,
         'Инвентарный номер': item.inventoryNumber,
+        'Характеристики': item.characteristics || '',
         'Стоимость': item.cost
       }));
       
@@ -860,21 +866,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
                         children: [new TextRun({ text: "Наименование материальных ценностей", bold: true, size: 20 })],
                         alignment: AlignmentType.CENTER
                       })],
-                      width: { size: 40, type: WidthType.PERCENTAGE },
+                      width: { size: 30, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ 
+                        children: [new TextRun({ text: "Характеристики", bold: true, size: 20 })],
+                        alignment: AlignmentType.CENTER
+                      })],
+                      width: { size: 25, type: WidthType.PERCENTAGE },
                     }),
                     new TableCell({
                       children: [new Paragraph({ 
                         children: [new TextRun({ text: "Инвентаризационный номер", bold: true, size: 20 })],
                         alignment: AlignmentType.CENTER
                       })],
-                      width: { size: 23, type: WidthType.PERCENTAGE },
+                      width: { size: 20, type: WidthType.PERCENTAGE },
                     }),
                     new TableCell({
                       children: [new Paragraph({ 
                         children: [new TextRun({ text: "Сумма, руб.", bold: true, size: 20 })],
                         alignment: AlignmentType.CENTER
                       })],
-                      width: { size: 23, type: WidthType.PERCENTAGE },
+                      width: { size: 15, type: WidthType.PERCENTAGE },
                     }),
                   ],
                 }),
@@ -898,6 +911,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       new TableCell({
                         children: [new Paragraph({ 
                           children: [new TextRun({ text: item?.name || "", size: 18 })]
+                        })],
+                      }),
+                      new TableCell({
+                        children: [new Paragraph({ 
+                          children: [new TextRun({ text: item?.characteristics || "", size: 18 })]
                         })],
                       }),
                       new TableCell({
@@ -929,6 +947,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                         children: [new TextRun({ text: "Итого:", bold: true, size: 18 })],
                         alignment: AlignmentType.RIGHT
                       })],
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "", size: 18 })] })],
                     }),
                     new TableCell({
                       children: [new Paragraph({ children: [new TextRun({ text: "", size: 18 })] })],
