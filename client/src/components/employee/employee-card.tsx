@@ -249,6 +249,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
   };
 
   const canEdit = user && ['admin', 'accountant'].includes(user.role);
+  const canEditEquipment = user && ['admin', 'sysadmin', 'office-manager', 'accountant'].includes(user.role);
   const canViewDocs = user && ['admin', 'accountant'].includes(user.role);
 
   // ТОЛЬКО ТЕПЕРЬ мы можем использовать условные возвраты
@@ -577,7 +578,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 Закрепленное имущество ({employee.equipment?.length || 0})
-                {canEdit && (
+                {canEditEquipment && (
                   <Button
                     size="sm"
                     variant="outline"
@@ -653,7 +654,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                       <TableHead>Наименование</TableHead>
                       <TableHead>Инв. номер</TableHead>
                       <TableHead>Стоимость</TableHead>
-                      {canEdit && <TableHead>Действия</TableHead>}
+                      {canEditEquipment && <TableHead>Действия</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -662,7 +663,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                         <TableCell>{item.name}</TableCell>
                         <TableCell>{item.inventoryNumber}</TableCell>
                         <TableCell>{item.cost}</TableCell>
-                        {canEdit && (
+                        {canEditEquipment && (
                           <TableCell>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>

@@ -231,7 +231,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Equipment routes
-  app.post('/api/equipment', requireAuth, async (req, res) => {
+  app.post('/api/equipment', requireAuth, requireRole(['admin', 'sysadmin', 'office-manager']), async (req, res) => {
     try {
       const equipmentData = insertEquipmentSchema.parse(req.body);
       const equipment = await storage.createEquipment(equipmentData);
@@ -245,7 +245,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/equipment/:id', requireAuth, async (req, res) => {
+  app.put('/api/equipment/:id', requireAuth, requireRole(['admin', 'sysadmin', 'office-manager']), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const updateData = req.body;
@@ -257,7 +257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/equipment/:id', requireAuth, async (req, res) => {
+  app.delete('/api/equipment/:id', requireAuth, requireRole(['admin', 'sysadmin', 'office-manager']), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.deleteEquipment(id);
@@ -668,7 +668,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/import/equipment', requireAuth, requireRole(['admin']), upload.single('file'), async (req, res) => {
+  app.post('/api/import/equipment', requireAuth, requireRole(['admin', 'sysadmin', 'office-manager']), upload.single('file'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "Файл не найден" });

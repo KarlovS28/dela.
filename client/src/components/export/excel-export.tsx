@@ -29,7 +29,7 @@ export function ExcelExport() {
 
   const handleExport = async (type: 'inventory' | 'employees' | 'employees-public') => {
     setIsExporting(type);
-    
+
     try {
       const response = await fetch(`/api/export/${type}`, {
         method: 'GET',
@@ -44,13 +44,13 @@ export function ExcelExport() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      
+
       const filename = type === 'inventory' 
         ? 'инвентаризация.xlsx' 
         : type === 'employees' 
         ? 'сотрудники.xlsx' 
         : 'сотрудники-публичные.xlsx';
-      
+
       a.download = filename;
       document.body.appendChild(a);
       a.click();
@@ -79,7 +79,7 @@ export function ExcelExport() {
     if (!file) return;
 
     setIsImporting('employees');
-    
+
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -95,7 +95,7 @@ export function ExcelExport() {
       }
 
       const result = await response.json();
-      
+
       // Обновляем кэш данных
       queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
@@ -129,7 +129,7 @@ export function ExcelExport() {
     if (!file) return;
 
     setIsImporting('equipment');
-    
+
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -145,7 +145,7 @@ export function ExcelExport() {
       }
 
       const result = await response.json();
-      
+
       // Обновляем кэш данных
       queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/equipment"] });
@@ -194,7 +194,7 @@ export function ExcelExport() {
             <Download className="mr-2 h-4 w-4" />
             {isExporting === 'inventory' ? 'Экспорт...' : 'Инвентаризация'}
           </Button>
-          
+
           <Button
             onClick={() => handleExport('employees')}
             disabled={isExporting === 'employees'}
@@ -203,7 +203,7 @@ export function ExcelExport() {
             <Download className="mr-2 h-4 w-4" />
             {isExporting === 'employees' ? 'Экспорт...' : 'Данные сотрудников'}
           </Button>
-          
+
           <Button
             onClick={() => handleExport('employees-public')}
             disabled={isExporting === 'employees-public'}
@@ -213,22 +213,22 @@ export function ExcelExport() {
             {isExporting === 'employees-public' ? 'Экспорт...' : 'Без личных данных'}
           </Button>
         </div>
-        
+
         <div className="text-sm text-muted-foreground space-y-1">
           <p><strong>Инвентаризация:</strong> ФИО, наименование имущества, инвентарный номер, стоимость (поддержка нескольких единиц имущества на сотрудника)</p>
           <p><strong>Данные сотрудников:</strong> ФИО, паспортные данные, должность, грейд, отдел, документы о приеме, акт мат. ответственности</p>
           <p><strong>Без личных данных:</strong> ФИО, должность, грейд, отдел</p>
         </div>
-        
+
         <Separator className="my-6" />
-        
+
         {/* Секция импорта */}
         <div className="space-y-4">
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <Upload className="h-5 w-5" />
             Импорт данных Excel
           </h3>
-          
+
           <div className="grid gap-4 md:grid-cols-2">
             {/* Импорт сотрудников */}
             <div className="space-y-2">
@@ -246,25 +246,27 @@ export function ExcelExport() {
                 Загрузите Excel файл с данными сотрудников. Поддерживаемые поля: ФИО, Должность, Грейд, Отдел, Серия паспорта, Номер паспорта, Кем выдан, Дата выдачи паспорта, Адрес прописки, Номер приказа о приеме, Дата приказа о приеме, Номер акта мат. ответственности, Дата акта мат. ответственности, Наименование имущества, Инвентарный номер, Характеристики, Стоимость ответственности, Дата акта мат. ответственности, Наименование имущества, Инвентарный номер, Стоимость. Поддерживается добавление нескольких единиц имущества для одного сотрудника.
               </p>
             </div>
-            
-            {/* Импорт оборудования */}
-            <div className="space-y-2">
-              <Label htmlFor="equipment-upload">Импорт оборудования</Label>
-              <Input
-                id="equipment-upload"
-                type="file"
-                accept=".xlsx,.xls"
-                ref={equipmentFileInputRef}
-                onChange={handleImportEquipment}
-                disabled={isImporting === 'equipment'}
-                className="cursor-pointer"
-              />
-              <p className="text-xs text-muted-foreground">
-                Загрузите Excel файл с инвентаризацией
-              </p>
-            </div>
+
+            {/* Импорт оборудования - доступен для админов, сисадминов и офис-менеджеров */}
+            {user && ['admin', 'sysadmin', 'office-manager'].includes(user.role) && (
+              <div className="space-y-2">
+                <Label htmlFor="equipment-upload">Импорт оборудования</Label>
+                <Input
+                  id="equipment-upload"
+                  type="file"
+                  accept=".xlsx,.xls"
+                  ref={equipmentFileInputRef}
+                  onChange={handleImportEquipment}
+                  disabled={isImporting === 'equipment'}
+                  className="cursor-pointer"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Загрузите Excel файл с данными оборудования. Поддерживаемые поля: ФИО сотрудника, Наименование имущества, Инвентарный номер, Стоимость имущества
+                </p>
+              </div>
+            )}
           </div>
-          
+
           {(isImporting) && (
             <div className="text-center text-sm text-muted-foreground">
               {isImporting === 'employees' ? 'Импорт сотрудников...' : 'Импорт оборудования...'}
