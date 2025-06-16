@@ -353,10 +353,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             'Стоимость имущества': ''
           });
         } else {
-          equipment.forEach(item => {
+          // Поддержка нескольких единиц имущества для одного сотрудника
+          equipment.forEach((item, equipmentIndex) => {
             data.push({
               '№ п/п': index++,
-              'ФИО сотрудника': employee.fullName,
+              'ФИО сотрудника': equipmentIndex === 0 ? employee.fullName : '', // ФИО только в первой строке
               'Наименование имущества': item.name,
               'Инвентарный номер': item.inventoryNumber,
               'Стоимость имущества': item.cost
@@ -472,15 +473,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
             'Серия паспорта': employee.passportSeries || '',
             'Номер паспорта': employee.passportNumber || '',
             'Кем выдан': employee.passportIssuedBy || '',
-            'Дата выдачи': employee.passportDate || '',
-            'Адрес прописки': employee.address || ''
+            'Дата выдачи паспорта': employee.passportDate || '',
+            'Адрес прописки': employee.address || '',
+            'Номер приказа о приеме': employee.orderNumber || '',
+            'Дата приказа о приеме': employee.orderDate || '',
+            'Номер акта мат. ответственности': employee.responsibilityActNumber || '',
+            'Дата акта мат. ответственности': employee.responsibilityActDate || ''
           });
         }
         
-        // Добавляем данные об оборудовании
+        // Добавляем данные об оборудовании - поддержка нескольких единиц имущества
         if (equipment.length > 0) {
           equipment.forEach((item, index) => {
-            const rowData = index === 0 ? { ...baseData } : {};
+            const rowData = index === 0 ? { ...baseData } : {
+              // Для дополнительных строк оборудования оставляем только ФИО
+              'ФИО': employee.fullName,
+              'Должность': '',
+              'Отдел': ''
+            };
+            
+            // Очищаем дополнительные поля для последующих строк оборудования
+            if (index > 0 && ['admin', 'accountant'].includes(userRole!)) {
+              Object.assign(rowData, {
+                'Грейд': '',
+                'Серия паспорта': '',
+                'Номер паспорта': '',
+                'Кем выдан': '',
+                'Дата выдачи паспорта': '',
+                'Адрес прописки': '',
+                'Номер приказа о приеме': '',
+                'Дата приказа о приеме': '',
+                'Номер акта мат. ответственности': '',
+                'Дата акта мат. ответственности': ''
+              });
+            }
+            
             Object.assign(rowData, {
               'Наименование имущества': item.name,
               'Инвентарный номер': item.inventoryNumber,
