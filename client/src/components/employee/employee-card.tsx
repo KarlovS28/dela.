@@ -710,6 +710,14 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                     Список имущества
                   </Button>
 
+                  <Button
+                    onClick={() => window.open(`/api/docx/termination-checklist/${employee.id}`, '_blank')}
+                    variant="outline"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Обходной лист
+                  </Button>
+
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="destructive">
