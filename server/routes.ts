@@ -440,7 +440,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Маршруты импорта Excel файлов
-  app.post('/api/import/employees', requireAuth, requireRole(['admin']), upload.single('file'), async (req, res) => {
+  app.post('/api/import/employees', requireAuth, requireRole(['admin', 'accountant']), upload.single('file'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "Файл не найден" });
