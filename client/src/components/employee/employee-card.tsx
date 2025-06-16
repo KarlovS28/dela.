@@ -22,6 +22,7 @@ interface EmployeeCardProps {
 }
 
 export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardProps) {
+  // Все хуки должны быть объявлены ПЕРЕД любыми условными возвратами
   const [isUploading, setIsUploading] = useState(false);
   const [editingSection, setEditingSection] = useState<string | null>(null);
   const [editData, setEditData] = useState<any>({});
@@ -49,70 +50,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
     enabled: !!employeeId && open,
   });
 
-  // Early returns for loading and error states
-  if (isLoading) {
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>Загрузка...</DialogTitle>
-          </DialogHeader>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  if (error || !employee) {
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>Ошибка</DialogTitle>
-          </DialogHeader>
-          <p>Не удалось загрузить данные сотрудника</p>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !employee) return;
-
-    setIsUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append("photo", file);
-
-      const response = await fetch(`/api/employees/${employee.id}/photo`, {
-        method: "POST",
-        credentials: "include",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to upload photo");
-      }
-
-      queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
-
-      toast({
-        title: "Успешно",
-        description: "Фото загружено",
-      });
-    } catch (error) {
-      console.error("Photo upload error:", error);
-      toast({
-        title: "Ошибка",
-        description: "Не удалось загрузить фото",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
+  // Мутации
   const updateEmployee = useMutation({
     mutationFn: async (updateData: any) => {
       const response = await fetch(`/api/employees/${employeeId}`, {
@@ -243,6 +181,45 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
     },
   });
 
+  // Обработчики событий
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !employee) return;
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("photo", file);
+
+      const response = await fetch(`/api/employees/${employee.id}/photo`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to upload photo");
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
+
+      toast({
+        title: "Успешно",
+        description: "Фото загружено",
+      });
+    } catch (error) {
+      console.error("Photo upload error:", error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось загрузить фото",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleEditSection = (section: string) => {
     setEditingSection(section);
     if (employee) {
@@ -274,6 +251,32 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
 
   const canEdit = user && ['admin', 'accountant'].includes(user.role);
   const canViewDocs = user && ['admin', 'accountant'].includes(user.role);
+
+  // ТОЛЬКО ТЕПЕРЬ мы можем использовать условные возвраты
+  if (isLoading) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Загрузка...</DialogTitle>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (error || !employee) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Ошибка</DialogTitle>
+          </DialogHeader>
+          <p>Не удалось загрузить данные сотрудника</p>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
