@@ -766,11 +766,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Employee not found" });
       }
 
-      // Создание документа DOCX для акта материальной ответственности
+      // Создание документа DOCX для акта материальной ответственности по российскому стандарту
       const doc = new Document({
         sections: [{
           properties: {},
           children: [
+            // Шапка организации
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "ООО \"НАЗВАНИЕ ОРГАНИЗАЦИИ\"",
+                  bold: true,
+                  size: 24,
+                }),
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 200 },
+            }),
+            
             // Заголовок документа
             new Paragraph({
               children: [
@@ -800,70 +813,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
             new Paragraph({
               children: [
                 new TextRun({
-                  text: `№ ${employee.responsibilityActNumber || '___________'}`,
+                  text: `№ ${employee.responsibilityActNumber || '__-___'}`,
                   size: 24,
                 }),
                 new TextRun({
-                  text: `\t\t\tот ${employee.responsibilityActDate || new Date().toLocaleDateString('ru-RU')}`,
+                  text: `                                       от ${employee.responsibilityActDate || new Date().toLocaleDateString('ru-RU')} г.`,
                   size: 24,
                 }),
               ],
               spacing: { after: 400 },
             }),
             
-            // Информация о сотруднике
+            // Основной текст акта
             new Paragraph({
               children: [
                 new TextRun({
-                  text: `Материально ответственное лицо: ${employee.fullName}`,
-                  size: 24,
-                }),
-              ],
-              spacing: { after: 200 },
-            }),
-            
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: `Должность: ${employee.position}`,
-                  size: 24,
-                }),
-              ],
-              spacing: { after: 200 },
-            }),
-            
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: `Структурное подразделение: ${employee.department?.name || 'Не указан'}`,
-                  size: 24,
-                }),
-              ],
-              spacing: { after: 200 },
-            }),
-
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: `Приказ о назначении материально ответственным лицом № ${employee.orderNumber || '___________'} от ${employee.orderDate || '___________'}`,
-                  size: 24,
+                  text: `Настоящий акт приема-передачи составлен между ООО "НАЗВАНИЕ ОРГАНИЗАЦИИ", именуемым в дальнейшем "Передающая сторона", в лице директора "ФИО ДИРЕКТОРА", с одной стороны, и сотрудником ${employee.fullName} (паспорт серия ${employee.passportSeries || '____'} № ${employee.passportNumber || '______'} выдан ${employee.passportDate || '__.__.____ г.'} ${employee.passportIssuedBy || '_____________________________________________________'}, зарегистрированным по адресу: ${employee.address || '________________________________________________________________'}, работающим в должности "${employee.position}", с другой стороны, о нижеследующем акте о передаче:`,
+                  size: 22,
                 }),
               ],
               spacing: { after: 400 },
+              alignment: AlignmentType.JUSTIFIED,
             }),
             
             new Paragraph({
               children: [
                 new TextRun({
-                  text: "Перечень переданных материальных ценностей:",
-                  bold: true,
-                  size: 24,
+                  text: `1. В соответствии с приказом директора № ${employee.orderNumber || '__-___'} от ${employee.orderDate || '__.__.____ г.'} и договором о полной материальной ответственности № ${employee.responsibilityActNumber || '__-____'} от ${employee.responsibilityActDate || '__.__._____'} г. Передающая сторона, в присутствии комиссии передает материально ответственному лицу следующие материальные ценности:`,
+                  size: 22,
                 }),
               ],
               spacing: { after: 200 },
+              alignment: AlignmentType.JUSTIFIED,
             }),
             
-            // Таблица с оборудованием
+            // Таблица с материальными ценностями
             new Table({
               width: {
                 size: 100,
@@ -874,126 +858,169 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 new TableRow({
                   children: [
                     new TableCell({
-                      children: [new Paragraph({ children: [new TextRun({ text: "№ п/п", bold: true, size: 20 })] })],
+                      children: [new Paragraph({ 
+                        children: [new TextRun({ text: "№", bold: true, size: 20 })],
+                        alignment: AlignmentType.CENTER
+                      })],
+                      width: { size: 6, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ 
+                        children: [new TextRun({ text: "№ п/п", bold: true, size: 20 })],
+                        alignment: AlignmentType.CENTER
+                      })],
                       width: { size: 8, type: WidthType.PERCENTAGE },
                     }),
                     new TableCell({
-                      children: [new Paragraph({ children: [new TextRun({ text: "Наименование имущества", bold: true, size: 20 })] })],
-                      width: { size: 46, type: WidthType.PERCENTAGE },
+                      children: [new Paragraph({ 
+                        children: [new TextRun({ text: "Наименование материальных ценностей", bold: true, size: 20 })],
+                        alignment: AlignmentType.CENTER
+                      })],
+                      width: { size: 40, type: WidthType.PERCENTAGE },
                     }),
                     new TableCell({
-                      children: [new Paragraph({ children: [new TextRun({ text: "Инвентарный номер", bold: true, size: 20 })] })],
+                      children: [new Paragraph({ 
+                        children: [new TextRun({ text: "Инвентарный номер", bold: true, size: 20 })],
+                        alignment: AlignmentType.CENTER
+                      })],
                       width: { size: 23, type: WidthType.PERCENTAGE },
                     }),
                     new TableCell({
-                      children: [new Paragraph({ children: [new TextRun({ text: "Стоимость (руб.)", bold: true, size: 20 })] })],
+                      children: [new Paragraph({ 
+                        children: [new TextRun({ text: "Сумма, руб.", bold: true, size: 20 })],
+                        alignment: AlignmentType.CENTER
+                      })],
                       width: { size: 23, type: WidthType.PERCENTAGE },
                     }),
                   ],
                 }),
-                // Строки с оборудованием или пустые строки если нет оборудования
-                ...(employee.equipment && employee.equipment.length > 0 
-                  ? employee.equipment.map((item, index) => new TableRow({
-                      children: [
-                        new TableCell({
-                          children: [new Paragraph({ children: [new TextRun({ text: (index + 1).toString(), size: 20 })] })],
-                        }),
-                        new TableCell({
-                          children: [new Paragraph({ children: [new TextRun({ text: item.name, size: 20 })] })],
-                        }),
-                        new TableCell({
-                          children: [new Paragraph({ children: [new TextRun({ text: item.inventoryNumber, size: 20 })] })],
-                        }),
-                        new TableCell({
-                          children: [new Paragraph({ children: [new TextRun({ text: item.cost, size: 20 })] })],
-                        }),
-                      ],
-                    }))
-                  : // Создаем 5 пустых строк для заполнения вручную
-                    Array.from({ length: 5 }, (_, index) => new TableRow({
-                      children: [
-                        new TableCell({
-                          children: [new Paragraph({ children: [new TextRun({ text: (index + 1).toString(), size: 20 })] })],
-                        }),
-                        new TableCell({
-                          children: [new Paragraph({ children: [new TextRun({ text: "", size: 20 })] })],
-                        }),
-                        new TableCell({
-                          children: [new Paragraph({ children: [new TextRun({ text: "", size: 20 })] })],
-                        }),
-                        new TableCell({
-                          children: [new Paragraph({ children: [new TextRun({ text: "", size: 20 })] })],
-                        }),
-                      ],
-                    }))
-                ),
+                // Строки с оборудованием (всегда 18 строк согласно стандартному шаблону)
+                ...Array.from({ length: 18 }, (_, index) => {
+                  const item = employee.equipment && employee.equipment[index];
+                  return new TableRow({
+                    children: [
+                      new TableCell({
+                        children: [new Paragraph({ 
+                          children: [new TextRun({ text: "", size: 18 })],
+                          alignment: AlignmentType.CENTER
+                        })],
+                      }),
+                      new TableCell({
+                        children: [new Paragraph({ 
+                          children: [new TextRun({ text: (index + 1).toString(), size: 18 })],
+                          alignment: AlignmentType.CENTER
+                        })],
+                      }),
+                      new TableCell({
+                        children: [new Paragraph({ 
+                          children: [new TextRun({ text: item?.name || "", size: 18 })]
+                        })],
+                      }),
+                      new TableCell({
+                        children: [new Paragraph({ 
+                          children: [new TextRun({ text: item?.inventoryNumber || "", size: 18 })],
+                          alignment: AlignmentType.CENTER
+                        })],
+                      }),
+                      new TableCell({
+                        children: [new Paragraph({ 
+                          children: [new TextRun({ text: item?.cost || "", size: 18 })],
+                          alignment: AlignmentType.RIGHT
+                        })],
+                      }),
+                    ],
+                  });
+                }),
+                // Итоговая строка
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "", size: 18 })] })],
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "", size: 18 })] })],
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ 
+                        children: [new TextRun({ text: "Итого:", bold: true, size: 18 })],
+                        alignment: AlignmentType.RIGHT
+                      })],
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "", size: 18 })] })],
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ 
+                        children: [new TextRun({ 
+                          text: employee.equipment && employee.equipment.length > 0 
+                            ? employee.equipment.reduce((sum, item) => sum + parseFloat(item.cost || '0'), 0).toFixed(2)
+                            : '',
+                          bold: true,
+                          size: 18
+                        })],
+                        alignment: AlignmentType.RIGHT
+                      })],
+                    }),
+                  ],
+                }),
               ],
             }),
             
-            // Итоговая стоимость
+            // Пункты акта
             new Paragraph({
               children: [
                 new TextRun({
-                  text: `\nОбщая стоимость переданных материальных ценностей: ${
-                    employee.equipment && employee.equipment.length > 0 
-                      ? employee.equipment.reduce((sum, item) => sum + parseFloat(item.cost || '0'), 0).toFixed(2)
-                      : '___________'
-                  } руб.`,
-                  size: 24,
+                  text: "2. Передаваемые ценности в хорошем и исправном состоянии.",
+                  size: 22,
                 }),
               ],
-              spacing: { before: 400, after: 400 },
+              spacing: { before: 300, after: 200 },
+              alignment: AlignmentType.JUSTIFIED,
+            }),
+            
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "3. Принимающий все ценности в полном объеме, без каких либо претензий.",
+                  size: 22,
+                }),
+              ],
+              spacing: { after: 200 },
+              alignment: AlignmentType.JUSTIFIED,
+            }),
+            
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "4. Настоящий договор.",
+                  size: 22,
+                }),
+              ],
+              spacing: { after: 400 },
+              alignment: AlignmentType.JUSTIFIED,
             }),
             
             // Подписи
             new Paragraph({
               children: [
                 new TextRun({
-                  text: "Материально ответственное лицо:",
-                  size: 24,
+                  text: "Передал                                                                          Принял",
+                  size: 22,
                 }),
               ],
-              spacing: { before: 400, after: 200 },
+              spacing: { before: 400, after: 400 },
+              alignment: AlignmentType.JUSTIFIED,
             }),
             
             new Paragraph({
               children: [
                 new TextRun({
-                  text: `${employee.fullName} _________________ (подпись)`,
-                  size: 24,
-                }),
-              ],
-              spacing: { after: 300 },
-            }),
-            
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: "Руководитель структурного подразделения:",
-                  size: 24,
+                  text: `________________(ФИО директора)                            _________________(${employee.fullName})`,
+                  size: 22,
                 }),
               ],
               spacing: { after: 200 },
-            }),
-            
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: "_________________ _________________ (подпись) (расшифровка)",
-                  size: 24,
-                }),
-              ],
-              spacing: { after: 300 },
-            }),
-
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: `Дата составления: ${new Date().toLocaleDateString('ru-RU')}`,
-                  size: 24,
-                }),
-              ],
-              spacing: { before: 200 },
+              alignment: AlignmentType.JUSTIFIED,
             }),
           ],
         }],
