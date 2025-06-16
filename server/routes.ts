@@ -766,16 +766,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Employee not found" });
       }
 
-      // Создание документа DOCX для акта материальной ответственности по российскому стандарту
+      // Создание документа DOCX для акта материальной ответственности согласно новому шаблону
       const doc = new Document({
         sections: [{
           properties: {},
           children: [
-            // Шапка организации
+            // Заголовок документа
             new Paragraph({
               children: [
                 new TextRun({
-                  text: "ООО \"НАЗВАНИЕ ОРГАНИЗАЦИИ\"",
+                  text: `Акт приема-передачи № ${employee.responsibilityActNumber || '__'}`,
                   bold: true,
                   size: 24,
                 }),
@@ -784,23 +784,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               spacing: { after: 200 },
             }),
             
-            // Заголовок документа
             new Paragraph({
               children: [
                 new TextRun({
-                  text: "АКТ",
-                  bold: true,
-                  size: 32,
-                }),
-              ],
-              alignment: AlignmentType.CENTER,
-              spacing: { after: 200 },
-            }),
-            
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: "приема-передачи материальных ценностей",
+                  text: "материальных ценностей исполнителю",
                   bold: true,
                   size: 24,
                 }),
@@ -809,18 +796,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
               spacing: { after: 400 },
             }),
             
-            // Номер и дата акта
+            // Дата документа
             new Paragraph({
               children: [
                 new TextRun({
-                  text: `№ ${employee.responsibilityActNumber || '__-___'}`,
-                  size: 24,
-                }),
-                new TextRun({
-                  text: `                                       от ${employee.responsibilityActDate || new Date().toLocaleDateString('ru-RU')} г.`,
-                  size: 24,
+                  text: `« ${employee.responsibilityActDate ? new Date(employee.responsibilityActDate).getDate().toString().padStart(2, '0') : '__'} »   ${employee.responsibilityActDate ? new Date(employee.responsibilityActDate).toLocaleDateString('ru-RU', { month: 'long' }) : '_______'}           20${employee.responsibilityActDate ? new Date(employee.responsibilityActDate).getFullYear().toString().slice(-2) : '__'}     г.`,
+                  size: 22,
                 }),
               ],
+              alignment: AlignmentType.RIGHT,
               spacing: { after: 400 },
             }),
             
@@ -828,7 +812,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             new Paragraph({
               children: [
                 new TextRun({
-                  text: `Настоящий акт приема-передачи составлен между ООО "НАЗВАНИЕ ОРГАНИЗАЦИИ", именуемым в дальнейшем "Передающая сторона", в лице директора "ФИО ДИРЕКТОРА", с одной стороны, и сотрудником ${employee.fullName} (паспорт серия ${employee.passportSeries || '____'} № ${employee.passportNumber || '______'} выдан ${employee.passportDate || '__.__.____ г.'} ${employee.passportIssuedBy || '_____________________________________________________'}, зарегистрированным по адресу: ${employee.address || '________________________________________________________________'}, работающим в должности "${employee.position}", с другой стороны, о нижеследующем акте о передаче:`,
+                  text: `Общество с ограниченной ответственностью «МассПроект», далее именуемый "Работодатель", в лице директора Скородедова Филиппа Игоревича, действующего на основании Устава, c одной стороны и гражданин ${employee.fullName || '_____________________________'} (паспортные данные ${employee.passportSeries || '______'} № ${employee.passportNumber || '________'} выдан ${employee.passportDate || '__.__._____ '} ${employee.passportIssuedBy || '_____________________________________________________'}, зарегистрированный по адресу: ${employee.address || '________________________________________________________________'}, именуемый в дальнейшем "Работник", с другой стороны, составили настоящий акт о следующем:`,
                   size: 22,
                 }),
               ],
@@ -839,11 +823,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             new Paragraph({
               children: [
                 new TextRun({
-                  text: `1. В соответствии с приказом директора № ${employee.orderNumber || '__-___'} от ${employee.orderDate || '__.__.____ г.'} и договором о полной материальной ответственности № ${employee.responsibilityActNumber || '__-____'} от ${employee.responsibilityActDate || '__.__._____'} г. Передающая сторона, в присутствии комиссии передает материально ответственному лицу следующие материальные ценности:`,
+                  text: `1. В соответствии с Трудовым договором № ${employee.orderNumber || '__-___'} от ${employee.orderDate || '__.__.______ г.'} и Договором о полной материальной ответственности работника № ${employee.responsibilityActNumber || '__-____'} от ${employee.responsibilityActDate || '__.__._____г.'} Работодатель передал, а Работник принял следующие материальные ценности для выполнения своих должностных обязанностей:`,
                   size: 22,
                 }),
               ],
-              spacing: { after: 200 },
+              spacing: { after: 400 },
               alignment: AlignmentType.JUSTIFIED,
             }),
             
@@ -866,7 +850,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     }),
                     new TableCell({
                       children: [new Paragraph({ 
-                        children: [new TextRun({ text: "№ п/п", bold: true, size: 20 })],
+                        children: [new TextRun({ text: "п/п", bold: true, size: 20 })],
                         alignment: AlignmentType.CENTER
                       })],
                       width: { size: 8, type: WidthType.PERCENTAGE },
@@ -880,7 +864,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     }),
                     new TableCell({
                       children: [new Paragraph({ 
-                        children: [new TextRun({ text: "Инвентарный номер", bold: true, size: 20 })],
+                        children: [new TextRun({ text: "Инвентаризационный номер", bold: true, size: 20 })],
                         alignment: AlignmentType.CENTER
                       })],
                       width: { size: 23, type: WidthType.PERCENTAGE },
@@ -894,7 +878,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     }),
                   ],
                 }),
-                // Строки с оборудованием (всегда 18 строк согласно стандартному шаблону)
+                // Строки с оборудованием (всегда 18 строк согласно шаблону)
                 ...Array.from({ length: 18 }, (_, index) => {
                   const item = employee.equipment && employee.equipment[index];
                   return new TableRow({
@@ -970,7 +954,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             new Paragraph({
               children: [
                 new TextRun({
-                  text: "2. Передаваемые ценности в хорошем и исправном состоянии.",
+                  text: "2.Материальные ценности проверены и посчитаны в присутствии сторон.",
                   size: 22,
                 }),
               ],
@@ -981,7 +965,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             new Paragraph({
               children: [
                 new TextRun({
-                  text: "3. Принимающий все ценности в полном объеме, без каких либо претензий.",
+                  text: "3.Настоящий акт составлен в двух экземплярах, по одному для каждой стороны.",
                   size: 22,
                 }),
               ],
@@ -992,7 +976,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             new Paragraph({
               children: [
                 new TextRun({
-                  text: "4. Настоящий договор.",
+                  text: "4.Подписи сторон.",
                   size: 22,
                 }),
               ],
@@ -1004,7 +988,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             new Paragraph({
               children: [
                 new TextRun({
-                  text: "Передал                                                                          Принял",
+                  text: "Заказчик                                                                          Работник",
                   size: 22,
                 }),
               ],
@@ -1015,7 +999,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             new Paragraph({
               children: [
                 new TextRun({
-                  text: `________________(ФИО директора)                            _________________(${employee.fullName})`,
+                  text: `________________(Скородедов Ф.И)                            ___________________(${employee.fullName || '____________.__.__'})`,
                   size: 22,
                 }),
               ],
