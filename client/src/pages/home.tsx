@@ -1,3 +1,4 @@
+import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/layout/header";
 import { DepartmentSection } from "@/components/department/department-section";
@@ -7,7 +8,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { AddEmployeeModal } from "@/components/employee/add-employee-modal";
 import { ArchivedEmployees } from "@/components/employee/archived-employees";
 import { canViewAllPersonalData } from "@/lib/auth-utils";
-import type { DepartmentWithEmployees } from "@shared/schema";
 
 export default function Home() {
   const { data: departments, isLoading, error } = useQuery<DepartmentWithEmployees[]>({

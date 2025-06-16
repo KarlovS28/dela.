@@ -9,17 +9,19 @@ import type { DepartmentWithEmployees } from "@shared/schema";
 
 interface DepartmentSectionProps {
   department: DepartmentWithEmployees;
+  onAddEmployee?: () => void;
 }
 
-export function DepartmentSection({ department }: DepartmentSectionProps) {
+export function DepartmentSection({ department, onAddEmployee }: DepartmentSectionProps) {
   const { user } = useAuth();
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
 
   const canCreate = user && canCreateEmployee(user.role);
 
   const handleAddEmployee = () => {
-    // TODO: Implement add employee modal
-    console.log("Add employee to department:", department.name);
+    if (onAddEmployee) {
+      onAddEmployee();
+    }
   };
 
   return (
