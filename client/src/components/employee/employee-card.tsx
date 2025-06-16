@@ -338,7 +338,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
         <DialogHeader>
           <DialogTitle>{employee.fullName}</DialogTitle>
         </DialogHeader>
@@ -367,7 +367,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <Avatar className="w-32 h-32">
+              <Avatar className="w-32 h-32 sm:w-24 sm:h-24">
                 <AvatarImage src={employee.photoUrl || undefined} />
                 <AvatarFallback className="text-2xl">
                   {employee.fullName.split(' ').map(n => n[0]).join('')}
@@ -642,8 +642,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                     variant="outline"
                     onClick={() => setShowAddEquipment(!showAddEquipment)}
                   >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Добавить
+                    <Plus className="w-4 h-4" />
                   </Button>
                 )}
               </CardTitle>
@@ -711,9 +710,9 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                     <TableRow>
                       <TableHead>Наименование</TableHead>
                       <TableHead>Инв. номер</TableHead>
-                      <TableHead>Характеристики</TableHead>
-                      <TableHead>Стоимость</TableHead>
-                      {canEditEquipment && <TableHead>Действия</TableHead>}
+                      <TableHead className="hidden sm:table-cell">Характеристики</TableHead>
+                      <TableHead className="hidden sm:table-cell">Стоимость</TableHead>
+                      {canEditEquipment && <TableHead>TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -760,10 +759,10 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                           </>
                         ) : (
                           <>
-                            <TableCell>{item.name}</TableCell>
-                            <TableCell>{item.inventoryNumber}</TableCell>
-                            <TableCell>{item.characteristics || '-'}</TableCell>
-                            <TableCell>{item.cost}</TableCell>
+                            <TableCell className="text-xs sm:text-sm">{item.name}</TableCell>
+                            <TableCell className="text-xs sm:text-sm">{item.inventoryNumber}</TableCell>
+                            <TableCell className="hidden sm:table-cell text-xs sm:text-sm">{item.characteristics || '-'}</TableCell>
+                            <TableCell className="hidden sm:table-cell text-xs sm:text-sm">{item.cost}</TableCell>
                             {canEditEquipment && (
                               <TableCell>
                                 <div className="flex gap-2">

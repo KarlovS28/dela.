@@ -159,7 +159,7 @@ export function AddEmployeeModal({ departmentId, children }: AddEmployeeModalPro
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
         <DialogHeader>
           <DialogTitle>Добавить сотрудника</DialogTitle>
         </DialogHeader>

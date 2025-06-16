@@ -96,8 +96,12 @@ export function Header() {
                     <User className="mr-2 h-4 w-4" />
                     Личный кабинет
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
+                  <DropdownMenuItem 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      logout.mutate();
+                    }}
+                  >
                     Выйти
                   </DropdownMenuItem>
                 </DropdownMenuContent>

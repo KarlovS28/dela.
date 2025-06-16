@@ -26,14 +26,13 @@ export function DepartmentSection({ department }: DepartmentSectionProps) {
         <h2 className="text-2xl font-bold text-foreground">{department.name}</h2>
         {canCreate && (
           <AddEmployeeModal departmentId={department.id}>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Добавить сотрудника
+            <Button variant="outline" size="sm">
+              <Plus className="w-4 h-4" />
             </Button>
           </AddEmployeeModal>
         )}
       </div>
-      
+
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6">
         {department.employees.map((employee) => (
           <EmployeeAvatar
@@ -42,7 +41,7 @@ export function DepartmentSection({ department }: DepartmentSectionProps) {
             onClick={() => setSelectedEmployeeId(employee.id)}
           />
         ))}
-        
+
         {department.employees.length === 0 && (
           <div className="col-span-full text-center text-muted-foreground py-8">
             В отделе пока нет сотрудников

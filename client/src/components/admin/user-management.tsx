@@ -189,17 +189,17 @@ export function UserManagement() {
           <TableHeader>
             <TableRow>
               <TableHead>ФИО</TableHead>
-              <TableHead>Email</TableHead>
+              <TableHead className="hidden sm:table-cell">Email</TableHead>
               <TableHead>Роль</TableHead>
-              <TableHead>Дата регистрации</TableHead>
+              <TableHead className="hidden md:table-cell">Дата регистрации</TableHead>
               <TableHead>Действия</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {users?.map((user) => (
               <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.fullName}</TableCell>
-                <TableCell>{user.email}</TableCell>
+                <TableCell className="font-medium text-xs sm:text-sm">{user.fullName}</TableCell>
+                <TableCell className="hidden sm:table-cell text-xs sm:text-sm">{user.email}</TableCell>
                 <TableCell>
                   {editingUserId === user.id ? (
                     <div className="flex items-center gap-2">
@@ -237,7 +237,7 @@ export function UserManagement() {
                     </Badge>
                   )}
                 </TableCell>
-                <TableCell>
+                <TableCell className="hidden md:table-cell text-xs sm:text-sm">
                   {new Date(user.createdAt).toLocaleDateString('ru-RU')}
                 </TableCell>
                 <TableCell>
