@@ -1,428 +1,276 @@
-
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { FileText, User, Users, MapPin, Calendar, Hash, UserX, Upload } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { canEditEmployee, canArchiveEmployee } from "@/lib/auth-utils";
-import { Edit, PrinterCheck, UserMinus, Upload } from "lucide-react";
 import type { EmployeeWithEquipment } from "@shared/schema";
 
 interface EmployeeCardProps {
-  employeeId: number;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  employee: EmployeeWithEquipment;
+  isArchived?: boolean;
 }
 
-export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardProps) {
+export default function EmployeeCard({ employee, isArchived = false }: EmployeeCardProps) {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { user } = useAuth();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [isEditing, setIsEditing] = useState(false);
-  const [editData, setEditData] = useState<Partial<EmployeeWithEquipment>>({});
 
-  const { data: employee, isLoading } = useQuery<EmployeeWithEquipment>({
-    queryKey: ["/api/employees", employeeId],
-    enabled: open && !!employeeId,
-  });
+  // Определяем права пользователя
+  const canEdit = user?.role === "admin" || user?.role === "sysadmin";
+  const canViewSensitive = user?.role === "admin" || user?.role === "sysadmin" || user?.role === "office-manager";
 
-  const updateEmployeeMutation = useMutation({
-    mutationFn: async (data: Partial<EmployeeWithEquipment>) => {
-      const response = await apiRequest("PUT", `/api/employees/${employeeId}`, data);
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
-      setIsEditing(false);
-      toast({
-        title: "Успешно",
-        description: "Данные сотрудника обновлены",
+  const archiveMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/employees/${id}/archive`, {
+        method: "POST",
       });
-    },
-    onError: () => {
-      toast({
-        title: "Ошибка",
-        description: "Не удалось обновить данные сотрудника",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const archiveEmployeeMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/employees/${employeeId}/archive`);
+      if (!response.ok) throw new Error("Failed to archive employee");
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
-      onOpenChange(false);
-      toast({
-        title: "Успешно",
-        description: "Сотрудник перемещен в архив",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Ошибка",
-        description: "Не удалось архивировать сотрудника",
-        variant: "destructive",
-      });
+      setIsDialogOpen(false);
     },
   });
 
-  const handleEdit = () => {
-    if (employee) {
-      setEditData(employee);
-      setIsEditing(true);
-    }
-  };
-
-  const handleSave = () => {
-    updateEmployeeMutation.mutate(editData);
-  };
-
-  const handleArchive = () => {
-    if (window.confirm("Вы уверены, что хотите уволить этого сотрудника?")) {
-      archiveEmployeeMutation.mutate();
+  const handleArchiveEmployee = () => {
+    if (confirm("Вы уверены, что хотите уволить этого сотрудника? Это действие приведет к автоматической генерации документов увольнения.")) {
+      archiveMutation.mutate(employee.id);
     }
   };
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Create a temporary URL for the uploaded image
-      const photoUrl = URL.createObjectURL(file);
-      setEditData({ ...editData, photoUrl });
-      
-      toast({
-        title: "Фото загружено",
-        description: "Фото будет сохранено при сохранении изменений",
-      });
+      // Здесь будет логика загрузки фото
+      console.log("Uploading photo:", file);
     }
   };
 
-  const handlePrint = () => {
-    if (!employee) return;
-    
-    // Generate print version of the material responsibility act
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Акт о материальной ответственности - ${employee.fullName}</title>
-            <style>
-              body { font-family: Arial, sans-serif; margin: 20px; }
-              .header { text-align: center; margin-bottom: 30px; }
-              .employee-info { margin-bottom: 20px; }
-              .equipment-table { width: 100%; border-collapse: collapse; }
-              .equipment-table th, .equipment-table td { border: 1px solid #000; padding: 8px; text-align: left; }
-              .equipment-table th { background-color: #f0f0f0; }
-            </style>
-          </head>
-          <body>
-            <div class="header">
-              <h1>АКТ О МАТЕРИАЛЬНОЙ ОТВЕТСТВЕННОСТИ</h1>
-              <p>№ ${employee.responsibilityActNumber || 'Не указан'}</p>
-            </div>
-            <div class="employee-info">
-              <p><strong>ФИО:</strong> ${employee.fullName}</p>
-              <p><strong>Должность:</strong> ${employee.position}</p>
-              <p><strong>Приказ о приеме:</strong> ${employee.orderNumber || 'Не указан'}</p>
-            </div>
-            <table class="equipment-table">
-              <thead>
-                <tr>
-                  <th>№</th>
-                  <th>Наименование имущества</th>
-                  <th>Инвентарный номер</th>
-                  <th>Стоимость</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${employee.equipment.map((item, index) => `
-                  <tr>
-                    <td>${index + 1}</td>
-                    <td>${item.name}</td>
-                    <td>${item.inventoryNumber}</td>
-                    <td>${item.cost}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.print();
+  const handlePrintResponsibilityAct = async () => {
+    try {
+      const response = await fetch(`/api/docx/responsibility-act/${employee.id}`);
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `akt-otvetstvennosti-${employee.fullName}.docx`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }
+    } catch (error) {
+      console.error("Error downloading responsibility act:", error);
     }
   };
 
-  // Always render the same structure to avoid hook order issues
-  if (isLoading || !employee) {
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>Загрузка...</DialogTitle>
-          </DialogHeader>
-          <div className="flex items-center justify-center h-96">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
+  const handleTermination = async () => {
+    if (!confirm("Вы уверены, что хотите уволить этого сотрудника?")) return;
 
-  const canEdit = user && canEditEmployee(user.role);
-  const canArchive = user && canArchiveEmployee(user.role);
+    try {
+      // Архивируем сотрудника
+      await archiveMutation.mutateAsync(employee.id);
+
+      // Автоматически генерируем обходной лист
+      const response = await fetch(`/api/docx/termination-checklist/${employee.id}`);
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `obhodnoy-list-${employee.fullName}.docx`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }
+    } catch (error) {
+      console.error("Error during termination:", error);
+    }
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold">
-            {isEditing ? "Редактирование сотрудника" : "Карточка сотрудника"}
-          </DialogTitle>
-        </DialogHeader>
-        
-        {/* Employee Photo and Basic Info */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row gap-6">
-              <div className="flex flex-col items-center">
-                <Avatar className="w-32 h-32 border-4 border-primary">
-                  <AvatarImage 
-                    src={editData.photoUrl || employee.photoUrl || `https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=128&h=128&fit=crop&crop=face`} 
+    <Card className="w-full max-w-sm mx-auto">
+      <CardContent className="p-4">
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <div className="cursor-pointer">
+              <div className="flex flex-col items-center space-y-3">
+                <div className="relative">
+                  <img
+                    src={employee.photoUrl || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"}
                     alt={employee.fullName}
+                    className="w-20 h-20 rounded-full object-cover"
                   />
-                  <AvatarFallback className="bg-primary/10 text-primary font-medium text-2xl">
-                    {employee.fullName.split(" ").map(n => n[0]).join("")}
-                  </AvatarFallback>
-                </Avatar>
-                
-                {isEditing && (
-                  <div className="mt-4">
-                    <Label htmlFor="photo-upload" className="cursor-pointer">
-                      <Button variant="outline" size="sm" asChild>
-                        <span>
-                          <Upload className="w-4 h-4 mr-2" />
-                          Загрузить фото
-                        </span>
-                      </Button>
-                    </Label>
-                    <Input
-                      id="photo-upload"
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handlePhotoUpload}
-                    />
+                  {canEdit && !isArchived && (
+                    <label className="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-1 cursor-pointer hover:bg-blue-600">
+                      <Upload className="h-3 w-3" />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+                <div className="text-center">
+                  <h3 className="font-semibold text-sm">{employee.fullName}</h3>
+                  <p className="text-xs text-gray-600">{employee.position}</p>
+                  <Badge variant="secondary" className="text-xs mt-1">
+                    {employee.grade}
+                  </Badge>
+                  {employee.department && (
+                    <p className="text-xs text-gray-500 mt-1">{employee.department.name}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </DialogTrigger>
+
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Карточка сотрудника
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Основная информация */}
+              <div className="space-y-4">
+                <div className="flex items-center space-x-4">
+                  <img
+                    src={employee.photoUrl || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"}
+                    alt={employee.fullName}
+                    className="w-24 h-24 rounded-full object-cover"
+                  />
+                  <div>
+                    <h2 className="text-xl font-bold">{employee.fullName}</h2>
+                    <p className="text-gray-600">{employee.position}</p>
+                    <Badge variant="outline">{employee.grade}</Badge>
+                  </div>
+                </div>
+
+                {/* Паспортные данные - только для админа и офис-менеджера */}
+                {canViewSensitive && (
+                  <div className="space-y-2">
+                    <h3 className="font-semibold flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Паспортные данные
+                    </h3>
+                    <div className="bg-gray-50 p-3 rounded space-y-1 text-sm">
+                      {employee.passportSeries && employee.passportNumber && (
+                        <p><span className="font-medium">Серия и номер:</span> {employee.passportSeries} {employee.passportNumber}</p>
+                      )}
+                      {employee.passportIssuedBy && (
+                        <p><span className="font-medium">Кем выдан:</span> {employee.passportIssuedBy}</p>
+                      )}
+                      {employee.passportDate && (
+                        <p><span className="font-medium">Дата выдачи:</span> {employee.passportDate}</p>
+                      )}
+                      {employee.address && (
+                        <p className="flex items-start gap-1">
+                          <MapPin className="h-3 w-3 mt-1" />
+                          <span>{employee.address}</span>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Документы - только для админа */}
+                {user?.role === "admin" && (
+                  <div className="space-y-2">
+                    <h3 className="font-semibold flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      Документы
+                    </h3>
+                    <div className="bg-gray-50 p-3 rounded space-y-1 text-sm">
+                      {employee.orderNumber && (
+                        <p><span className="font-medium">Приказ о приеме:</span> {employee.orderNumber}</p>
+                      )}
+                      {employee.orderDate && (
+                        <p><span className="font-medium">Дата приказа:</span> {employee.orderDate}</p>
+                      )}
+                      {employee.responsibilityActNumber && (
+                        <p><span className="font-medium">Акт мат. ответственности:</span> {employee.responsibilityActNumber}</p>
+                      )}
+                      {employee.responsibilityActDate && (
+                        <p><span className="font-medium">Дата акта:</span> {employee.responsibilityActDate}</p>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
-              
-              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">ФИО</Label>
-                  {isEditing ? (
-                    <Input
-                      value={editData.fullName || ""}
-                      onChange={(e) => setEditData({...editData, fullName: e.target.value})}
-                    />
-                  ) : (
-                    <p className="text-lg font-semibold">{employee.fullName}</p>
-                  )}
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Должность</Label>
-                  {isEditing ? (
-                    <Input
-                      value={editData.position || ""}
-                      onChange={(e) => setEditData({...editData, position: e.target.value})}
-                    />
-                  ) : (
-                    <p>{employee.position}</p>
-                  )}
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Разряд</Label>
-                  {isEditing ? (
-                    <Input
-                      value={editData.grade || ""}
-                      onChange={(e) => setEditData({...editData, grade: e.target.value})}
-                    />
-                  ) : (
-                    <p>{employee.grade}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Personal Information */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-lg">Личная информация</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Серия паспорта</Label>
-                {isEditing ? (
-                  <Input
-                    value={editData.passportSeries || ""}
-                    onChange={(e) => setEditData({...editData, passportSeries: e.target.value})}
-                  />
+              {/* Оборудование */}
+              <div className="space-y-4">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Hash className="h-4 w-4" />
+                  Закрепленное оборудование
+                </h3>
+
+                {employee.equipment && employee.equipment.length > 0 ? (
+                  <div className="border rounded">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Наименование</TableHead>
+                          <TableHead>Инв. номер</TableHead>
+                          <TableHead>Стоимость</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {employee.equipment.map((item) => (
+                          <TableRow key={item.id}>
+                            <TableCell className="font-medium">{item.name}</TableCell>
+                            <TableCell>{item.inventoryNumber}</TableCell>
+                            <TableCell>{item.cost || "—"}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 ) : (
-                  <p>{employee.passportSeries || "Не указана"}</p>
+                  <p className="text-gray-500 italic">Оборудование не закреплено</p>
                 )}
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Номер паспорта</Label>
-                {isEditing ? (
-                  <Input
-                    value={editData.passportNumber || ""}
-                    onChange={(e) => setEditData({...editData, passportNumber: e.target.value})}
-                  />
-                ) : (
-                  <p>{employee.passportNumber || "Не указан"}</p>
-                )}
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Дата выдачи паспорта</Label>
-                {isEditing ? (
-                  <Input
-                    value={editData.passportDate || ""}
-                    onChange={(e) => setEditData({...editData, passportDate: e.target.value})}
-                  />
-                ) : (
-                  <p>{employee.passportDate || "Не указана"}</p>
-                )}
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Адрес</Label>
-                {isEditing ? (
-                  <Input
-                    value={editData.address || ""}
-                    onChange={(e) => setEditData({...editData, address: e.target.value})}
-                  />
-                ) : (
-                  <p>{employee.address || "Не указан"}</p>
-                )}
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Номер приказа о приеме</Label>
-                {isEditing ? (
-                  <Input
-                    value={editData.orderNumber || ""}
-                    onChange={(e) => setEditData({...editData, orderNumber: e.target.value})}
-                  />
-                ) : (
-                  <p>{employee.orderNumber || "Не указан"}</p>
-                )}
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Номер акта мат. ответственности</Label>
-                {isEditing ? (
-                  <Input
-                    value={editData.responsibilityActNumber || ""}
-                    onChange={(e) => setEditData({...editData, responsibilityActNumber: e.target.value})}
-                  />
-                ) : (
-                  <p>{employee.responsibilityActNumber || "Не указан"}</p>
+
+                {/* Действия - только для админа */}
+                {canEdit && !isArchived && (
+                  <div className="space-y-2 pt-4">
+                    <Button
+                      onClick={handlePrintResponsibilityAct}
+                      variant="outline"
+                      className="w-full"
+                      disabled={!employee.equipment || employee.equipment.length === 0}
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Печать акта мат. ответственности
+                    </Button>
+
+                    <Button
+                      onClick={handleTermination}
+                      variant="destructive"
+                      className="w-full"
+                      disabled={archiveMutation.isPending}
+                    >
+                      <UserX className="h-4 w-4 mr-2" />
+                      {archiveMutation.isPending ? "Увольнение..." : "Увольнение"}
+                    </Button>
+                  </div>
                 )}
               </div>
             </div>
-          </CardContent>
-        </Card>
-        
-        {/* Material Responsibility Table */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-lg">Акт о материальной ответственности</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>№</TableHead>
-                    <TableHead>Наименование имущества</TableHead>
-                    <TableHead>Инвентарный номер</TableHead>
-                    <TableHead>Стоимость</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {employee.equipment.map((item, index) => (
-                    <TableRow key={item.id}>
-                      <TableCell>{index + 1}</TableCell>
-                      <TableCell>{item.name}</TableCell>
-                      <TableCell>{item.inventoryNumber}</TableCell>
-                      <TableCell>{item.cost}</TableCell>
-                    </TableRow>
-                  ))}
-                  {employee.equipment.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center text-muted-foreground">
-                        Имущество не закреплено
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Action Buttons */}
-        <div className="flex flex-wrap gap-4 justify-center">
-          <Button onClick={handlePrint} className="bg-green-600 hover:bg-green-700">
-            <PrinterCheck className="w-4 h-4 mr-2" />
-            Печать акта
-          </Button>
-          
-          {canEdit && (
-            <>
-              {isEditing ? (
-                <>
-                  <Button onClick={handleSave} disabled={updateEmployeeMutation.isPending}>
-                    {updateEmployeeMutation.isPending ? "Сохранение..." : "Сохранить"}
-                  </Button>
-                  <Button variant="outline" onClick={() => setIsEditing(false)}>
-                    Отмена
-                  </Button>
-                </>
-              ) : (
-                <Button onClick={handleEdit} variant="outline">
-                  <Edit className="w-4 h-4 mr-2" />
-                  Редактировать
-                </Button>
-              )}
-            </>
-          )}
-          
-          {canArchive && !employee.isArchived && (
-            <Button 
-              onClick={handleArchive} 
-              variant="destructive"
-              disabled={archiveEmployeeMutation.isPending}
-            >
-              <UserMinus className="w-4 h-4 mr-2" />
-              {archiveEmployeeMutation.isPending ? "Увольнение..." : "Уволить"}
-            </Button>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
+          </DialogContent>
+        </Dialog>
+      </CardContent>
+    </Card>
   );
 }
