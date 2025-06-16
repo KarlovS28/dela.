@@ -60,7 +60,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/auth/login', async (req, res) => {
     try {
       const { email, password } = req.body;
-      
+
       if (!email || !password) {
         return res.status(400).json({ message: "Email and password are required" });
       }
@@ -85,7 +85,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/auth/register', async (req, res) => {
     try {
       const userData = insertUserSchema.parse(req.body);
-      
+
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(userData.email);
       if (existingUser) {
@@ -93,7 +93,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const user = await storage.createUser(userData);
-      
+
       // Auto-login after registration
       req.session.userId = user.id;
       req.session.userRole = user.role;
@@ -124,7 +124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) {
         return res.status(401).json({ message: "No user ID in session" });
       }
-      
+
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -150,13 +150,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Employee routes
-  app.get('/api/employees/archived', requireAuth, requireRole(['admin', 'accountant']), async (req, res) => {
+  app.get("/api/employees", async (req, res) => {
+    try {
+      const employees = await storage.getEmployees();
+      res.json(employees);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch employees" });
+    }
+  });
+
+  // Get archived employees
+  app.get("/api/employees/archived", async (req, res) => {
     try {
       const archivedEmployees = await storage.getArchivedEmployees();
       res.json(archivedEmployees);
     } catch (error) {
-      console.error("Get archived employees error:", error);
-      res.status(500).json({ message: "Internal server error" });
+      res.status(500).json({ error: "Failed to fetch archived employees" });
     }
   });
 
@@ -164,7 +173,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const employee = await storage.getEmployee(id);
-      
+
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
@@ -194,7 +203,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const updateData = req.body;
-      
+
       // Role-based permissions
       const userRole = req.session.userRole;
       if (userRole === 'sysadmin' || userRole === 'office-manager') {
@@ -203,7 +212,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const filteredData = Object.keys(updateData)
           .filter(key => allowedFields.includes(key))
           .reduce((obj, key) => ({ ...obj, [key]: updateData[key] }), {});
-        
+
         const employee = await storage.updateEmployee(id, filteredData);
         res.json(employee);
       } else if (userRole === 'accountant' || userRole === 'admin') {
@@ -280,7 +289,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Для демонстрации сохраняем как base64
       const photoBuffer = req.file.buffer;
       const photoBase64 = `data:${req.file.mimetype};base64,${photoBuffer.toString('base64')}`;
-      
+
       const updatedEmployee = await storage.updateEmployee(employeeId, {
         photoUrl: photoBase64
       });
@@ -302,7 +311,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // В реальном приложении здесь была бы сохранение шаблона в файловую систему
       // Для демонстрации просто возвращаем успех
       console.log('Uploaded responsibility act template:', req.file.originalname, req.file.size, 'bytes');
-      
+
       res.json({ 
         message: "Шаблон акта материальной ответственности успешно загружен",
         filename: req.file.originalname 
@@ -322,7 +331,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // В реальном приложении здесь была бы сохранение шаблона в файловую систему
       // Для демонстрации просто возвращаем успех
       console.log('Uploaded termination checklist template:', req.file.originalname, req.file.size, 'bytes');
-      
+
       res.json({ 
         message: "Шаблон обходного листа успешно загружен",
         filename: req.file.originalname 
@@ -339,11 +348,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const employees = await storage.getEmployees();
       const data: any[] = [];
       let index = 1;
-      
+
       for (const employee of employees) {
         if (employee.isArchived) continue;
         const equipment = await storage.getEquipmentByEmployee(employee.id);
-        
+
         if (equipment.length === 0) {
           data.push({
             '№ п/п': index++,
@@ -364,13 +373,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       }
-      
+
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Инвентаризация');
-      
+
       const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
-      
+
       res.setHeader('Content-Disposition', 'attachment; filename=inventory.xlsx');
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.send(buffer);
@@ -385,7 +394,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const employees = await storage.getEmployees();
       const departments = await storage.getDepartments();
       const departmentMap = new Map(departments.map(d => [d.id, d.name]));
-      
+
       const data = employees
         .filter(emp => !emp.isArchived)
         .map(employee => ({
@@ -399,13 +408,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'Грейд': employee.grade,
           'Отдел': departmentMap.get(employee.departmentId!) || ''
         }));
-      
+
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Сотрудники');
-      
+
       const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
-      
+
       res.setHeader('Content-Disposition', 'attachment; filename=employees.xlsx');
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.send(buffer);
@@ -420,7 +429,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const employees = await storage.getEmployees();
       const departments = await storage.getDepartments();
       const departmentMap = new Map(departments.map(d => [d.id, d.name]));
-      
+
       const data = employees
         .filter(emp => !emp.isArchived)
         .map(employee => ({
@@ -429,13 +438,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'Грейд': employee.grade,
           'Отдел': departmentMap.get(employee.departmentId!) || ''
         }));
-      
+
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Сотрудники');
-      
+
       const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
-      
+
       res.setHeader('Content-Disposition', 'attachment; filename=employees-public.xlsx');
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.send(buffer);
@@ -452,19 +461,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const departments = await storage.getDepartments();
       const departmentMap = new Map(departments.map(d => [d.id, d.name]));
       const userRole = req.session.userRole;
-      
+
       const data = [];
-      
+
       for (const employee of employees.filter(emp => !emp.isArchived)) {
         const equipment = await storage.getEquipmentByEmployee(employee.id);
-        
+
         // Базовые данные для всех ролей
         const baseData = {
           'ФИО': employee.fullName,
           'Должность': employee.position,
           'Отдел': departmentMap.get(employee.departmentId!) || ''
         };
-        
+
         // Полные данные только для админа и бухгалтера
         if (['admin', 'accountant'].includes(userRole!)) {
           Object.assign(baseData, {
@@ -476,7 +485,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             'Адрес прописки': employee.address || ''
           });
         }
-        
+
         // Добавляем данные об оборудовании
         if (equipment.length > 0) {
           equipment.forEach((item, index) => {
@@ -498,13 +507,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       }
-      
+
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Инвентаризация');
-      
+
       const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
-      
+
       res.setHeader('Content-Disposition', 'attachment; filename=inventory-full.xlsx');
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.send(buffer);
@@ -538,11 +547,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           if (row['ФИО'] && row['Должность']) {
             let departmentId = 1; // По умолчанию администрация
-            
+
             // Обработка отдела - создание если не существует
             if (row['Отдел']) {
               const departmentName = String(row['Отдел']).trim();
-              
+
               if (departmentCache.has(departmentName)) {
                 departmentId = departmentCache.get(departmentName)!;
               } else {
@@ -640,7 +649,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
-      
+
       const equipment = await storage.getEquipmentByEmployee(id);
       const data = equipment.map((item, index) => ({
         '№ п/п': index + 1,
@@ -648,14 +657,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'Инвентарный номер': item.inventoryNumber,
         'Стоимость': item.cost
       }));
-      
+
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
       XLSX.utils.sheet_add_aoa(wb, [['Список закрепленной техники'], [`ФИО: ${employee.fullName}`], ['']], { origin: 'A1' });
       XLSX.utils.book_append_sheet(wb, ws, 'Техника сотрудника');
-      
+
       const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
-      
+
       res.setHeader('Content-Disposition', `attachment; filename=equipment-${encodeURIComponent(employee.fullName)}.xlsx`);
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.send(buffer);
@@ -672,7 +681,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
-      
+
       const currentDate = new Date().toLocaleDateString('ru-RU');
       const data = [{
         'ОБХОДНОЙ ЛИСТ': '',
@@ -685,13 +694,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'Отдел': employee.department?.name || '',
         'Дата увольнения': currentDate
       }];
-      
+
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Обходной лист');
-      
+
       const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
-      
+
       res.setHeader('Content-Disposition', `attachment; filename=termination-${encodeURIComponent(employee.fullName)}.xlsx`);
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.send(buffer);
@@ -727,7 +736,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               alignment: AlignmentType.CENTER,
               spacing: { after: 400 },
             }),
-            
+
             // Информация о сотруднике
             new Paragraph({
               children: [
@@ -738,7 +747,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ],
               spacing: { after: 200 },
             }),
-            
+
             new Paragraph({
               children: [
                 new TextRun({
@@ -748,7 +757,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ],
               spacing: { after: 200 },
             }),
-            
+
             new Paragraph({
               children: [
                 new TextRun({
@@ -758,7 +767,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ],
               spacing: { after: 400 },
             }),
-            
+
             // Таблица с оборудованием
             new Table({
               width: {
@@ -796,7 +805,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     new TableCell({
                       children: [new Paragraph({ children: [new TextRun({ text: item.name })] })],
                     }),
-                    new TableCell({
+                    newTableCell({
                       children: [new Paragraph({ children: [new TextRun({ text: item.inventoryNumber })] })],
                     }),
                     new TableCell({
@@ -806,7 +815,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 })),
               ],
             }),
-            
+
             // Подписи
             new Paragraph({
               children: [
@@ -817,7 +826,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ],
               spacing: { before: 400 },
             }),
-            
+
             new Paragraph({
               children: [
                 new TextRun({
@@ -827,7 +836,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ],
               spacing: { before: 200 },
             }),
-            
+
             new Paragraph({
               children: [
                 new TextRun({
@@ -842,7 +851,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const buffer = await Packer.toBuffer(doc);
-      
+
       res.setHeader('Content-Disposition', `attachment; filename=act-${encodeURIComponent(employee.fullName)}.docx`);
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       res.send(buffer);
@@ -877,7 +886,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               alignment: AlignmentType.CENTER,
               spacing: { after: 400 },
             }),
-            
+
             new Paragraph({
               children: [
                 new TextRun({
@@ -888,7 +897,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               alignment: AlignmentType.CENTER,
               spacing: { after: 600 },
             }),
-            
+
             // Информация о сотруднике
             new Paragraph({
               children: [
@@ -900,7 +909,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ],
               spacing: { after: 200 },
             }),
-            
+
             new Paragraph({
               children: [
                 new TextRun({
@@ -910,7 +919,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ],
               spacing: { after: 200 },
             }),
-            
+
             new Paragraph({
               children: [
                 new TextRun({
@@ -920,7 +929,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ],
               spacing: { after: 200 },
             }),
-            
+
             new Paragraph({
               children: [
                 new TextRun({
@@ -930,7 +939,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ],
               spacing: { after: 600 },
             }),
-            
+
             // Таблица обходного листа
             new Table({
               width: {
@@ -958,7 +967,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     }),
                   ],
                 }),
-                
+
                 // Стандартные пункты обходного листа
                 ...[
                   "IT отдел - сдача оборудования",
@@ -985,7 +994,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 })),
               ],
             }),
-            
+
             // Заключительная подпись
             new Paragraph({
               children: [
@@ -1001,7 +1010,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const buffer = await Packer.toBuffer(doc);
-      
+
       res.setHeader('Content-Disposition', `attachment; filename=checklist-${encodeURIComponent(employee.fullName)}.docx`);
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       res.send(buffer);

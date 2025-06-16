@@ -401,7 +401,12 @@ export function AddEmployeeModal({ departmentId, children }: AddEmployeeModalPro
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Серия паспорта</FormLabel>
-                    <FormCon</FormControl>
+                    <FormControl>
+                      <Input
+                        placeholder="1234"
+                        {...field}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
