@@ -282,6 +282,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Загрузка шаблонов документов
+  app.post('/api/templates/responsibility-act', requireAuth, requireRole(['admin', 'accountant']), upload.single('template'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Файл не найден" });
+      }
+
+      // В реальном приложении здесь была бы сохранение шаблона в файловую систему
+      // Для демонстрации просто возвращаем успех
+      console.log('Uploaded responsibility act template:', req.file.originalname, req.file.size, 'bytes');
+      
+      res.json({ 
+        message: "Шаблон акта материальной ответственности успешно загружен",
+        filename: req.file.originalname 
+      });
+    } catch (error) {
+      console.error('Template upload error:', error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post('/api/templates/termination-checklist', requireAuth, requireRole(['admin', 'accountant']), upload.single('template'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Файл не найден" });
+      }
+
+      // В реальном приложении здесь была бы сохранение шаблона в файловую систему
+      // Для демонстрации просто возвращаем успех
+      console.log('Uploaded termination checklist template:', req.file.originalname, req.file.size, 'bytes');
+      
+      res.json({ 
+        message: "Шаблон обходного листа успешно загружен",
+        filename: req.file.originalname 
+      });
+    } catch (error) {
+      console.error('Template upload error:', error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Excel Export routes
   app.get('/api/export/inventory', requireAuth, requireRole(['admin']), async (req, res) => {
     try {

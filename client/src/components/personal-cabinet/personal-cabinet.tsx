@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { canImportExport, canViewArchive } from "@/lib/auth-utils";
 import { Download, Upload, FileText, FileSpreadsheet, Archive } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiRequest } from "@/lib/queryClient";
 
 const passwordSchema = z.object({
@@ -70,6 +71,69 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
       description: "Смена пароля будет реализована в следующей версии",
     });
     passwordForm.reset();
+  };
+
+  // Функции для загрузки шаблонов документов
+  const handleResponsibilityTemplateUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const formData = new FormData();
+      formData.append("template", file);
+      
+      try {
+        const response = await fetch("/api/templates/responsibility-act", {
+          method: "POST",
+          credentials: "include",
+          body: formData,
+        });
+        
+        if (response.ok) {
+          toast({
+            title: "Шаблон загружен",
+            description: "Шаблон акта материальной ответственности успешно загружен",
+          });
+        } else {
+          throw new Error("Ошибка загрузки");
+        }
+      } catch (error) {
+        toast({
+          title: "Ошибка",
+          description: "Не удалось загрузить шаблон",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const handleChecklistTemplateUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const formData = new FormData();
+      formData.append("template", file);
+      
+      try {
+        const response = await fetch("/api/templates/termination-checklist", {
+          method: "POST",
+          credentials: "include",
+          body: formData,
+        });
+        
+        if (response.ok) {
+          toast({
+            title: "Шаблон загружен",
+            description: "Шаблон обходного листа успешно загружен",
+          });
+        } else {
+          throw new Error("Ошибка загрузки");
+        }
+      } catch (error) {
+        toast({
+          title: "Ошибка",
+          description: "Не удалось загрузить шаблон",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   // Обновленная функция экспорта инвентаризации с полными данными
@@ -282,6 +346,62 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
                     />
                     <p className="text-xs text-muted-foreground">
                       Поддерживаются файлы с колонками: ФИО, Должность, Грейд, Отдел, Паспортные данные
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Document Templates */}
+          {canManageData && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Шаблоны документов</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium">Шаблон акта материальной ответственности</Label>
+                    <Button
+                      variant="outline"
+                      className="w-full mt-2"
+                      onClick={() => document.getElementById('responsibility-template')?.click()}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Загрузить шаблон
+                    </Button>
+                    <input
+                      id="responsibility-template"
+                      type="file"
+                      accept=".docx,.xlsx"
+                      className="hidden"
+                      onChange={handleResponsibilityTemplateUpload}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Поддерживаются форматы: .docx, .xlsx
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-sm font-medium">Шаблон обходного листа</Label>
+                    <Button
+                      variant="outline"
+                      className="w-full mt-2"
+                      onClick={() => document.getElementById('checklist-template')?.click()}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Загрузить шаблон
+                    </Button>
+                    <input
+                      id="checklist-template"
+                      type="file"
+                      accept=".docx,.xlsx"
+                      className="hidden"
+                      onChange={handleChecklistTemplateUpload}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Поддерживаются форматы: .docx, .xlsx
                     </p>
                   </div>
                 </div>
