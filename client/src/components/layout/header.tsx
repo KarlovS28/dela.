@@ -28,8 +28,6 @@ export function Header() {
         return "Системный администратор";
       case "accountant":
         return "Бухгалтер";
-      case "office-manager":
-        return "Офис-менеджер";
       default:
         return role;
     }

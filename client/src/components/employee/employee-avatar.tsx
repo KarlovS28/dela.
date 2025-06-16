@@ -39,8 +39,8 @@ export function EmployeeAvatar({ employee, size = "md", onClick }: EmployeeAvata
       
       {size !== "lg" && (
         <div className="mt-3 text-center">
-          <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors duration-200 leading-tight">
-            {employee.fullName}
+          <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors duration-200">
+            {employee.fullName.split(" ").map(n => `${n[0]}.`).join("")}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
             {employee.position}

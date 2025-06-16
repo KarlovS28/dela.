@@ -13,7 +13,7 @@ const registerSchema = z.object({
   fullName: z.string().min(1, "ФИО обязательно"),
   email: z.string().email("Введите корректный email"),
   password: z.string().min(6, "Пароль должен содержать минимум 6 символов"),
-  role: z.enum(["admin", "sysadmin", "accountant", "office-manager"], {
+  role: z.enum(["admin", "sysadmin", "accountant"], {
     required_error: "Выберите роль",
   }),
 });
@@ -109,7 +109,6 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
                 <SelectItem value="admin">Администратор</SelectItem>
                 <SelectItem value="sysadmin">Системный администратор</SelectItem>
                 <SelectItem value="accountant">Бухгалтер</SelectItem>
-                <SelectItem value="office-manager">Офис-менеджер</SelectItem>
               </SelectContent>
             </Select>
             {form.formState.errors.role && (

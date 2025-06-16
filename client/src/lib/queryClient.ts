@@ -28,17 +28,9 @@ export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
-  async (context) => {
-    // Строим URL из массива queryKey
-    let url = context.queryKey[0] as string;
-    if (context.queryKey.length > 1) {
-      // Для запросов типа ["/api/employees", 1] создаем "/api/employees/1"
-      url = context.queryKey.join('/');
-    }
-    
-    const res = await fetch(url, {
+  async ({ queryKey }) => {
+    const res = await fetch(queryKey[0] as string, {
       credentials: "include",
-      signal: context.signal,
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
@@ -52,12 +44,12 @@ export const getQueryFn: <T>(options: {
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      queryFn: (context) => {
+      queryFn: ({ queryKey }) => {
         // For auth endpoint, return null on 401 instead of throwing
-        if (context.queryKey[0] === "/api/auth/me") {
-          return getQueryFn({ on401: "returnNull" })(context);
+        if (queryKey[0] === "/api/auth/me") {
+          return getQueryFn({ on401: "returnNull" })({ queryKey });
         }
-        return getQueryFn({ on401: "throw" })(context);
+        return getQueryFn({ on401: "throw" })({ queryKey });
       },
       refetchInterval: false,
       refetchOnWindowFocus: false,

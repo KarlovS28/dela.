@@ -121,88 +121,11 @@
 - **Port Configuration**: Flexible port assignment for deployment
 - **CORS**: Configured for cross-origin requests in development
 
-## Recent Changes
-
-### Excel Export/Import System (June 14, 2025)
-- ✓ Добавлена система экспорта данных в Excel (3 шаблона)
-- ✓ Шаблон инвентаризации: ФИО, наименование имущества, инвентарный номер, стоимость
-- ✓ Шаблон данных сотрудников: ФИО, паспортные данные, должность, грейд, отдел
-- ✓ Шаблон без личных данных: ФИО, должность, грейд, отдел
-- ✓ API маршруты для экспорта: `/api/export/inventory`, `/api/export/employees`, `/api/export/employees-public`
-
-### Enhanced Employee Card (June 14, 2025)
-- ✓ Расширенная карточка сотрудника с полными паспортными данными
-- ✓ Кликабельные фото сотрудников для открытия карточки
-- ✓ Таблица акта материальной ответственности
-- ✓ Кнопка "Печать" для акта материальной ответственности (DOCX)
-- ✓ Кнопка "Увольнение" с автоматической печатью документов
-- ✓ Архивирование сотрудника при увольнении
-- ✓ Генерация профессиональных DOCX документов
-
-### Excel Import System (June 14, 2025)
-- ✓ Функциональность импорта Excel файлов с автоматическим заполнением данных
-- ✓ API маршруты: `/api/import/employees`, `/api/import/equipment`
-- ✓ Поддержка импорта сотрудников и оборудования из Excel
-- ✓ Валидация и обработка ошибок при импорте
-
-### DOCX Document Generation (June 14, 2025)
-- ✓ Генерация профессиональных DOCX документов
-- ✓ Акт материальной ответственности (API: `/api/docx/responsibility-act/:id`)
-- ✓ Обходной лист при увольнении (API: `/api/docx/termination-checklist/:id`)
-- ✓ Интеграция с карточкой сотрудника для автоматической печати
-
-### Employee Management Modal (June 14, 2025)
-- ✓ Модальное окно добавления сотрудников
-- ✓ Полная форма с паспортными данными и документами
-- ✓ Валидация формы с помощью Zod
-- ✓ Интеграция с API для создания сотрудников
-
-### Database Schema Updates (June 14, 2025)
-- ✓ Добавлены поля: passportIssuedBy, orderDate, responsibilityActDate
-- ✓ Обновлены типы данных для поддержки всех необходимых полей
-- ✓ Примеры данных с полной информацией о сотрудниках
-
-### Role-Based Access Control System (June 14, 2025)
-- ✓ Добавлена роль "Офис-менеджер"
-- ✓ Администратор: полные права на все функции, управление пользователями, архив
-- ✓ Бухгалтер: просмотр/редактирование сотрудников, печать документов, увольнение
-- ✓ Системный администратор и офис-менеджер: только работа с оборудованием
-- ✓ Ролевые ограничения в экспорте данных (паспортные данные только для admin/accountant)
-
-### Personal Cabinet Integration (June 14, 2025)
-- ✓ Перенос экспорта/импорта в личный кабинет
-- ✓ Обновленный экспорт инвентаризации с полными данными
-- ✓ Удален экспорт "Без личных данных" и "Данные сотрудников"
-- ✓ Объединенный шаблон инвентаризации с паспортными данными, должностью, грейдом, отделом
-- ✓ Архив сотрудников (интерфейс готов, функциональность в разработке)
-
-### Fixed Issues (June 14, 2025)
-- ✓ Исправлены карточки сотрудников - теперь открываются корректно
-- ✓ Улучшена обработка ошибок при загрузке данных сотрудников
-- ✓ Исправлен импорт Excel - автоматическое создание отделов работает
-- ✓ Убран экспорт с главной страницы
-- ✓ Добавлен отдельный CSS файл для ручного управления стилями
-
-### Documentation & Deployment (June 14, 2025)
-- ✓ Подробный README.md с инструкциями по установке
-- ✓ Конфигурация nginx для продакшена
-- ✓ PM2 конфигурация для автоматического деплоя
-- ✓ Скрипт автоматического деплоя deploy.sh
-- ✓ Русские комментарии во всех файлах кода
-- ✓ Файл client/src/styles/custom.css для ручной настройки стилей
-
 ## Changelog
 
 ```
 Changelog:
 - June 14, 2025. Initial setup
-- June 14, 2025. Excel export/import system implementation
-- June 14, 2025. Enhanced employee card with full passport data and print functionality
-- June 14, 2025. Added Excel import functionality for automated data population
-- June 14, 2025. Implemented DOCX document generation for responsibility acts and termination checklists
-- June 14, 2025. Created comprehensive employee management modal with full form validation
-- June 14, 2025. Added deployment configuration with nginx, PM2, and automated deploy scripts
-- June 14, 2025. Enhanced codebase with Russian comments and documentation
 ```
 
 ## User Preferences
