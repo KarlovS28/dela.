@@ -184,6 +184,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put('/api/users/:id/password', requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { newPassword } = req.body;
+      
+      if (!newPassword || newPassword.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters" });
+      }
+
+      const user = await storage.updateUserPassword(id, newPassword);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const { password: _, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Update user password error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.delete('/api/users/:id', requireAuth, requireRole(['admin']), async (req, res) => {
     try {
       const id = parseInt(req.params.id);

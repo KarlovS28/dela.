@@ -27,6 +27,8 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
   const [editData, setEditData] = useState<any>({});
   const [newEquipment, setNewEquipment] = useState({ name: '', inventoryNumber: '', characteristics: '', cost: '' });
   const [showAddEquipment, setShowAddEquipment] = useState(false);
+  const [editingEquipment, setEditingEquipment] = useState<number | null>(null);
+  const [editEquipmentData, setEditEquipmentData] = useState({ name: '', inventoryNumber: '', characteristics: '', cost: '' });
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -115,6 +117,41 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
       toast({
         title: "Ошибка",
         description: "Не удалось добавить имущество",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateEquipment = useMutation({
+    mutationFn: async ({ equipmentId, data }: { equipmentId: number; data: any }) => {
+      const response = await fetch(`/api/equipment/${equipmentId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update equipment");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
+      setEditingEquipment(null);
+      setEditEquipmentData({ name: '', inventoryNumber: '', characteristics: '', cost: '' });
+      toast({
+        title: "Успешно",
+        description: "Имущество обновлено. Акт материальной ответственности автоматически обновлен.",
+      });
+    },
+    onError: (error) => {
+      console.error("Update equipment error:", error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось обновить имущество",
         variant: "destructive",
       });
     },
@@ -246,6 +283,27 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
   const handleCancelEdit = () => {
     setEditingSection(null);
     setEditData({});
+  };
+
+  const handleEditEquipment = (equipment: any) => {
+    setEditingEquipment(equipment.id);
+    setEditEquipmentData({
+      name: equipment.name,
+      inventoryNumber: equipment.inventoryNumber,
+      characteristics: equipment.characteristics || '',
+      cost: equipment.cost
+    });
+  };
+
+  const handleSaveEquipment = () => {
+    if (editingEquipment) {
+      updateEquipment.mutate({ equipmentId: editingEquipment, data: editEquipmentData });
+    }
+  };
+
+  const handleCancelEditEquipment = () => {
+    setEditingEquipment(null);
+    setEditEquipmentData({ name: '', inventoryNumber: '', characteristics: '', cost: '' });
   };
 
   const canEdit = user && ['admin', 'accountant'].includes(user.role);
@@ -653,6 +711,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                     <TableRow>
                       <TableHead>Наименование</TableHead>
                       <TableHead>Инв. номер</TableHead>
+                      <TableHead>Характеристики</TableHead>
                       <TableHead>Стоимость</TableHead>
                       {canEditEquipment && <TableHead>Действия</TableHead>}
                     </TableRow>
@@ -660,33 +719,82 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                   <TableBody>
                     {employee.equipment.map((item) => (
                       <TableRow key={item.id}>
-                        <TableCell>{item.name}</TableCell>
-                        <TableCell>{item.inventoryNumber}</TableCell>
-                        <TableCell>{item.cost}</TableCell>
-                        {canEditEquipment && (
-                          <TableCell>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button size="sm" variant="outline">
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Удалить имущество?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Это действие нельзя отменить. Имущество будет удалено из системы.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Отменить</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => deleteEquipment.mutate(item.id)}>
-                                    Удалить
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </TableCell>
+                        {editingEquipment === item.id ? (
+                          <>
+                            <TableCell>
+                              <Input
+                                value={editEquipmentData.name}
+                                onChange={(e) => setEditEquipmentData({ ...editEquipmentData, name: e.target.value })}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                value={editEquipmentData.inventoryNumber}
+                                onChange={(e) => setEditEquipmentData({ ...editEquipmentData, inventoryNumber: e.target.value })}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                value={editEquipmentData.characteristics}
+                                onChange={(e) => setEditEquipmentData({ ...editEquipmentData, characteristics: e.target.value })}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                value={editEquipmentData.cost}
+                                onChange={(e) => setEditEquipmentData({ ...editEquipmentData, cost: e.target.value })}
+                              />
+                            </TableCell>
+                            {canEditEquipment && (
+                              <TableCell>
+                                <div className="flex gap-2">
+                                  <Button size="sm" onClick={handleSaveEquipment}>
+                                    <Save className="w-4 h-4" />
+                                  </Button>
+                                  <Button size="sm" variant="outline" onClick={handleCancelEditEquipment}>
+                                    <X className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <TableCell>{item.name}</TableCell>
+                            <TableCell>{item.inventoryNumber}</TableCell>
+                            <TableCell>{item.characteristics || '-'}</TableCell>
+                            <TableCell>{item.cost}</TableCell>
+                            {canEditEquipment && (
+                              <TableCell>
+                                <div className="flex gap-2">
+                                  <Button size="sm" variant="ghost" onClick={() => handleEditEquipment(item)}>
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button size="sm" variant="ghost">
+                                        <Trash2 className="w-4 h-4" />
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Удалить имущество?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Это действие нельзя отменить. Имущество будет удалено из системы.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Отменить</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => deleteEquipment.mutate(item.id)}>
+                                          Удалить
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                </div>
+                              </TableCell>
+                            )}
+                          </>
                         )}
                       </TableRow>
                     ))}
@@ -713,22 +821,6 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                     Акт мат. ответственности
                   </Button>
 
-                  <Button
-                    onClick={() => window.open(`/api/print/employee/${employee.id}/equipment`, '_blank')}
-                    variant="outline"
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    Список имущества
-                  </Button>
-
-                  <Button
-                    onClick={() => window.open(`/api/docx/termination-checklist/${employee.id}`, '_blank')}
-                    variant="outline"
-                  >
-                    <FileText className="w-4 h-4 mr-2" />
-                    Обходной лист
-                  </Button>
-
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="destructive">
@@ -739,7 +831,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                       <AlertDialogHeader>
                         <AlertDialogTitle>Уволить сотрудника?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Сотрудник будет перемещен в архив. Это действие можно отменить позже.
+                          Сотрудник будет перемещен в архив. Будет сгенерирован обходной лист и список имущества.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>

@@ -14,9 +14,22 @@ export function Header() {
 
   const handleLogout = async () => {
     try {
-      await logout();
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        // Очищаем все кэши
+        queryClient.clear();
+
+        // Перенаправляем на страницу входа
+        window.location.href = "/login";
+      }
     } catch (error) {
       console.error("Logout error:", error);
+      // В случае ошибки всё равно перенаправляем
+      window.location.href = "/login";
     }
   };
 
@@ -44,7 +57,7 @@ export function Header() {
             <div className="flex items-center">
               <h1 className="text-3xl font-bold text-primary">dela.</h1>
             </div>
-            
+
             {/* User Menu */}
             <div className="flex items-center space-x-4">
               {/* Theme Toggle */}
@@ -59,7 +72,7 @@ export function Header() {
                   <Moon className="h-5 w-5" />
                 )}
               </Button>
-              
+
               {/* User Profile */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

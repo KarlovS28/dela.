@@ -6,9 +6,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Shield } from "lucide-react";
+import { Trash2, Shield, Key } from "lucide-react";
 
 interface User {
   id: number;
@@ -34,6 +37,8 @@ const roleBadgeVariants: Record<string, string> = {
 
 export function UserManagement() {
   const [editingUserId, setEditingUserId] = useState<number | null>(null);
+  const [passwordDialogUserId, setPasswordDialogUserId] = useState<number | null>(null);
+  const [newPassword, setNewPassword] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -74,6 +79,40 @@ export function UserManagement() {
     },
   });
 
+  const updateUserPassword = useMutation({
+    mutationFn: async ({ userId, newPassword }: { userId: number; newPassword: string }) => {
+      const response = await fetch(`/api/users/${userId}/password`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ newPassword }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update password");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      setPasswordDialogUserId(null);
+      setNewPassword("");
+      toast({
+        title: "Успешно",
+        description: "Пароль пользователя обновлен",
+      });
+    },
+    onError: (error) => {
+      console.error("Update password error:", error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось обновить пароль",
+        variant: "destructive",
+      });
+    },
+  });
+
   const deleteUser = useMutation({
     mutationFn: async (userId: number) => {
       const response = await fetch(`/api/users/${userId}`, {
@@ -107,6 +146,18 @@ export function UserManagement() {
 
   const handleRoleChange = (userId: number, newRole: string) => {
     updateUserRole.mutate({ userId, role: newRole });
+  };
+
+  const handlePasswordChange = (userId: number) => {
+    if (!newPassword || newPassword.length < 6) {
+      toast({
+        title: "Ошибка",
+        description: "Пароль должен содержать минимум 6 символов",
+        variant: "destructive",
+      });
+      return;
+    }
+    updateUserPassword.mutate({ userId, newPassword });
   };
 
   if (isLoading) {
@@ -190,27 +241,76 @@ export function UserManagement() {
                   {new Date(user.createdAt).toLocaleDateString('ru-RU')}
                 </TableCell>
                 <TableCell>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Удалить пользователя?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Это действие нельзя отменить. Пользователь {user.fullName} будет удален из системы.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Отменить</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => deleteUser.mutate(user.id)}>
-                          Удалить
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  <div className="flex items-center gap-2">
+                    <Dialog open={passwordDialogUserId === user.id} onOpenChange={(open) => {
+                      if (!open) {
+                        setPasswordDialogUserId(null);
+                        setNewPassword("");
+                      }
+                    }}>
+                      <DialogTrigger asChild>
+                        <Button variant="ghost" size="sm" onClick={() => setPasswordDialogUserId(user.id)}>
+                          <Key className="w-4 h-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Изменить пароль для {user.fullName}</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="newPassword">Новый пароль</Label>
+                            <Input
+                              id="newPassword"
+                              type="password"
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                              placeholder="Минимум 6 символов"
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button 
+                              onClick={() => handlePasswordChange(user.id)}
+                              disabled={!newPassword || newPassword.length < 6}
+                            >
+                              Сохранить
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              onClick={() => {
+                                setPasswordDialogUserId(null);
+                                setNewPassword("");
+                              }}
+                            >
+                              Отменить
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Удалить пользователя?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Это действие нельзя отменить. Пользователь {user.fullName} будет удален из системы.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Отменить</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => deleteUser.mutate(user.id)}>
+                            Удалить
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

@@ -46,6 +46,7 @@ export interface IStorage {
 
   getUsers(): Promise<User[]>;
   updateUserRole(id: number, role: string): Promise<User | undefined>;
+  updateUserPassword(id: number, newPassword: string): Promise<User | undefined>;
   deleteUser(id: number): Promise<void>;
 }
 
@@ -332,6 +333,7 @@ export class MemStorage implements IStorage {
       id,
       name: insertEquipment.name,
       inventoryNumber: insertEquipment.inventoryNumber,
+      characteristics: insertEquipment.characteristics || null,
       cost: insertEquipment.cost,
       employeeId: insertEquipment.employeeId ?? null,
       createdAt: new Date(),
@@ -368,6 +370,16 @@ export class MemStorage implements IStorage {
 
   async deleteUser(id: number): Promise<void> {
     this.users.delete(id);
+  }
+
+  async updateUserPassword(id: number, newPassword: string): Promise<User | undefined> {
+    const user = this.users.get(id);
+    if (!user) return undefined;
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const updatedUser = { ...user, password: hashedPassword };
+    this.users.set(id, updatedUser);
+    return updatedUser;
   }
 }
 
