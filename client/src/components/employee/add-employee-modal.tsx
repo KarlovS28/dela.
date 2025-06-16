@@ -96,37 +96,37 @@ export function AddEmployeeModal({ departmentId, children }: AddEmployeeModalPro
           departmentId: parseInt(data.departmentId),
         }),
       });
-      
+
       if (!response.ok) {
         throw new Error("Ошибка создания сотрудника");
       }
-      
+
       const employee = await response.json();
-      
+
       // Если есть фото, загружаем его
       if (photoFile && employee.id) {
         const formData = new FormData();
         formData.append("photo", photoFile);
-        
+
         await fetch(`/api/employees/${employee.id}/photo`, {
           method: "POST",
           credentials: "include",
           body: formData,
         });
       }
-      
+
       return employee;
     },
     onSuccess: () => {
       // Обновляем кэш данных
       queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
-      
+
       toast({
         title: "Успешно",
         description: "Сотрудник добавлен",
       });
-      
+
       // Закрываем модал и сбрасываем форму
       setOpen(false);
       form.reset();
@@ -392,99 +392,7 @@ export function AddEmployeeModal({ departmentId, children }: AddEmployeeModalPro
                   )}
                 />
               </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="passportSeries"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Серия паспорта</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="1234"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="passportNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Номер паспорта</FormLabel>
-                    <FormControl>
-                      <Input placeholder="123456" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
-
-            <FormField
-              control={form.control}
-              name="passportIssuedBy"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Кем выдан</FormLabel>
-                  <FormControl>
-                    <Input placeholder="ОВД района..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="passportDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Дата выдачи паспорта</FormLabel>
-                    <FormControl>
-                      <Input placeholder="01.01.2010" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Адрес прописки</FormLabel>
-                    <FormControl>
-                        <Input placeholder="01.01.2023" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            <FormField
-              control={form.control}
-              name="photoUrl"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>URL фото</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://example.com/photo.jpg" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             {/* Кнопки действий */}
             <div className="flex justify-end space-x-2 pt-4">
