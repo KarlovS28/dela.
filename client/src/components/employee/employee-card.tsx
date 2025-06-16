@@ -1,10 +1,10 @@
+
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -16,20 +16,37 @@ import { useAuth } from "@/hooks/use-auth";
 import type { EmployeeWithEquipment } from "@shared/schema";
 
 interface EmployeeCardProps {
-  employee: EmployeeWithEquipment;
-  isOpen: boolean;
+  employeeId: number;
+  open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function EmployeeCard({ employee, isOpen, onOpenChange }: EmployeeCardProps) {
+export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardProps) {
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
+  // Fetch employee data
+  const { data: employee, isLoading, error } = useQuery({
+    queryKey: ["/api/employees", employeeId],
+    queryFn: async () => {
+      const response = await fetch(`/api/employees/${employeeId}`, {
+        credentials: "include",
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to fetch employee");
+      }
+      
+      return response.json() as Promise<EmployeeWithEquipment>;
+    },
+    enabled: !!employeeId && open,
+  });
+
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file || !employee) return;
 
     setIsUploading(true);
     try {
@@ -67,6 +84,8 @@ export function EmployeeCard({ employee, isOpen, onOpenChange }: EmployeeCardPro
 
   const archiveEmployeeMutation = useMutation({
     mutationFn: async () => {
+      if (!employee) throw new Error("No employee data");
+      
       const response = await fetch(`/api/employees/${employee.id}/archive`, {
         method: "POST",
         credentials: "include",
@@ -81,7 +100,9 @@ export function EmployeeCard({ employee, isOpen, onOpenChange }: EmployeeCardPro
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/employees", employee.id] });
+      if (employee) {
+        queryClient.invalidateQueries({ queryKey: ["/api/employees", employee.id] });
+      }
 
       toast({
         title: "Успешно",
@@ -100,6 +121,8 @@ export function EmployeeCard({ employee, isOpen, onOpenChange }: EmployeeCardPro
   });
 
   const handleDownloadAct = async () => {
+    if (!employee) return;
+    
     try {
       const response = await fetch(`/api/docx/responsibility-act/${employee.id}`, {
         credentials: "include",
@@ -128,6 +151,8 @@ export function EmployeeCard({ employee, isOpen, onOpenChange }: EmployeeCardPro
   };
 
   const handleDownloadTermination = async () => {
+    if (!employee) return;
+    
     try {
       const response = await fetch(`/api/docx/termination-checklist/${employee.id}`, {
         credentials: "include",
@@ -155,11 +180,39 @@ export function EmployeeCard({ employee, isOpen, onOpenChange }: EmployeeCardPro
     }
   };
 
+  if (isLoading) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Загрузка...</DialogTitle>
+          </DialogHeader>
+          <div className="p-8 text-center">Загрузка данных сотрудника...</div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (error || !employee) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Ошибка</DialogTitle>
+          </DialogHeader>
+          <div className="p-8 text-center text-red-600">
+            Не удалось загрузить данные сотрудника
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   const canEdit = user?.role === 'admin' || user?.role === 'accountant';
   const canArchive = user?.role === 'admin' || user?.role === 'accountant';
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Карточка сотрудника</DialogTitle>
