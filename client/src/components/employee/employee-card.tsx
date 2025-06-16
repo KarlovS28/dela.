@@ -2,7 +2,7 @@
 // Включает паспортные данные, таблицу оборудования, кнопки печати и увольнения
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -245,8 +245,8 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Загрузка...</DialogTitle>
+            <DialogDescription>Загрузка данных сотрудника...</DialogDescription>
           </DialogHeader>
-          <p>Загрузка данных сотрудника...</p>
         </DialogContent>
       </Dialog>
     );
@@ -258,8 +258,8 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Сотрудник не найден</DialogTitle>
+            <DialogDescription>Данные сотрудника недоступны</DialogDescription>
           </DialogHeader>
-          <p>Данные сотрудника недоступны</p>
         </DialogContent>
       </Dialog>
     );
