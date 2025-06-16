@@ -92,9 +92,10 @@ export function Header() {
                   <DropdownMenuItem 
                     onClick={(e) => {
                       e.preventDefault();
-                      logout.mutate();
+                      handleLogout();
                     }}
                   >
+                    <LogOut className="mr-2 h-4 w-4" />
                     Выйти
                   </DropdownMenuItem>
                 </DropdownMenuContent>
