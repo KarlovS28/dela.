@@ -568,15 +568,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 position: String(row['Должность']).trim(),
                 grade: row['Грейд'] ? String(row['Грейд']).trim() : 'Junior',
                 departmentId,
-                passportSeries: row['Серия паспорта'] ? String(row['Серия паспорта']).trim() : null,
-                passportNumber: row['Номер паспорта'] ? String(row['Номер паспорта']).trim() : null,
-                passportIssuedBy: row['Кем выдан'] ? String(row['Кем выдан']).trim() : null,
-                passportDate: row['Дата выдачи'] ? String(row['Дата выдачи']).trim() : null,
-                address: row['Адрес прописки'] ? String(row['Адрес прописки']).trim() : null,
-                orderNumber: row['Номер приказа'] ? String(row['Номер приказа']).trim() : null,
-                orderDate: row['Дата приказа'] ? String(row['Дата приказа']).trim() : null,
-                responsibilityActNumber: row['Номер акта мат. ответственности'] ? String(row['Номер акта мат. ответственности']).trim() : null,
-                responsibilityActDate: row['Дата акта мат. ответственности'] ? String(row['Дата акта мат. ответственности']).trim() : null,
+                passportSeries: row['Серия паспорта'] ? String(row['Серия паспорта']).trim() : undefined,
+                passportNumber: row['Номер паспорта'] ? String(row['Номер паспорта']).trim() : undefined,
+                passportIssuedBy: row['Кем выдан'] ? String(row['Кем выдан']).trim() : undefined,
+                passportDate: row['Дата выдачи'] || row['Дата выдачи паспорта'] ? String(row['Дата выдачи'] || row['Дата выдачи паспорта']).trim() : undefined,
+                address: row['Адрес прописки'] || row['Адрес'] ? String(row['Адрес прописки'] || row['Адрес']).trim() : undefined,
+                orderNumber: row['Номер приказа'] || row['Номер приказа о приеме'] ? String(row['Номер приказа'] || row['Номер приказа о приеме']).trim() : undefined,
+                orderDate: row['Дата приказа'] || row['Дата приказа о приеме'] ? String(row['Дата приказа'] || row['Дата приказа о приеме']).trim() : undefined,
+                responsibilityActNumber: row['Номер акта мат. ответственности'] || row['Номер акта материальной ответственности'] ? String(row['Номер акта мат. ответственности'] || row['Номер акта материальной ответственности']).trim() : undefined,
+                responsibilityActDate: row['Дата акта мат. ответственности'] || row['Дата акта материальной ответственности'] ? String(row['Дата акта мат. ответственности'] || row['Дата акта материальной ответственности']).trim() : undefined,
               };
 
               const employee = await storage.createEmployee(employeeData);
@@ -590,7 +590,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const equipmentData = {
                 name: String(row['Наименование имущества']).trim(),
                 inventoryNumber: String(row['Инвентарный номер']).trim(),
-                cost: row['Стоимость'] ? String(row['Стоимость']).trim() : '0',
+                cost: row['Стоимость'] || row['Стоимость имущества'] ? String(row['Стоимость'] || row['Стоимость имущества']).trim() : '0',
                 employeeId,
               };
 
@@ -872,7 +872,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const buffer = await Packer.toBuffer(doc);
       
-      res.setHeader('Content-Disposition', `attachment; filename=act-${employee.fullName}.docx`);
+      res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(`act-${employee.fullName}.docx`)}`);
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       res.send(buffer);
     } catch (error) {
@@ -1031,7 +1031,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const buffer = await Packer.toBuffer(doc);
       
-      res.setHeader('Content-Disposition', `attachment; filename=checklist-${employee.fullName}.docx`);
+      res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(`checklist-${employee.fullName}.docx`)}`);
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       res.send(buffer);
     } catch (error) {
