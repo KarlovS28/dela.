@@ -270,6 +270,9 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
       <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Карточка сотрудника</DialogTitle>
+          <DialogDescription className="sr-only">
+            Подробная информация о сотруднике с паспортными данными и оборудованием
+          </DialogDescription>
         </DialogHeader>
 
         {/* Employee Header */}
