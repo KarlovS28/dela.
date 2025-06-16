@@ -6,26 +6,19 @@ import { PersonalCabinet } from "@/components/personal-cabinet/personal-cabinet"
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/components/theme-provider";
 import { Moon, Sun, User, LogOut } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function Header() {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [showPersonalCabinet, setShowPersonalCabinet] = useState(false);
+  const queryClient = useQueryClient();
 
   const handleLogout = async () => {
     try {
-      const response = await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "include",
-      });
-
-      if (response.ok) {
-        // Очищаем все кэши
-        queryClient.clear();
-
-        // Перенаправляем на страницу входа
-        window.location.href = "/login";
-      }
+      await logout();
+      queryClient.clear();
+      window.location.href = "/login";
     } catch (error) {
       console.error("Logout error:", error);
       // В случае ошибки всё равно перенаправляем
