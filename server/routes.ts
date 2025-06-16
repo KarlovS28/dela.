@@ -775,12 +775,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
             new Paragraph({
               children: [
                 new TextRun({
-                  text: "АКТ О МАТЕРИАЛЬНОЙ ОТВЕТСТВЕННОСТИ",
+                  text: "АКТ",
                   bold: true,
-                  size: 28,
+                  size: 32,
                 }),
               ],
               alignment: AlignmentType.CENTER,
+              spacing: { after: 200 },
+            }),
+            
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "приема-передачи материальных ценностей",
+                  bold: true,
+                  size: 24,
+                }),
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 400 },
+            }),
+            
+            // Номер и дата акта
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `№ ${employee.responsibilityActNumber || '___________'}`,
+                  size: 24,
+                }),
+                new TextRun({
+                  text: `\t\t\tот ${employee.responsibilityActDate || new Date().toLocaleDateString('ru-RU')}`,
+                  size: 24,
+                }),
+              ],
               spacing: { after: 400 },
             }),
             
@@ -788,7 +815,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             new Paragraph({
               children: [
                 new TextRun({
-                  text: `ФИО: ${employee.fullName}`,
+                  text: `Материально ответственное лицо: ${employee.fullName}`,
                   size: 24,
                 }),
               ],
@@ -808,11 +835,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
             new Paragraph({
               children: [
                 new TextRun({
-                  text: `Отдел: ${employee.department?.name || 'Не указан'}`,
+                  text: `Структурное подразделение: ${employee.department?.name || 'Не указан'}`,
+                  size: 24,
+                }),
+              ],
+              spacing: { after: 200 },
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `Приказ о назначении материально ответственным лицом № ${employee.orderNumber || '___________'} от ${employee.orderDate || '___________'}`,
                   size: 24,
                 }),
               ],
               spacing: { after: 400 },
+            }),
+            
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "Перечень переданных материальных ценностей:",
+                  bold: true,
+                  size: 24,
+                }),
+              ],
+              spacing: { after: 200 },
             }),
             
             // Таблица с оборудованием
@@ -826,68 +874,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 new TableRow({
                   children: [
                     new TableCell({
-                      children: [new Paragraph({ children: [new TextRun({ text: "№", bold: true })] })],
-                      width: { size: 10, type: WidthType.PERCENTAGE },
+                      children: [new Paragraph({ children: [new TextRun({ text: "№ п/п", bold: true, size: 20 })] })],
+                      width: { size: 8, type: WidthType.PERCENTAGE },
                     }),
                     new TableCell({
-                      children: [new Paragraph({ children: [new TextRun({ text: "Наименование", bold: true })] })],
-                      width: { size: 50, type: WidthType.PERCENTAGE },
+                      children: [new Paragraph({ children: [new TextRun({ text: "Наименование имущества", bold: true, size: 20 })] })],
+                      width: { size: 46, type: WidthType.PERCENTAGE },
                     }),
                     new TableCell({
-                      children: [new Paragraph({ children: [new TextRun({ text: "Инв. номер", bold: true })] })],
-                      width: { size: 20, type: WidthType.PERCENTAGE },
+                      children: [new Paragraph({ children: [new TextRun({ text: "Инвентарный номер", bold: true, size: 20 })] })],
+                      width: { size: 23, type: WidthType.PERCENTAGE },
                     }),
                     new TableCell({
-                      children: [new Paragraph({ children: [new TextRun({ text: "Стоимость", bold: true })] })],
-                      width: { size: 20, type: WidthType.PERCENTAGE },
+                      children: [new Paragraph({ children: [new TextRun({ text: "Стоимость (руб.)", bold: true, size: 20 })] })],
+                      width: { size: 23, type: WidthType.PERCENTAGE },
                     }),
                   ],
                 }),
-                // Строки с оборудованием
-                ...employee.equipment.map((item, index) => new TableRow({
-                  children: [
-                    new TableCell({
-                      children: [new Paragraph({ children: [new TextRun({ text: (index + 1).toString() })] })],
-                    }),
-                    new TableCell({
-                      children: [new Paragraph({ children: [new TextRun({ text: item.name })] })],
-                    }),
-                    new TableCell({
-                      children: [new Paragraph({ children: [new TextRun({ text: item.inventoryNumber })] })],
-                    }),
-                    new TableCell({
-                      children: [new Paragraph({ children: [new TextRun({ text: item.cost })] })],
-                    }),
-                  ],
-                })),
+                // Строки с оборудованием или пустые строки если нет оборудования
+                ...(employee.equipment && employee.equipment.length > 0 
+                  ? employee.equipment.map((item, index) => new TableRow({
+                      children: [
+                        new TableCell({
+                          children: [new Paragraph({ children: [new TextRun({ text: (index + 1).toString(), size: 20 })] })],
+                        }),
+                        new TableCell({
+                          children: [new Paragraph({ children: [new TextRun({ text: item.name, size: 20 })] })],
+                        }),
+                        new TableCell({
+                          children: [new Paragraph({ children: [new TextRun({ text: item.inventoryNumber, size: 20 })] })],
+                        }),
+                        new TableCell({
+                          children: [new Paragraph({ children: [new TextRun({ text: item.cost, size: 20 })] })],
+                        }),
+                      ],
+                    }))
+                  : // Создаем 5 пустых строк для заполнения вручную
+                    Array.from({ length: 5 }, (_, index) => new TableRow({
+                      children: [
+                        new TableCell({
+                          children: [new Paragraph({ children: [new TextRun({ text: (index + 1).toString(), size: 20 })] })],
+                        }),
+                        new TableCell({
+                          children: [new Paragraph({ children: [new TextRun({ text: "", size: 20 })] })],
+                        }),
+                        new TableCell({
+                          children: [new Paragraph({ children: [new TextRun({ text: "", size: 20 })] })],
+                        }),
+                        new TableCell({
+                          children: [new Paragraph({ children: [new TextRun({ text: "", size: 20 })] })],
+                        }),
+                      ],
+                    }))
+                ),
               ],
+            }),
+            
+            // Итоговая стоимость
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `\nОбщая стоимость переданных материальных ценностей: ${
+                    employee.equipment && employee.equipment.length > 0 
+                      ? employee.equipment.reduce((sum, item) => sum + parseFloat(item.cost || '0'), 0).toFixed(2)
+                      : '___________'
+                  } руб.`,
+                  size: 24,
+                }),
+              ],
+              spacing: { before: 400, after: 400 },
             }),
             
             // Подписи
             new Paragraph({
               children: [
                 new TextRun({
-                  text: `\n\nДата составления: ${new Date().toLocaleDateString('ru-RU')}`,
+                  text: "Материально ответственное лицо:",
                   size: 24,
                 }),
               ],
-              spacing: { before: 400 },
+              spacing: { before: 400, after: 200 },
             }),
             
             new Paragraph({
               children: [
                 new TextRun({
-                  text: "\n\nПодпись сотрудника: _________________",
+                  text: `${employee.fullName} _________________ (подпись)`,
                   size: 24,
                 }),
               ],
-              spacing: { before: 200 },
+              spacing: { after: 300 },
             }),
             
             new Paragraph({
               children: [
                 new TextRun({
-                  text: "\nПодпись ответственного лица: _________________",
+                  text: "Руководитель структурного подразделения:",
+                  size: 24,
+                }),
+              ],
+              spacing: { after: 200 },
+            }),
+            
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "_________________ _________________ (подпись) (расшифровка)",
+                  size: 24,
+                }),
+              ],
+              spacing: { after: 300 },
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `Дата составления: ${new Date().toLocaleDateString('ru-RU')}`,
                   size: 24,
                 }),
               ],
@@ -899,7 +1001,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const buffer = await Packer.toBuffer(doc);
       
-      res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(`act-${employee.fullName}.docx`)}`);
+      res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(`Акт_материальной_ответственности_${employee.fullName}.docx`)}`);
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       res.send(buffer);
     } catch (error) {
@@ -921,6 +1023,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sections: [{
           properties: {},
           children: [
+            // Шапка организации
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "ООО \"НАЗВАНИЕ ОРГАНИЗАЦИИ\"",
+                  bold: true,
+                  size: 24,
+                }),
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 200 },
+            }),
+            
             // Заголовок
             new Paragraph({
               children: [
@@ -931,7 +1046,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }),
               ],
               alignment: AlignmentType.CENTER,
-              spacing: { after: 400 },
+              spacing: { after: 200 },
             }),
             
             new Paragraph({
@@ -939,52 +1054,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 new TextRun({
                   text: "при увольнении сотрудника",
                   size: 24,
+                  italics: true,
                 }),
               ],
               alignment: AlignmentType.CENTER,
-              spacing: { after: 600 },
+              spacing: { after: 400 },
             }),
             
-            // Информация о сотруднике
+            // Информация о сотруднике в виде таблицы
+            new Table({
+              width: {
+                size: 100,
+                type: WidthType.PERCENTAGE,
+              },
+              rows: [
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "ФИО:", bold: true, size: 22 })] })],
+                      width: { size: 25, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: employee.fullName, size: 22, bold: true })] })],
+                      width: { size: 75, type: WidthType.PERCENTAGE },
+                    }),
+                  ],
+                }),
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Должность:", bold: true, size: 22 })] })],
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: employee.position, size: 22 })] })],
+                    }),
+                  ],
+                }),
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Подразделение:", bold: true, size: 22 })] })],
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: employee.department?.name || 'Не указано', size: 22 })] })],
+                    }),
+                  ],
+                }),
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Дата увольнения:", bold: true, size: 22 })] })],
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "_______________", size: 22 })] })],
+                    }),
+                  ],
+                }),
+              ],
+            }),
+            
             new Paragraph({
               children: [
                 new TextRun({
-                  text: `ФИО: ${employee.fullName}`,
-                  size: 24,
+                  text: "",
+                }),
+              ],
+              spacing: { after: 400 },
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "Отметки о сдаче дел и материальных ценностей:",
                   bold: true,
-                }),
-              ],
-              spacing: { after: 200 },
-            }),
-            
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: `Должность: ${employee.position}`,
                   size: 24,
                 }),
               ],
-              spacing: { after: 200 },
-            }),
-            
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: `Отдел: ${employee.department?.name || 'Не указан'}`,
-                  size: 24,
-                }),
-              ],
-              spacing: { after: 200 },
-            }),
-            
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: `Дата увольнения: ${new Date().toLocaleDateString('ru-RU')}`,
-                  size: 24,
-                }),
-              ],
-              spacing: { after: 600 },
+              spacing: { after: 300 },
             }),
             
             // Таблица обходного листа
@@ -997,60 +1143,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 new TableRow({
                   children: [
                     new TableCell({
-                      children: [new Paragraph({ children: [new TextRun({ text: "№", bold: true })] })],
+                      children: [new Paragraph({ children: [new TextRun({ text: "№", bold: true, size: 20 })] })],
                       width: { size: 5, type: WidthType.PERCENTAGE },
                     }),
                     new TableCell({
-                      children: [new Paragraph({ children: [new TextRun({ text: "Подразделение/Отдел", bold: true })] })],
-                      width: { size: 40, type: WidthType.PERCENTAGE },
+                      children: [new Paragraph({ children: [new TextRun({ text: "Структурное подразделение/Отдел", bold: true, size: 20 })] })],
+                      width: { size: 35, type: WidthType.PERCENTAGE },
                     }),
                     new TableCell({
-                      children: [new Paragraph({ children: [new TextRun({ text: "Отметка о сдаче", bold: true })] })],
+                      children: [new Paragraph({ children: [new TextRun({ text: "Что сдано", bold: true, size: 20 })] })],
                       width: { size: 25, type: WidthType.PERCENTAGE },
                     }),
                     new TableCell({
-                      children: [new Paragraph({ children: [new TextRun({ text: "Подпись ответственного", bold: true })] })],
-                      width: { size: 30, type: WidthType.PERCENTAGE },
+                      children: [new Paragraph({ children: [new TextRun({ text: "Отметка о сдаче", bold: true, size: 20 })] })],
+                      width: { size: 15, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Подпись ответственного", bold: true, size: 20 })] })],
+                      width: { size: 20, type: WidthType.PERCENTAGE },
                     }),
                   ],
                 }),
                 
                 // Стандартные пункты обходного листа
                 ...[
-                  "IT отдел - сдача оборудования",
-                  "Бухгалтерия - расчет",
-                  "Кадровая служба - документы",
-                  "Материально ответственное лицо",
-                  "Служба безопасности - пропуск",
-                  "Библиотека - книги и материалы"
+                  { dept: "IT отдел", items: "Компьютерная техника, оборудование, пароли" },
+                  { dept: "Бухгалтерия", items: "Окончательный расчет, справки" },
+                  { dept: "Отдел кадров", items: "Трудовая книжка, документы" },
+                  { dept: "Материально ответственное лицо", items: "Инвентарь, ключи, пропуска" },
+                  { dept: "Служба безопасности", items: "Пропуск, электронные карты" },
+                  { dept: "Непосредственный руководитель", items: "Рабочие дела, документы" },
+                  { dept: "Библиотека/Архив", items: "Книги, документы, материалы" },
+                  { dept: "Склад", items: "Спецодежда, инструменты" }
                 ].map((item, index) => new TableRow({
                   children: [
                     new TableCell({
-                      children: [new Paragraph({ children: [new TextRun({ text: (index + 1).toString() })] })],
+                      children: [new Paragraph({ children: [new TextRun({ text: (index + 1).toString(), size: 18 })] })],
                     }),
                     new TableCell({
-                      children: [new Paragraph({ children: [new TextRun({ text: item })] })],
+                      children: [new Paragraph({ children: [new TextRun({ text: item.dept, size: 18 })] })],
                     }),
                     new TableCell({
-                      children: [new Paragraph({ children: [new TextRun({ text: "" })] })],
+                      children: [new Paragraph({ children: [new TextRun({ text: item.items, size: 18 })] })],
                     }),
                     new TableCell({
-                      children: [new Paragraph({ children: [new TextRun({ text: "" })] })],
+                      children: [new Paragraph({ children: [new TextRun({ text: "", size: 18 })] })],
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "", size: 18 })] })],
                     }),
                   ],
                 })),
               ],
             }),
             
-            // Заключительная подпись
+            // Заключительные подписи
             new Paragraph({
               children: [
                 new TextRun({
-                  text: "\n\nРуководитель кадровой службы: _________________ \n\nДата: _____________",
-                  size: 24,
+                  text: "\n\nВсе дела и материальные ценности сданы полностью.",
+                  size: 22,
                 }),
               ],
-              spacing: { before: 600 },
+              spacing: { before: 400, after: 300 },
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `Увольняющийся сотрудник: ${employee.fullName} _________________ (подпись)`,
+                  size: 22,
+                }),
+              ],
+              spacing: { after: 300 },
+            }),
+            
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "Руководитель отдела кадров: _________________ _________________ (подпись) (расшифровка)",
+                  size: 22,
+                }),
+              ],
+              spacing: { after: 200 },
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `Дата составления: ${new Date().toLocaleDateString('ru-RU')}`,
+                  size: 22,
+                }),
+              ],
+              spacing: { before: 200 },
             }),
           ],
         }],
@@ -1058,7 +1243,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const buffer = await Packer.toBuffer(doc);
       
-      res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(`checklist-${employee.fullName}.docx`)}`);
+      res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(`Обходной_лист_${employee.fullName}.docx`)}`);
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       res.send(buffer);
     } catch (error) {

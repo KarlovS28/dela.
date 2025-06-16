@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
@@ -49,6 +48,32 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
     },
     enabled: !!employeeId && open,
   });
+
+  // Early returns for loading and error states
+  if (isLoading) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Загрузка...</DialogTitle>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (error || !employee) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Ошибка</DialogTitle>
+          </DialogHeader>
+          <p>Не удалось загрузить данные сотрудника</p>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -145,7 +170,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
       setShowAddEquipment(false);
       toast({
         title: "Успешно",
-        description: "Имущество добавлено",
+        description: "Имущество добавлено. Акт материальной ответственности автоматически обновлен.",
       });
     },
     onError: (error) => {
@@ -174,7 +199,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
       queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
       toast({
         title: "Успешно",
-        description: "Имущество удалено",
+        description: "Имущество удалено. Акт материальной ответственности автоматически обновлен.",
       });
     },
     onError: (error) => {
@@ -249,31 +274,6 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
 
   const canEdit = user && ['admin', 'accountant'].includes(user.role);
   const canViewDocs = user && ['admin', 'accountant'].includes(user.role);
-
-  if (isLoading) {
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>Загрузка...</DialogTitle>
-          </DialogHeader>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  if (error || !employee) {
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>Ошибка</DialogTitle>
-          </DialogHeader>
-          <p>Не удалось загрузить данные сотрудника</p>
-        </DialogContent>
-      </Dialog>
-    );
-  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
