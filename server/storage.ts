@@ -381,6 +381,10 @@ export class MemStorage implements IStorage {
     this.users.set(id, updatedUser);
     return updatedUser;
   }
+
+  async getWarehouseEquipment(): Promise<Equipment[]> {
+    return Array.from(this.equipment.values()).filter(eq => eq.employeeId === null);
+  }
 }
 
 export const storage = new MemStorage();

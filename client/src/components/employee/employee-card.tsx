@@ -157,6 +157,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
     },
   });
 
+  // Удаление оборудования
   const deleteEquipment = useMutation({
     mutationFn: async (equipmentId: number) => {
       const response = await fetch(`/api/equipment/${equipmentId}`, {
@@ -181,6 +182,41 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
       toast({
         title: "Ошибка",
         description: "Не удалось удалить имущество",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Перемещение оборудования на склад
+  const moveToWarehouse = useMutation({
+    mutationFn: async (equipmentId: number) => {
+      const response = await fetch(`/api/equipment/${equipmentId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ employeeId: null }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to move equipment to warehouse");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/warehouse/equipment"] });
+      toast({
+        title: "Успешно",
+        description: "Имущество перемещено на склад. Акт материальной ответственности автоматически обновлен.",
+      });
+    },
+    onError: (error) => {
+      console.error("Move to warehouse error:", error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось переместить имущество на склад",
         variant: "destructive",
       });
     },
@@ -790,6 +826,9 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                                       </AlertDialogFooter>
                                     </AlertDialogContent>
                                   </AlertDialog>
+                                  <Button size="sm" variant="ghost" onClick={() => moveToWarehouse.mutate(item.id)}>
+                                    На склад
+                                  </Button>
                                 </div>
                               </TableCell>
                             )}

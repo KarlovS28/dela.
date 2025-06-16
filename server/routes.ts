@@ -342,6 +342,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Warehouse routes
+  app.get('/api/warehouse/equipment', requireAuth, requireRole(['admin', 'sysadmin', 'office-manager']), async (req, res) => {
+    try {
+      const warehouseEquipment = await storage.getWarehouseEquipment();
+      res.json(warehouseEquipment);
+    } catch (error) {
+      console.error("Get warehouse equipment error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Загрузка фотографии сотрудника
   app.post('/api/employees/:id/photo', requireAuth, requireRole(['admin', 'accountant']), upload.single('photo'), async (req, res) => {
     try {

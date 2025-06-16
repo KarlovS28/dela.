@@ -18,6 +18,7 @@ import { canImportExport, canViewArchive } from "@/lib/auth-utils";
 import { Download, Upload, FileText, FileSpreadsheet, Archive } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiRequest } from "@/lib/queryClient";
+import { Warehouse } from "@/components/warehouse/warehouse";
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, "Введите текущий пароль"),
@@ -39,8 +40,11 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [showArchivedEmployees, setShowArchivedEmployees] = useState(false);
+  const [showWarehouse, setShowWarehouse] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [showUserManagement, setShowUserManagement] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const passwordForm = useForm<PasswordFormData>({
@@ -219,8 +223,10 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
   if (!user) return null;
 
   const canManageData = canImportExport(user.role);
+  const canViewArchive = user.role === 'admin' || user.role === 'sysadmin' || user.role === 'office-manager';
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -356,85 +362,39 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
             </Card>
           )}
 
-          {/* Document Templates */}
-          {canManageData && (
+          {/* Склад - для администраторов и офис-менеджеров */}
+          {(user?.role === 'admin' || user?.role === 'sysadmin' || user?.role === 'office-manager') && (
             <Card>
               <CardHeader>
-                <CardTitle>Шаблоны документов</CardTitle>
+                <CardTitle>Склад</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium">Шаблон акта материальной ответственности</Label>
-                    <Button
-                      variant="outline"
-                      className="w-full mt-2"
-                      onClick={() => document.getElementById('responsibility-template')?.click()}
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      Загрузить шаблон
-                    </Button>
-                    <input
-                      id="responsibility-template"
-                      type="file"
-                      accept=".docx,.xlsx"
-                      className="hidden"
-                      onChange={handleResponsibilityTemplateUpload}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Поддерживаются форматы: .docx, .xlsx
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label className="text-sm font-medium">Шаблон обходного листа</Label>
-                    <Button
-                      variant="outline"
-                      className="w-full mt-2"
-                      onClick={() => document.getElementById('checklist-template')?.click()}
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      Загрузить шаблон
-                    </Button>
-                    <input
-                      id="checklist-template"
-                      type="file"
-                      accept=".docx,.xlsx"
-                      className="hidden"
-                      onChange={handleChecklistTemplateUpload}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Поддерживаются форматы: .docx, .xlsx
-                    </p>
-                  </div>
-                </div>
+              <CardContent>
+                <p className="text-muted-foreground mb-4">
+                  Здесь отображается имущество, которое не закреплено за сотрудниками
+                </p>
+                <Button
+                  onClick={() => setShowWarehouse(true)}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <Archive className="w-4 h-4 mr-2" />
+                  Открыть склад
+                </Button>
               </CardContent>
             </Card>
           )}
 
           {/* Archive Access */}
-          {canViewArchive(user.role) && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Архив сотрудников</CardTitle>
-              </CardHeader>
-              <CardContent>
+          {canViewArchive && (
                 <Button
+                  onClick={() => setShowArchivedEmployees(true)}
                   variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => {
-                    toast({
-                      title: "Функция в разработке",
-                      description: "Архив сотрудников будет реализован в следующей версии",
-                    });
-                  }}
+                  className="w-full"
                 >
-                  <Archive className="mr-2 h-4 w-4" />
-                  Просмотр архива уволенных сотрудников
+                  <Archive className="w-4 h-4 mr-2" />
+                  Архив уволенных сотрудников
                 </Button>
-              </CardContent>
-            </Card>
-          )}
+              )}
 
           {/* Управление пользователями - только для администратора */}
           {user?.role === 'admin' && (
@@ -445,5 +405,16 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
         </div>
       </DialogContent>
     </Dialog>
+
+    <ArchivedEmployees 
+        open={showArchivedEmployees}
+        onOpenChange={setShowArchivedEmployees}
+    />
+
+    <Warehouse 
+      open={showWarehouse} 
+      onOpenChange={setShowWarehouse} 
+    />
+  </>
   );
 }
