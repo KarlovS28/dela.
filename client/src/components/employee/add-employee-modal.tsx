@@ -160,6 +160,34 @@ export function AddEmployeeModal({ departmentId, children }: AddEmployeeModalPro
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* Загрузка фотографии */}
+            <div className="flex flex-col items-center space-y-4">
+              <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-full flex items-center justify-center overflow-hidden">
+                {photoPreview ? (
+                  <img src={photoPreview} alt="Предпросмотр" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="text-center">
+                    <Plus className="mx-auto h-8 w-8 text-gray-400" />
+                    <span className="text-xs text-gray-500">Фото</span>
+                  </div>
+                )}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => document.getElementById('photo-upload')?.click()}
+              >
+                Загрузить фото
+              </Button>
+              <input
+                id="photo-upload"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePhotoChange}
+              />
+            </div>
+
             {/* Основная информация */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
