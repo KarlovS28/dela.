@@ -43,6 +43,10 @@ export interface IStorage {
   createEquipment(equipment: InsertEquipment): Promise<Equipment>;
   updateEquipment(id: number, equipment: Partial<InsertEquipment>): Promise<Equipment>;
   deleteEquipment(id: number): Promise<void>;
+
+  getUsers(): Promise<User[]>;
+  updateUserRole(id: number, role: string): Promise<User | undefined>;
+  deleteUser(id: number): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -139,7 +143,7 @@ export class MemStorage implements IStorage {
 
     for (const emp of sampleEmployees) {
       const employee = await this.createEmployee(emp);
-      
+
       // Add equipment for developers
       if (emp.position.includes("Developer")) {
         await this.createEquipment({
@@ -183,7 +187,7 @@ export class MemStorage implements IStorage {
   async authenticateUser(email: string, password: string): Promise<User | null> {
     const user = await this.getUserByEmail(email);
     if (!user) return null;
-    
+
     const isValid = await bcrypt.compare(password, user.password);
     return isValid ? user : null;
   }
@@ -200,7 +204,7 @@ export class MemStorage implements IStorage {
     for (const dept of departments) {
       const deptEmployees = Array.from(this.employees.values())
         .filter(emp => emp.departmentId === dept.id && !emp.isArchived);
-      
+
       const employeesWithEquipment = await Promise.all(
         deptEmployees.map(async emp => ({
           ...emp,
@@ -249,12 +253,12 @@ export class MemStorage implements IStorage {
 
   async getArchivedEmployees(): Promise<EmployeeWithEquipment[]> {
     const archivedEmployees = Array.from(this.employees.values()).filter(emp => emp.isArchived);
-    
+
     const employeesWithEquipment = await Promise.all(
       archivedEmployees.map(async emp => {
         const equipment = await this.getEquipmentByEmployee(emp.id);
         const department = emp.departmentId ? this.departments.get(emp.departmentId) : undefined;
-        
+
         return {
           ...emp,
           equipment,
@@ -347,6 +351,23 @@ export class MemStorage implements IStorage {
 
   async deleteEquipment(id: number): Promise<void> {
     this.equipment.delete(id);
+  }
+
+  async getUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
+  }
+
+  async updateUserRole(id: number, role: string): Promise<User | undefined> {
+    const user = this.users.get(id);
+    if (!user) return undefined;
+
+    const updatedUser = { ...user, role };
+    this.users.set(id, updatedUser);
+    return updatedUser;
+  }
+
+  async deleteUser(id: number): Promise<void> {
+    this.users.delete(id);
   }
 }
 

@@ -13,6 +13,8 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Plus } from "lucide-react";
 import type { Department } from "@shared/schema";
+import { canCreateEmployee } from "@/lib/auth-utils";
+import { useAuth } from "@/hooks/use-auth";
 
 // Схема валидации для формы добавления сотрудника
 const addEmployeeSchema = z.object({
@@ -44,6 +46,12 @@ export function AddEmployeeModal({ departmentId, children }: AddEmployeeModalPro
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  // Проверка прав доступа
+  if (!user || !canCreateEmployee(user.role)) {
+    return null;
+  }
 
   // Загружаем список отделов для выбора
   const { data: departments } = useQuery<Department[]>({

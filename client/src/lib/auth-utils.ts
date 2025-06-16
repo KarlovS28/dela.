@@ -8,7 +8,7 @@ export function canEditEmployee(userRole: string): boolean {
 }
 
 export function canCreateEmployee(userRole: string): boolean {
-  return userRole === "admin";
+  return ["admin", "sysadmin"].includes(userRole);
 }
 
 export function canArchiveEmployee(userRole: string): boolean {

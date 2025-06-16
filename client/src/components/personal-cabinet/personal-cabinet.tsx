@@ -9,6 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/use-auth";
+import { ArchivedEmployees } from "@/components/employee/archived-employees";
+import { ExcelExport } from "@/components/export/excel-export";
+import { UserManagement } from "@/components/admin/user-management";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { canImportExport, canViewArchive } from "@/lib/auth-utils";
@@ -79,14 +82,14 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
     if (file) {
       const formData = new FormData();
       formData.append("template", file);
-      
+
       try {
         const response = await fetch("/api/templates/responsibility-act", {
           method: "POST",
           credentials: "include",
           body: formData,
         });
-        
+
         if (response.ok) {
           toast({
             title: "Шаблон загружен",
@@ -110,14 +113,14 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
     if (file) {
       const formData = new FormData();
       formData.append("template", file);
-      
+
       try {
         const response = await fetch("/api/templates/termination-checklist", {
           method: "POST",
           credentials: "include",
           body: formData,
         });
-        
+
         if (response.ok) {
           toast({
             title: "Шаблон загружен",
@@ -247,7 +250,7 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
               </div>
             </CardContent>
           </Card>
-          
+
           {/* Change Password */}
           <Card>
             <CardHeader>
@@ -300,7 +303,7 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
               </form>
             </CardContent>
           </Card>
-          
+
           {/* Export/Import Data */}
           {canManageData && (
             <Card>
@@ -382,7 +385,7 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
                       Поддерживаются форматы: .docx, .xlsx
                     </p>
                   </div>
-                  
+
                   <div>
                     <Label className="text-sm font-medium">Шаблон обходного листа</Label>
                     <Button
@@ -431,6 +434,13 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
                 </Button>
               </CardContent>
             </Card>
+          )}
+
+          {/* Управление пользователями - только для администратора */}
+          {user?.role === 'admin' && (
+            <div className="mt-6">
+              <UserManagement />
+            </div>
           )}
         </div>
       </DialogContent>
