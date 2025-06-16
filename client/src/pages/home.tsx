@@ -3,11 +3,18 @@ import { Header } from "@/components/layout/header";
 import { DepartmentSection } from "@/components/department/department-section";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { DepartmentWithEmployees } from "@shared/schema";
+import { useAuth } from "@/hooks/use-auth";
+import { AddEmployeeModal } from "@/components/employee/add-employee-modal";
+import { ArchivedEmployees } from "@/components/employee/archived-employees";
+import { canViewAllPersonalData } from "@/lib/auth-utils";
+import type { DepartmentWithEmployees } from "@shared/schema";
 
 export default function Home() {
   const { data: departments, isLoading, error } = useQuery<DepartmentWithEmployees[]>({
     queryKey: ["/api/departments"],
   });
+  const { user } = useAuth();
+  const [showAddEmployeeModal, setShowAddEmployeeModal] = React.useState(false);
 
   if (error) {
     return (
@@ -46,13 +53,26 @@ export default function Home() {
           </div>
         ) : (
           departments?.map((department) => (
-            <DepartmentSection
-              key={department.id}
+            <DepartmentSection 
+              key={department.id} 
               department={department}
+              onAddEmployee={() => setShowAddEmployeeModal(true)}
             />
           ))
         )}
+
+        {/* Archived Employees Section - Only visible to admin and accountant */}
+        {user && canViewAllPersonalData(user.role) && (
+          <div className="mt-8">
+            <ArchivedEmployees />
+          </div>
+        )}
       </main>
+
+      <AddEmployeeModal
+        open={showAddEmployeeModal}
+        onOpenChange={setShowAddEmployeeModal}
+      />
     </div>
   );
 }
