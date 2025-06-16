@@ -40,6 +40,20 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
   // Отладочная информация
   console.log("Employee Card:", { employeeId, open, employee, isLoading, error });
 
+  if (error) {
+    console.error("Employee fetch error:", error);
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ошибка загрузки</DialogTitle>
+          </DialogHeader>
+          <p>Не удалось загрузить данные сотрудника</p>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   const updateEmployeeMutation = useMutation({
     mutationFn: async (data: Partial<EmployeeWithEquipment>) => {
       const response = await apiRequest("PUT", `/api/employees/${employeeId}`, data);

@@ -8,7 +8,7 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   fullName: text("full_name").notNull(),
-  role: text("role").notNull(), // admin, sysadmin, accountant
+  role: text("role").notNull(), // admin, sysadmin, accountant, office-manager
   createdAt: timestamp("created_at").defaultNow(),
 });
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -7,10 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { canImportExport } from "@/lib/auth-utils";
-import { Download, Upload, FileText, FileSpreadsheet } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { canImportExport, canViewArchive } from "@/lib/auth-utils";
+import { Download, Upload, FileText, FileSpreadsheet, Archive } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, "Введите текущий пароль"),
@@ -31,6 +34,10 @@ interface PersonalCabinetProps {
 export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const passwordForm = useForm<PasswordFormData>({
     resolver: zodResolver(passwordSchema),
