@@ -568,9 +568,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Кэш сотрудников для добавления оборудования
       const employeeCache = new Map<string, number>();
+      let lastEmployeeId: number | null = null; // Последний созданный/найденный сотрудник
 
       for (const row of data as any[]) {
         try {
+          // Если указано ФИО и должность - создаем/находим сотрудника
           if (row['ФИО'] && row['Должность']) {
             let departmentId = 1; // По умолчанию администрация
             
@@ -616,6 +618,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               importedCount++;
             }
 
+            // Обновляем последнего сотрудника
+            lastEmployeeId = employeeId;
+
             // Добавляем оборудование, если оно указано
             if (row['Наименование имущества'] && row['Инвентарный номер']) {
               const equipmentData = {
@@ -629,6 +634,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
               await storage.createEquipment(equipmentData);
               equipmentCount++;
             }
+          } 
+          // Если ФИО пустое, но есть оборудование - привязываем к последнему сотруднику
+          else if ((!row['ФИО'] || String(row['ФИО']).trim() === '') && 
+                   row['Наименование имущества'] && 
+                   row['Инвентарный номер'] && 
+                   lastEmployeeId) {
+            
+            const equipmentData = {
+              name: String(row['Наименование имущества']).trim(),
+              inventoryNumber: String(row['Инвентарный номер']).trim(),
+              characteristics: row['Характеристики'] ? String(row['Характеристики']).trim() : undefined,
+              cost: row['Стоимость'] || row['Стоимость имущества'] ? String(row['Стоимость'] || row['Стоимость имущества']).trim() : '0',
+              employeeId: lastEmployeeId,
+            };
+
+            await storage.createEquipment(equipmentData);
+            equipmentCount++;
           }
         } catch (error) {
           console.error("Ошибка импорта строки:", error);
