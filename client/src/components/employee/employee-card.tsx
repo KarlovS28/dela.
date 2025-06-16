@@ -712,7 +712,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                       <TableHead>Инв. номер</TableHead>
                       <TableHead className="hidden sm:table-cell">Характеристики</TableHead>
                       <TableHead className="hidden sm:table-cell">Стоимость</TableHead>
-                      {canEditEquipment && <TableHead>TableHead>}
+                      {canEditEquipment && <TableHead>Действия</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
