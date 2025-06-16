@@ -17,12 +17,8 @@ export function Header() {
   const handleLogout = async () => {
     try {
       await logout();
-      queryClient.clear();
-      window.location.href = "/login";
     } catch (error) {
       console.error("Logout error:", error);
-      // В случае ошибки всё равно перенаправляем
-      window.location.href = "/login";
     }
   };
 
