@@ -15,7 +15,6 @@ import { canImportExport, canViewArchive } from "@/lib/auth-utils";
 import { Download, Upload, FileText, FileSpreadsheet, Archive } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiRequest } from "@/lib/queryClient";
-import ArchivedEmployees from "@/components/employee/archived-employees";
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, "Введите текущий пароль"),
@@ -80,14 +79,14 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
     if (file) {
       const formData = new FormData();
       formData.append("template", file);
-
+      
       try {
         const response = await fetch("/api/templates/responsibility-act", {
           method: "POST",
           credentials: "include",
           body: formData,
         });
-
+        
         if (response.ok) {
           toast({
             title: "Шаблон загружен",
@@ -111,14 +110,14 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
     if (file) {
       const formData = new FormData();
       formData.append("template", file);
-
+      
       try {
         const response = await fetch("/api/templates/termination-checklist", {
           method: "POST",
           credentials: "include",
           body: formData,
         });
-
+        
         if (response.ok) {
           toast({
             title: "Шаблон загружен",
@@ -225,209 +224,216 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
           <DialogTitle>Личный кабинет</DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="profile" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="profile">Профиль</TabsTrigger>
-            <TabsTrigger value="export">Экспорт данных</TabsTrigger>
-            <TabsTrigger value="import">Управление данными</TabsTrigger>
-            <TabsTrigger value="archive">Архив</TabsTrigger>
-          </TabsList>
-          <TabsContent value="profile">
-            <div className="space-y-6">
-              {/* Personal Info */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Личные данные</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-sm font-medium text-muted-foreground">ФИО</Label>
-                      <Input value={user.fullName} disabled />
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-muted-foreground">Email</Label>
-                      <Input value={user.email} disabled />
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-muted-foreground">Роль</Label>
-                      <Input value={getRoleDisplayName(user.role)} disabled />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+        <div className="space-y-6">
+          {/* Personal Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Личные данные</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">ФИО</Label>
+                  <Input value={user.fullName} disabled />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Email</Label>
+                  <Input value={user.email} disabled />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Роль</Label>
+                  <Input value={getRoleDisplayName(user.role)} disabled />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Change Password */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Смена пароля</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
+                <div>
+                  <Label htmlFor="currentPassword">Текущий пароль</Label>
+                  <Input
+                    id="currentPassword"
+                    type="password"
+                    {...passwordForm.register("currentPassword")}
+                  />
+                  {passwordForm.formState.errors.currentPassword && (
+                    <p className="text-sm text-destructive">
+                      {passwordForm.formState.errors.currentPassword.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="newPassword">Новый пароль</Label>
+                  <Input
+                    id="newPassword"
+                    type="password"
+                    {...passwordForm.register("newPassword")}
+                  />
+                  {passwordForm.formState.errors.newPassword && (
+                    <p className="text-sm text-destructive">
+                      {passwordForm.formState.errors.newPassword.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="confirmPassword">Подтвердите пароль</Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    {...passwordForm.register("confirmPassword")}
+                  />
+                  {passwordForm.formState.errors.confirmPassword && (
+                    <p className="text-sm text-destructive">
+                      {passwordForm.formState.errors.confirmPassword.message}
+                    </p>
+                  )}
+                </div>
+                <Button type="submit">
+                  Сохранить пароль
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+          
+          {/* Export/Import Data */}
+          {canManageData && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Экспорт и импорт данных</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Export Section */}
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Экспорт</h4>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={handleExportInventory}
+                    disabled={isExporting}
+                  >
+                    <FileSpreadsheet className="mr-2 h-4 w-4" />
+                    {isExporting ? "Экспорт..." : "Инвентаризация (полные данные)"}
+                  </Button>
+                </div>
 
-              {/* Change Password */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Смена пароля</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
-                    <div>
-                      <Label htmlFor="currentPassword">Текущий пароль</Label>
-                      <Input
-                        id="currentPassword"
-                        type="password"
-                        {...passwordForm.register("currentPassword")}
-                      />
-                      {passwordForm.formState.errors.currentPassword && (
-                        <p className="text-sm text-destructive">
-                          {passwordForm.formState.errors.currentPassword.message}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <Label htmlFor="newPassword">Новый пароль</Label>
-                      <Input
-                        id="newPassword"
-                        type="password"
-                        {...passwordForm.register("newPassword")}
-                      />
-                      {passwordForm.formState.errors.newPassword && (
-                        <p className="text-sm text-destructive">
-                          {passwordForm.formState.errors.newPassword.message}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <Label htmlFor="confirmPassword">Подтвердите пароль</Label>
-                      <Input
-                        id="confirmPassword"
-                        type="password"
-                        {...passwordForm.register("confirmPassword")}
-                      />
-                      {passwordForm.formState.errors.confirmPassword && (
-                        <p className="text-sm text-destructive">
-                          {passwordForm.formState.errors.confirmPassword.message}
-                        </p>
-                      )}
-                    </div>
-                    <Button type="submit">
-                      Сохранить пароль
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
+                <Separator />
 
-          <TabsContent value="export">
-            {/* Export/Import Data */}
-            {canManageData && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Экспорт и импорт данных</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Export Section */}
-                  <div>
-                    <h4 className="text-sm font-medium mb-2">Экспорт</h4>
+                {/* Import Section */}
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Импорт</h4>
+                  <div className="space-y-2">
                     <Button
                       variant="outline"
                       className="w-full justify-start"
-                      onClick={handleExportInventory}
-                      disabled={isExporting}
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isImporting}
                     >
-                      <FileSpreadsheet className="mr-2 h-4 w-4" />
-                      {isExporting ? "Экспорт..." : "Инвентаризация (полные данные)"}
+                      <Upload className="mr-2 h-4 w-4" />
+                      {isImporting ? "Импорт..." : "Загрузить файл Excel"}
                     </Button>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleImportFile}
+                      accept=".xlsx,.xls"
+                      className="hidden"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Поддерживаются файлы с колонками: ФИО, Должность, Грейд, Отдел, Паспортные данные
+                    </p>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-                  <Separator />
-
-                  {/* Import Section */}
+          {/* Document Templates */}
+          {canManageData && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Шаблоны документов</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <h4 className="text-sm font-medium mb-2">Импорт</h4>
-                    <div className="space-y-2">
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={isImporting}
-                      >
-                        <Upload className="mr-2 h-4 w-4" />
-                        {isImporting ? "Импорт..." : "Загрузить файл Excel"}
-                      </Button>
-                      <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleImportFile}
-                        accept=".xlsx,.xls"
-                        className="hidden"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Поддерживаются файлы с колонками: ФИО, Должность, Грейд, Отдел, Паспортные данные
-                      </p>
-                    </div>
+                    <Label className="text-sm font-medium">Шаблон акта материальной ответственности</Label>
+                    <Button
+                      variant="outline"
+                      className="w-full mt-2"
+                      onClick={() => document.getElementById('responsibility-template')?.click()}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Загрузить шаблон
+                    </Button>
+                    <input
+                      id="responsibility-template"
+                      type="file"
+                      accept=".docx,.xlsx"
+                      className="hidden"
+                      onChange={handleResponsibilityTemplateUpload}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Поддерживаются форматы: .docx, .xlsx
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          <TabsContent value="import">
-            {canManageData && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Шаблоны документов</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-sm font-medium">Шаблон акта материальной ответственности</Label>
-                      <Button
-                        variant="outline"
-                        className="w-full mt-2"
-                        onClick={() => document.getElementById('responsibility-template')?.click()}
-                      >
-                        <Upload className="w-4 h-4 mr-2" />
-                        Загрузить шаблон
-                      </Button>
-                      <input
-                        id="responsibility-template"
-                        type="file"
-                        accept=".docx,.xlsx"
-                        className="hidden"
-                        onChange={handleResponsibilityTemplateUpload}
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Поддерживаются форматы: .docx, .xlsx
-                      </p>
-                    </div>
-
-                    <div>
-                      <Label className="text-sm font-medium">Шаблон обходного листа</Label>
-                      <Button
-                        variant="outline"
-                        className="w-full mt-2"
-                        onClick={() => document.getElementById('checklist-template')?.click()}
-                      >
-                        <Upload className="w-4 h-4 mr-2" />
-                        Загрузить шаблон
-                      </Button>
-                      <input
-                        id="checklist-template"
-                        type="file"
-                        accept=".docx,.xlsx"
-                        className="hidden"
-                        onChange={handleChecklistTemplateUpload}
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Поддерживаются форматы: .docx, .xlsx
-                      </p>
-                    </div>
+                  
+                  <div>
+                    <Label className="text-sm font-medium">Шаблон обходного листа</Label>
+                    <Button
+                      variant="outline"
+                      className="w-full mt-2"
+                      onClick={() => document.getElementById('checklist-template')?.click()}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Загрузить шаблон
+                    </Button>
+                    <input
+                      id="checklist-template"
+                      type="file"
+                      accept=".docx,.xlsx"
+                      className="hidden"
+                      onChange={handleChecklistTemplateUpload}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Поддерживаются форматы: .docx, .xlsx
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-        <TabsContent value="archive">
-          {canManageData && <ArchivedEmployees />}
-        </TabsContent>
-      </Tabs>
-    </DialogContent>
+          {/* Archive Access */}
+          {canViewArchive(user.role) && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Архив сотрудников</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => {
+                    toast({
+                      title: "Функция в разработке",
+                      description: "Архив сотрудников будет реализован в следующей версии",
+                    });
+                  }}
+                >
+                  <Archive className="mr-2 h-4 w-4" />
+                  Просмотр архива уволенных сотрудников
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </DialogContent>
     </Dialog>
   );
 }

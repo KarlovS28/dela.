@@ -96,37 +96,37 @@ export function AddEmployeeModal({ departmentId, children }: AddEmployeeModalPro
           departmentId: parseInt(data.departmentId),
         }),
       });
-
+      
       if (!response.ok) {
         throw new Error("Ошибка создания сотрудника");
       }
-
+      
       const employee = await response.json();
-
+      
       // Если есть фото, загружаем его
       if (photoFile && employee.id) {
         const formData = new FormData();
         formData.append("photo", photoFile);
-
+        
         await fetch(`/api/employees/${employee.id}/photo`, {
           method: "POST",
           credentials: "include",
           body: formData,
         });
       }
-
+      
       return employee;
     },
     onSuccess: () => {
       // Обновляем кэш данных
       queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
-
+      
       toast({
         title: "Успешно",
         description: "Сотрудник добавлен",
       });
-
+      
       // Закрываем модал и сбрасываем форму
       setOpen(false);
       form.reset();
@@ -393,6 +393,20 @@ export function AddEmployeeModal({ departmentId, children }: AddEmployeeModalPro
                 />
               </div>
             </div>
+
+            <FormField
+              control={form.control}
+              name="photoUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>URL фото</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://example.com/photo.jpg" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             {/* Кнопки действий */}
             <div className="flex justify-end space-x-2 pt-4">

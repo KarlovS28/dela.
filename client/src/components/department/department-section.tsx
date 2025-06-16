@@ -10,10 +10,9 @@ import type { DepartmentWithEmployees } from "@shared/schema";
 
 interface DepartmentSectionProps {
   department: DepartmentWithEmployees;
-  showArchived?: boolean;
 }
 
-export function DepartmentSection({ department, showArchived = false }: DepartmentSectionProps) {
+export function DepartmentSection({ department }: DepartmentSectionProps) {
   const { user } = useAuth();
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
 
