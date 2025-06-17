@@ -1380,7 +1380,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }),
             new Paragraph({ 
               children: [new TextRun({ 
-                text: `________________(${employee.fullName.split(' ')[0]} ${employee.fullName.split(' ')[1]?.charAt(0) || ''}.${employee.fullName.split(' ')[2]?.charAt(0) || ''}.`)                            ___________________(____________.__.__)`, 
+                text: `________________(${employee.fullName.split(' ')[0]} ${employee.fullName.split(' ')[1]?.charAt(0) || ''}.${employee.fullName.split(' ')[2]?.charAt(0) || ''}.                            ___________________(____________.__.__)`, 
                 size: 20 
               })],
               spacing: { line: 240 },
