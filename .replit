@@ -42,11 +42,7 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm run db:generate"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm run db:migrate"
+args = "npm run db:push"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
