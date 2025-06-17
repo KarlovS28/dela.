@@ -353,6 +353,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
         fullName: employee.fullName,
         position: employee.position,
         grade: employee.grade,
+        gender: employee.gender || '',
         passportSeries: employee.passportSeries || '',
         passportNumber: employee.passportNumber || '',
         passportIssuedBy: employee.passportIssuedBy || '',
@@ -519,6 +520,18 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                       onChange={(e) => setEditData({ ...editData, grade: e.target.value })}
                     />
                   </div>
+                  <div>
+                    <Label>Пол</Label>
+                    <select
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                      value={editData.gender || ''}
+                      onChange={(e) => setEditData({ ...editData, gender: e.target.value })}
+                    >
+                      <option value="">Не выбран</option>
+                      <option value="М">Мужской</option>
+                      <option value="Ж">Женский</option>
+                    </select>
+                  </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -537,6 +550,10 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                   <div>
                     <span className="text-muted-foreground">Отдел:</span>
                     <p>{employee.department?.name}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Пол:</span>
+                    <p>{employee.gender === 'М' ? 'Мужской' : employee.gender === 'Ж' ? 'Женский' : 'Не указан'}</p>
                   </div>
                 </div>
               )}

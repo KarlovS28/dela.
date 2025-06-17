@@ -727,6 +727,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Базовые данные для всех ролей
         const baseData = {
           'ФИО': employee.fullName,
+          'Пол': employee.gender || '',
           'Должность': employee.position,
           'Отдел': departmentMap.get(employee.departmentId!) || ''
         };
@@ -946,6 +947,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 fullName,
                 position: String(row['Должность']).trim(),
                 grade: row['Грейд'] ? String(row['Грейд']).trim() : 'Junior',
+                gender: row['Пол'] && ['М', 'Ж'].includes(String(row['Пол']).trim()) ? String(row['Пол']).trim() : undefined,
                 departmentId,
                 passportSeries: row['Серия паспорта'] ? String(row['Серия паспорта']).trim() : undefined,
                 passportNumber: row['Номер паспорта'] ? String(row['Номер паспорта']).trim() : undefined,
@@ -1186,7 +1188,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             new Paragraph({
               children: [
                 new TextRun({
-                  text: `Общество с ограниченной ответственностью «МассПроект», далее именуемый "Работодатель", в лице директора Скородедова Филиппа Игоревича, действующего на основании Устава, c одной стороны и гражданин ${employee.fullName || '_____________________________'} (паспортные данные ${employee.passportSeries || '______'} № ${employee.passportNumber || '________'} выдан ${employee.passportDate || '__.__._____ '} ${employee.passportIssuedBy || '_____________________________________________________'}, зарегистрированный по адресу: ${employee.address || '________________________________________________________________'}, именуемый в дальнейшем "Работник", с другой стороны, составили настоящий акт о следующем:`,
+                  text: `Общество с ограниченной ответственностью «МассПроект», далее именуемый "Работодатель", в лице директора Скородедова Филиппа Игоревича, действующего на основании Устава, c одной стороны и ${employee.gender === 'Ж' ? 'гражданка' : 'гражданин'} ${employee.fullName || '_____________________________'} (паспортные данные ${employee.passportSeries || '______'} № ${employee.passportNumber || '________'} выдан ${employee.passportDate || '__.__._____ '} ${employee.passportIssuedBy || '_____________________________________________________'}, зарегистрированный по адресу: ${employee.address || '________________________________________________________________'}, именуемый в дальнейшем "Работник", с другой стороны, составили настоящий акт о следующем:`,
                   size: 22,
                 }),
               ],
@@ -1365,7 +1367,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               indent: { firstLine: 360 }
             }),
             new Paragraph({ 
-              children: [new TextRun({ text: "Передал                                                                          Принял", bold: true, size: 20 })],
+              children: [new TextRun({ text: "Заказчик                                                                          Работник", bold: true, size: 20 })],
               spacing: { after: 400, line: 240 },
               indent: { firstLine: 360 }
             }),
@@ -1381,7 +1383,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }),
             new Paragraph({ 
               children: [new TextRun({ 
-                text: `________________(${employee.fullName.split(' ')[0]} ${employee.fullName.split(' ')[1]?.charAt(0) || ''}.${employee.fullName.split(' ')[2]?.charAt(0) || ''}.                            ___________________(____________.__.__)`, 
+                text: `________________(Скородедов Ф.И.)                            ________________(${employee.fullName.split(' ')[0]} ${employee.fullName.split(' ')[1]?.charAt(0) || ''}.${employee.fullName.split(' ')[2]?.charAt(0) || ''}.`, 
                 size: 20 
               })],
               spacing: { line: 240 },
