@@ -21,6 +21,7 @@ const addEmployeeSchema = z.object({
   fullName: z.string().min(1, "ФИО обязательно"),
   position: z.string().min(1, "Должность обязательна"),
   grade: z.string().min(1, "Грейд обязателен"),
+  gender: z.enum(["М", "Ж"]),
   departmentId: z.string().min(1, "Отдел обязателен"),
   passportSeries: z.string().optional(),
   passportNumber: z.string().optional(),
@@ -64,6 +65,7 @@ export function AddEmployeeModal({ departmentId, children }: AddEmployeeModalPro
       fullName: "",
       position: "",
       grade: "",
+      gender: "М" as const,
       departmentId: departmentId?.toString() || "",
       passportSeries: "",
       passportNumber: "",
@@ -233,6 +235,28 @@ export function AddEmployeeModal({ departmentId, children }: AddEmployeeModalPro
                     <FormControl>
                       <Input placeholder="Senior" {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="gender"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Пол *</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Выберите пол" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="М">М - Мужской</SelectItem>
+                        <SelectItem value="Ж">Ж - Женский</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

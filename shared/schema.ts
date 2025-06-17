@@ -25,6 +25,7 @@ export const employees = pgTable("employees", {
   fullName: text("full_name").notNull(),
   position: text("position").notNull(),
   grade: text("grade").notNull(),
+  gender: text("gender").notNull().default("М"), // М - мужской, Ж - женский
   departmentId: integer("department_id").references(() => departments.id),
   photoUrl: text("photo_url"),
   passportSeries: text("passport_series"),
@@ -69,6 +70,8 @@ export const insertDepartmentSchema = createInsertSchema(departments).omit({
 export const insertEmployeeSchema = createInsertSchema(employees).omit({
   id: true,
   createdAt: true,
+}).extend({
+  gender: z.enum(["М", "Ж"]).default("М"),
 });
 
 export const insertEquipmentSchema = createInsertSchema(equipment).omit({

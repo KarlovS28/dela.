@@ -105,6 +105,7 @@ export class MemStorage implements IStorage {
         fullName: "Иванов Иван Иванович",
         position: "Директор",
         grade: "Executive",
+        gender: "М",
         departmentId: 1,
         photoUrl: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&h=100&fit=crop&crop=face",
         passportSeries: "1234",
@@ -121,6 +122,7 @@ export class MemStorage implements IStorage {
         fullName: "Петрова Петра Петровна",
         position: "Проект-менеджер",
         grade: "Senior",
+        gender: "Ж",
         departmentId: 2,
         photoUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&h=100&fit=crop&crop=face"
       },
@@ -128,6 +130,7 @@ export class MemStorage implements IStorage {
         fullName: "Петров Петр Петрович",
         position: "Senior Developer",
         grade: "Senior",
+        gender: "М",
         departmentId: 6,
         photoUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
         passportSeries: "5678",

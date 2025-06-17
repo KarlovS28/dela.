@@ -750,9 +750,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Добавляем данные об оборудовании - поддержка нескольких единиц имущества
         if (equipment.length > 0) {
           equipment.forEach((item, index) => {
+            // Для дополнительных строк оборудования оставляем только ФИО
             const rowData = index === 0 ? { ...baseData } : {
-              // Для дополнительных строк оборудования оставляем только ФИО
               'ФИО': employee.fullName,
+              'Пол': '',
               'Должность': '',
               'Отдел': ''
             };
