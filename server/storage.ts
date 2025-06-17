@@ -281,6 +281,7 @@ export class MemStorage implements IStorage {
       fullName: insertEmployee.fullName,
       position: insertEmployee.position,
       grade: insertEmployee.grade,
+      gender: insertEmployee.gender || 'М',
       departmentId: insertEmployee.departmentId || null,
       photoUrl: insertEmployee.photoUrl || null,
       passportSeries: insertEmployee.passportSeries || null,

@@ -824,14 +824,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const data = XLSX.utils.sheet_to_json(worksheet);
 
       let importedCount = 0;
+      let skippedCount = 0;
       let errors: string[] = [];
+
+      // Кэш существующих инвентарных номеров
+      const existingEquipment = await storage.getEquipment();
+      const existingInventoryNumbers = new Set(existingEquipment.map(eq => eq.inventoryNumber));
 
       for (const row of data as any[]) {
         try {
           if (row['Наименование оборудования'] && row['Инвентарный номер']) {
+            const inventoryNumber = String(row['Инвентарный номер']).trim();
+            
+            // Проверяем, не существует ли уже такой инвентарный номер
+            if (existingInventoryNumbers.has(inventoryNumber)) {
+              skippedCount++;
+              continue;
+            }
+
             const equipmentData = {
               name: String(row['Наименование оборудования']).trim(),
-              inventoryNumber: String(row['Инвентарный номер'] || row['№ п/п'] || `INV-${Date.now()}-${importedCount}`).trim(),
+              inventoryNumber,
               characteristics: row['Характеристики'] ? String(row['Характеристики']).trim() : undefined,
               cost: row['Стоимость'] ? String(row['Стоимость']).trim() : '0',
               category: row['Категория'] ? String(row['Категория']).trim() : 'Техника',
@@ -839,6 +852,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             };
 
             await storage.createEquipment(equipmentData);
+            existingInventoryNumbers.add(inventoryNumber);
             importedCount++;
           }
         } catch (error) {
@@ -848,7 +862,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json({ 
-        message: `Импортировано ${importedCount} единиц оборудования на склад`, 
+        message: `Импортировано ${importedCount} единиц оборудования на склад${skippedCount > 0 ? `, пропущено ${skippedCount} существующих` : ''}`, 
         errors: errors.length > 0 ? errors : null 
       });
     } catch (error) {
@@ -864,6 +878,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         {
           '№ п/п': 1,
           'Наименование оборудования': 'Ноутбук Dell Latitude',
+          'Инвентарный номер': 'INV-2024-001',
           'Характеристики': 'Intel i7, 16GB RAM, 512GB SSD',
           'Стоимость': '85000',
           'Категория': 'Техника'
@@ -871,9 +886,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         {
           '№ п/п': 2,
           'Наименование оборудования': 'Стол офисный',
+          'Инвентарный номер': 'INV-2024-002',
           'Характеристики': '120x60 см, белый',
           'Стоимость': '15000',
           'Категория': 'Мебель'
+        },
+        {
+          '№ п/п': 3,
+          'Наименование оборудования': 'Монитор Samsung 27"',
+          'Инвентарный номер': 'INV-2024-003',
+          'Характеристики': '27", 4K, IPS матрица',
+          'Стоимость': '35000',
+          'Категория': 'Техника'
         }
       ];
 
@@ -905,6 +929,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let importedCount = 0;
       let equipmentCount = 0;
+      let skippedCount = 0;
       let errors: string[] = [];
 
       // Кэш отделов для оптимизации
@@ -913,9 +938,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       existingDepartments.forEach(dept => departmentCache.set(dept.name, dept.id));
       let createdDepartments = 0;
 
+      // Кэш существующих сотрудников для предотвращения дублирования
+      const existingEmployees = await storage.getEmployees();
+      const existingEmployeeNames = new Set(existingEmployees.map(emp => emp.fullName.trim()));
+
       // Кэш сотрудников для добавления оборудования
       const employeeCache = new Map<string, number>();
-      let lastEmployeeId: number | null = null; // Последний созданный/найденный сотрудник
+      existingEmployees.forEach(emp => employeeCache.set(emp.fullName.trim(), emp.id));
+      let lastEmployeeId: number | null = null;
+
+      // Кэш существующих инвентарных номеров
+      const existingEquipment = await storage.getEquipment();
+      const existingInventoryNumbers = new Set(existingEquipment.map(eq => eq.inventoryNumber));
 
       for (const row of data as any[]) {
         try {
@@ -943,44 +977,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             // Создаем сотрудника только если его еще нет
             if (!employeeId) {
-              const employeeData = {
-                fullName,
-                position: String(row['Должность']).trim(),
-                grade: row['Грейд'] ? String(row['Грейд']).trim() : 'Junior',
-                gender: row['Пол'] && ['М', 'Ж'].includes(String(row['Пол']).trim()) ? String(row['Пол']).trim() : undefined,
-                departmentId,
-                passportSeries: row['Серия паспорта'] ? String(row['Серия паспорта']).trim() : undefined,
-                passportNumber: row['Номер паспорта'] ? String(row['Номер паспорта']).trim() : undefined,
-                passportIssuedBy: row['Кем выдан'] ? String(row['Кем выдан']).trim() : undefined,
-                passportDate: row['Дата выдачи'] || row['Дата выдачи паспорта'] ? String(row['Дата выдачи'] || row['Дата выдачи паспорта']).trim() : undefined,
-                address: row['Адрес прописки'] || row['Адрес'] ? String(row['Адрес прописки'] || row['Адрес']).trim() : undefined,
-                orderNumber: row['Номер приказа'] || row['Номер приказа о приеме'] ? String(row['Номер приказа'] || row['Номер приказа о приеме']).trim() : undefined,
-                orderDate: row['Дата приказа'] || row['Дата приказа о приеме'] ? String(row['Дата приказа'] || row['Дата приказа о приеме']).trim() : undefined,
-                responsibilityActNumber: row['Номер акта мат. ответственности'] || row['Номер акта материальной ответственности'] ? String(row['Номер акта мат. ответственности'] || row['Номер акта материальной ответственности']).trim() : undefined,
-                responsibilityActDate: row['Дата акта мат. ответственности'] || row['Дата акта материальной ответственности'] ? String(row['Дата акта мат. ответственности'] || row['Дата акта материальной ответственности']).trim() : undefined,
-              };
+              if (existingEmployeeNames.has(fullName)) {
+                // Сотрудник уже существует, пропускаем
+                skippedCount++;
+                const existingEmployee = existingEmployees.find(emp => emp.fullName.trim() === fullName);
+                if (existingEmployee) {
+                  employeeId = existingEmployee.id;
+                  employeeCache.set(fullName, employeeId);
+                }
+              } else {
+                // Обработка пола
+                let gender: 'М' | 'Ж' | undefined = undefined;
+                if (row['Пол']) {
+                  const genderValue = String(row['Пол']).trim().toUpperCase();
+                  if (genderValue === 'М' || genderValue === 'МУЖСКОЙ' || genderValue === 'M') {
+                    gender = 'М';
+                  } else if (genderValue === 'Ж' || genderValue === 'ЖЕНСКИЙ' || genderValue === 'F') {
+                    gender = 'Ж';
+                  }
+                }
 
-              const employee = await storage.createEmployee(employeeData);
-              employeeId = employee.id;
-              employeeCache.set(fullName, employeeId);
-              importedCount++;
+                const employeeData = {
+                  fullName,
+                  position: String(row['Должность']).trim(),
+                  grade: row['Грейд'] ? String(row['Грейд']).trim() : 'Junior',
+                  gender: gender || 'М',
+                  departmentId,
+                  passportSeries: row['Серия паспорта'] ? String(row['Серия паспорта']).trim() : undefined,
+                  passportNumber: row['Номер паспорта'] ? String(row['Номер паспорта']).trim() : undefined,
+                  passportIssuedBy: row['Кем выдан'] ? String(row['Кем выдан']).trim() : undefined,
+                  passportDate: row['Дата выдачи'] || row['Дата выдачи паспорта'] ? String(row['Дата выдачи'] || row['Дата выдачи паспорта']).trim() : undefined,
+                  address: row['Адрес прописки'] || row['Адрес'] ? String(row['Адрес прописки'] || row['Адрес']).trim() : undefined,
+                  orderNumber: row['Номер приказа'] || row['Номер приказа о приеме'] ? String(row['Номер приказа'] || row['Номер приказа о приеме']).trim() : undefined,
+                  orderDate: row['Дата приказа'] || row['Дата приказа о приеме'] ? String(row['Дата приказа'] || row['Дата приказа о приеме']).trim() : undefined,
+                  responsibilityActNumber: row['Номер акта мат. ответственности'] || row['Номер акта материальной ответственности'] ? String(row['Номер акта мат. ответственности'] || row['Номер акта материальной ответственности']).trim() : undefined,
+                  responsibilityActDate: row['Дата акта мат. ответственности'] || row['Дата акта материальной ответственности'] ? String(row['Дата акта мат. ответственности'] || row['Дата акта материальной ответственности']).trim() : undefined,
+                };
+
+                const employee = await storage.createEmployee(employeeData);
+                employeeId = employee.id;
+                employeeCache.set(fullName, employeeId);
+                existingEmployeeNames.add(fullName);
+                importedCount++;
+              }
             }
 
             // Обновляем последнего сотрудника
             lastEmployeeId = employeeId;
 
-            // Добавляем оборудование, если оно указано
+            // Добавляем оборудование, если оно указано и не дублируется
             if (row['Наименование имущества'] && row['Инвентарный номер']) {
-              const equipmentData = {
-                name: String(row['Наименование имущества']).trim(),
-                inventoryNumber: String(row['Инвентарный номер']).trim(),
-                characteristics: row['Характеристики'] ? String(row['Характеристики']).trim() : undefined,
-                cost: row['Стоимость'] || row['Стоимость имущества'] ? String(row['Стоимость'] || row['Стоимость имущества']).trim() : '0',
-                employeeId,
-              };
+              const inventoryNumber = String(row['Инвентарный номер']).trim();
+              
+              if (!existingInventoryNumbers.has(inventoryNumber)) {
+                const equipmentData = {
+                  name: String(row['Наименование имущества']).trim(),
+                  inventoryNumber,
+                  characteristics: row['Характеристики'] ? String(row['Характеристики']).trim() : undefined,
+                  cost: row['Стоимость'] || row['Стоимость имущества'] ? String(row['Стоимость'] || row['Стоимость имущества']).trim() : '0',
+                  employeeId,
+                };
 
-              await storage.createEquipment(equipmentData);
-              equipmentCount++;
+                await storage.createEquipment(equipmentData);
+                existingInventoryNumbers.add(inventoryNumber);
+                equipmentCount++;
+              }
             }
           } 
           // Если ФИО пустое, но есть оборудование - привязываем к последнему сотруднику
@@ -989,16 +1050,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
                    row['Инвентарный номер'] && 
                    lastEmployeeId) {
 
-            const equipmentData = {
-              name: String(row['Наименование имущества']).trim(),
-              inventoryNumber: String(row['Инвентарный номер']).trim(),
-              characteristics: row['Характеристики'] ? String(row['Характеристики']).trim() : undefined,
-              cost: row['Стоимость'] || row['Стоимость имущества'] ? String(row['Стоимость'] || row['Стоимость имущества']).trim() : '0',
-              employeeId: lastEmployeeId,
-            };
+            const inventoryNumber = String(row['Инвентарный номер']).trim();
+            
+            if (!existingInventoryNumbers.has(inventoryNumber)) {
+              const equipmentData = {
+                name: String(row['Наименование имущества']).trim(),
+                inventoryNumber,
+                characteristics: row['Характеристики'] ? String(row['Характеристики']).trim() : undefined,
+                cost: row['Стоимость'] || row['Стоимость имущества'] ? String(row['Стоимость'] || row['Стоимость имущества']).trim() : '0',
+                employeeId: lastEmployeeId,
+              };
 
-            await storage.createEquipment(equipmentData);
-            equipmentCount++;
+              await storage.createEquipment(equipmentData);
+              existingInventoryNumbers.add(inventoryNumber);
+              equipmentCount++;
+            }
           }
         } catch (error) {
           console.error("Ошибка импорта строки:", error);
@@ -1007,7 +1073,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json({ 
-        message: `Импортировано ${importedCount} сотрудников${equipmentCount > 0 ? `, ${equipmentCount} единиц оборудования` : ''}${createdDepartments > 0 ? `, создано ${createdDepartments} отделов` : ''}`, 
+        message: `Импортировано ${importedCount} новых сотрудников${equipmentCount > 0 ? `, ${equipmentCount} единиц оборудования` : ''}${createdDepartments > 0 ? `, создано ${createdDepartments} отделов` : ''}${skippedCount > 0 ? `, пропущено ${skippedCount} существующих сотрудников` : ''}`, 
         errors: errors.length > 0 ? errors : null 
       });
     } catch (error) {
