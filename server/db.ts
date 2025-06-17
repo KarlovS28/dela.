@@ -3,9 +3,8 @@ import { drizzle } from "drizzle-orm/neon-http";
 import { neon } from "@neondatabase/serverless";
 import * as schema from "@shared/schema";
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL environment variable is required");
-}
+// Используем локальную PostgreSQL в Replit если DATABASE_URL не задана
+const databaseUrl = process.env.DATABASE_URL || "postgresql://postgres:password@localhost:5432/dela_db";
 
-const sql = neon(process.env.DATABASE_URL);
+const sql = neon(databaseUrl);
 export const db = drizzle(sql, { schema });
