@@ -1215,44 +1215,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 new TableRow({
                   children: [
                     new TableCell({
-                      children: [new Paragraph({ 
-                        children: [new TextRun({ text: "№", bold: true, size: 20 })],
-                        alignment: AlignmentType.CENTER
+                      children: [new Paragraph({
+                        children: [new TextRun({ text: "№ п/п", bold: true, size: 20 })],
+                        alignment: AlignmentType.CENTER,
+                        spacing: { line: 240 }
                       })],
-                      width: { size: 6, type: WidthType.PERCENTAGE },
+                      width: { size: 10, type: WidthType.PERCENTAGE },
                     }),
                     new TableCell({
-                      children: [new Paragraph({ 
-                        children: [new TextRun({ text: "п/п", bold: true, size: 20 })],
-                        alignment: AlignmentType.CENTER
-                      })],
-                      width: { size: 8, type: WidthType.PERCENTAGE },
-                    }),
-                    new TableCell({
-                      children: [new Paragraph({ 
+                      children: [new Paragraph({
                         children: [new TextRun({ text: "Наименование материальных ценностей", bold: true, size: 20 })],
-                        alignment: AlignmentType.CENTER
+                        alignment: AlignmentType.CENTER,
+                        spacing: { line: 240 }
                       })],
-                      width: { size: 30, type: WidthType.PERCENTAGE },
+                      width: { size: 55, type: WidthType.PERCENTAGE },
                     }),
                     new TableCell({
-                      children: [new Paragraph({ 
-                        children: [new TextRun({ text: "Характеристики", bold: true, size: 20 })],
-                        alignment: AlignmentType.CENTER
-                      })],
-                      width: { size: 25, type: WidthType.PERCENTAGE },
-                    }),
-                    new TableCell({
-                      children: [new Paragraph({ 
+                      children: [new Paragraph({
                         children: [new TextRun({ text: "Инвентаризационный номер", bold: true, size: 20 })],
-                        alignment: AlignmentType.CENTER
+                        alignment: AlignmentType.CENTER,
+                        spacing: { line: 240 }
                       })],
                       width: { size: 20, type: WidthType.PERCENTAGE },
                     }),
                     new TableCell({
-                      children: [new Paragraph({ 
+                      children: [new Paragraph({
                         children: [new TextRun({ text: "Сумма, руб.", bold: true, size: 20 })],
-                        alignment: AlignmentType.CENTER
+                        alignment: AlignmentType.CENTER,
+                        spacing: { line: 240 }
                       })],
                       width: { size: 15, type: WidthType.PERCENTAGE },
                     }),
@@ -1265,36 +1255,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     children: [
                       new TableCell({
                         children: [new Paragraph({ 
-                          children: [new TextRun({ text: "", size: 18 })],
-                          alignment: AlignmentType.CENTER
-                        })],
-                      }),
-                      new TableCell({
-                        children: [new Paragraph({ 
                           children: [new TextRun({ text: (index + 1).toString(), size: 18 })],
-                          alignment: AlignmentType.CENTER
+                          alignment: AlignmentType.CENTER,
+                          spacing: { line: 240 }
                         })],
                       }),
                       new TableCell({
                         children: [new Paragraph({ 
-                          children: [new TextRun({ text: item?.name || "", size: 18 })]
-                        })],
-                      }),
-                      new TableCell({
-                        children: [new Paragraph({ 
-                          children: [new TextRun({ text: item?.characteristics || "", size: 18 })]
+                          children: [new TextRun({ text: item?.name || "", size: 18 })],
+                          spacing: { line: 240 }
                         })],
                       }),
                       new TableCell({
                         children: [new Paragraph({ 
                           children: [new TextRun({ text: item?.inventoryNumber || "", size: 18 })],
-                          alignment: AlignmentType.CENTER
+                          alignment: AlignmentType.CENTER,
+                          spacing: { line: 240 }
                         })],
                       }),
                       new TableCell({
                         children: [new Paragraph({ 
                           children: [new TextRun({ text: item?.cost || "", size: 18 })],
-                          alignment: AlignmentType.RIGHT
+                          alignment: AlignmentType.RIGHT,
+                          spacing: { line: 240 }
                         })],
                       }),
                     ],
@@ -1304,33 +1287,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 new TableRow({
                   children: [
                     new TableCell({
-                      children: [new Paragraph({ children: [new TextRun({ text: "", size: 18 })] })],
-                    }),
-                    new TableCell({
-                      children: [new Paragraph({ children: [new TextRun({ text: "", size: 18 })] })],
+                      children: [new Paragraph({ 
+                        children: [new TextRun({ text: "", size: 18 })],
+                        alignment: AlignmentType.CENTER,
+                        spacing: { line: 240 }
+                      })],
                     }),
                     new TableCell({
                       children: [new Paragraph({ 
                         children: [new TextRun({ text: "Итого:", bold: true, size: 18 })],
-                        alignment: AlignmentType.RIGHT
+                        alignment: AlignmentType.RIGHT,
+                        spacing: { line: 240 }
                       })],
                     }),
                     new TableCell({
-                      children: [new Paragraph({ children: [new TextRun({ text: "", size: 18 })] })],
-                    }),
-                    new TableCell({
-                      children: [new Paragraph({ children: [new TextRun({ text: "", size: 18 })] })],
+                      children: [new Paragraph({ 
+                        children: [new TextRun({ text: "", size: 18 })],
+                        alignment: AlignmentType.CENTER,
+                        spacing: { line: 240 }
+                      })],
                     }),
                     new TableCell({
                       children: [new Paragraph({ 
                         children: [new TextRun({ 
-                          text: employee.equipment && employee.equipment.length > 0 
-                            ? employee.equipment.reduce((sum, item) => sum + parseFloat(item.cost || '0'), 0).toFixed(2)
-                            : '',
-                          bold: true,
-                          size: 18
+                          text: employee.equipment?.reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0).toFixed(2) || "0.00", 
+                          bold: true, 
+                          size: 18 
                         })],
-                        alignment: AlignmentType.RIGHT
+                        alignment: AlignmentType.RIGHT,
+                        spacing: { line: 240 }
                       })],
                     }),
                   ],
@@ -1374,25 +1359,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             // Подписи
             new Paragraph({
-              children: [
-                new TextRun({
-                  text: "Заказчик                                                                          Работник",
-                  size: 22,
-                }),
-              ],
-              spacing: { before: 400, after: 400 },
-              alignment: AlignmentType.JUSTIFIED,
+              children: [new TextRun({ text: "", size: 20 })],
+              spacing: { after: 400, line: 240 },
+              indent: { firstLine: 360 }
             }),
-
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: `________________(Скородедов Ф.И)                            ___________________(${employee.fullName || '____________.__.__'})`,
-                  size: 22,
-                }),
-              ],
-              spacing: { after: 200 },
-              alignment: AlignmentType.JUSTIFIED,
+            new Paragraph({ 
+              children: [new TextRun({ text: "Передал                                                                          Принял", bold: true, size: 20 })],
+              spacing: { after: 400, line: 240 },
+              indent: { firstLine: 360 }
+            }),
+            new Paragraph({ 
+              children: [new TextRun({ text: "", size: 20 })],
+              spacing: { after: 400, line: 240 },
+              indent: { firstLine: 360 }
+            }),
+            new Paragraph({ 
+              children: [new TextRun({ text: "", size: 20 })],
+              spacing: { after: 400, line: 240 },
+              indent: { firstLine: 360 }
+            }),
+            new Paragraph({ 
+              children: [new TextRun({ 
+                text: `________________(${employee.fullName.split(' ')[0]} ${employee.fullName.split(' ')[1]?.charAt(0) || ''}.${employee.fullName.split(' ')[2]?.charAt(0) || ''}.`)                            ___________________(____________.__.__)`, 
+                size: 20 
+              })],
+              spacing: { line: 240 },
+              indent: { firstLine: 360 }
             }),
           ],
         }],
