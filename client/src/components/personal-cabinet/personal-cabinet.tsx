@@ -19,6 +19,7 @@ import { Download, Upload, FileText, FileSpreadsheet, Archive } from "lucide-rea
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiRequest } from "@/lib/queryClient";
 import { Warehouse } from "@/components/warehouse/warehouse";
+import { DecommissionedEquipment } from "@/components/decommissioned/decommissioned-equipment";
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, "Введите текущий пароль"),
@@ -42,6 +43,7 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
   const queryClient = useQueryClient();
   const [showArchivedEmployees, setShowArchivedEmployees] = useState(false);
   const [showWarehouse, setShowWarehouse] = useState(false);
+  const [showDecommissioned, setShowDecommissioned] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [showUserManagement, setShowUserManagement] = useState(false);
@@ -384,6 +386,26 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
             </Card>
           )}
 
+          {/* Списание - для всех пользователей */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Списание</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-4">
+                Здесь отображается имущество, которое необходимо списать
+              </p>
+              <Button
+                onClick={() => setShowDecommissioned(true)}
+                variant="outline"
+                className="w-full"
+              >
+                <Archive className="w-4 h-4 mr-2" />
+                Открыть списание
+              </Button>
+            </CardContent>
+          </Card>
+
           {/* Archive Access */}
           {canViewArchive && (
                 <Button
@@ -414,6 +436,11 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
     <Warehouse 
       open={showWarehouse} 
       onOpenChange={setShowWarehouse} 
+    />
+
+    <DecommissionedEquipment 
+      open={showDecommissioned} 
+      onOpenChange={setShowDecommissioned} 
     />
   </>
   );

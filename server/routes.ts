@@ -353,6 +353,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Decommissioned equipment routes
+  app.get('/api/decommissioned/equipment', requireAuth, async (req, res) => {
+    try {
+      const decommissionedEquipment = await storage.getDecommissionedEquipment();
+      res.json(decommissionedEquipment);
+    } catch (error) {
+      console.error("Get decommissioned equipment error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post('/api/equipment/:id/decommission', requireAuth, requireRole(['admin', 'sysadmin', 'office-manager', 'accountant']), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const equipment = await storage.decommissionEquipment(id);
+      res.json(equipment);
+    } catch (error) {
+      console.error("Decommission equipment error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post('/api/equipment/:id/assign', requireAuth, requireRole(['admin', 'sysadmin', 'office-manager']), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { employeeId } = req.body;
+      const equipment = await storage.updateEquipment(id, { employeeId });
+      res.json(equipment);
+    } catch (error) {
+      console.error("Assign equipment error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Загрузка фотографии сотрудника
   app.post('/api/employees/:id/photo', requireAuth, requireRole(['admin', 'accountant']), upload.single('photo'), async (req, res) => {
     try {
@@ -447,7 +481,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               'ФИО сотрудника': equipmentIndex === 0 ? employee.fullName : '', // ФИО только в первой строке
               'Наименование имущества': item.name,
               'Инвентарный номер': item.inventoryNumber,
-              'Категория': '',
+              'Категория': (item as any).category || 'Техника',
               'Характеристики': item.characteristics || '',
               'Стоимость имущества': item.cost
             });
@@ -535,6 +569,148 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Экспорт списанного имущества
+  app.get('/api/export/decommissioned', requireAuth, async (req, res) => {
+    try {
+      const decommissionedEquipment = await storage.getDecommissionedEquipment();
+
+      const data = decommissionedEquipment.map((item, index) => ({
+        '№ п/п': index + 1,
+        'Наименование имущества': item.name,
+        'Инвентарный номер': item.inventoryNumber,
+        'Категория': (item as any).category || 'Техника',
+        'Характеристики': item.characteristics || '',
+        'Стоимость': item.cost || '',
+        'Дата списания': new Date().toLocaleDateString('ru-RU')
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Списанное имущество');
+
+      const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+      res.setHeader('Content-Disposition', 'attachment; filename=decommissioned-equipment.xlsx');
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.send(buffer);
+    } catch (error) {
+      console.error("Export decommissioned equipment error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Экспорт выбранного имущества из склада в DOCX
+  app.post('/api/export/selected-equipment', requireAuth, requireRole(['admin', 'sysadmin', 'office-manager']), async (req, res) => {
+    try {
+      const { equipmentIds } = req.body;
+      if (!equipmentIds || !Array.isArray(equipmentIds)) {
+        return res.status(400).json({ message: "Equipment IDs are required" });
+      }
+
+      const allEquipment = await storage.getWarehouseEquipment();
+      const selectedEquipment = allEquipment.filter(eq => equipmentIds.includes(eq.id));
+
+      // Создание DOCX документа
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children: [
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "СПИСОК ВЫБРАННОГО ИМУЩЕСТВА СО СКЛАДА",
+                  bold: true,
+                  size: 24,
+                }),
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 400 },
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `Дата составления: ${new Date().toLocaleDateString('ru-RU')}`,
+                  size: 22,
+                }),
+              ],
+              alignment: AlignmentType.RIGHT,
+              spacing: { after: 400 },
+            }),
+
+            new Table({
+              width: {
+                size: 100,
+                type: WidthType.PERCENTAGE,
+              },
+              rows: [
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "№ п/п", bold: true, size: 20 })] })],
+                      width: { size: 10, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Наименование", bold: true, size: 20 })] })],
+                      width: { size: 30, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Инв. номер", bold: true, size: 20 })] })],
+                      width: { size: 20, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Категория", bold: true, size: 20 })] })],
+                      width: { size: 15, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Стоимость", bold: true, size: 20 })] })],
+                      width: { size: 15, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Характеристики", bold: true, size: 20 })] })],
+                      width: { size: 10, type: WidthType.PERCENTAGE },
+                    }),
+                  ],
+                }),
+                ...selectedEquipment.map((item, index) => new TableRow({
+                  children: [
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: (index + 1).toString(), size: 18 })] })],
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: item.name, size: 18 })] })],
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: item.inventoryNumber, size: 18 })] })],
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: (item as any).category || 'Техника', size: 18 })] })],
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: item.cost || '', size: 18 })] })],
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: item.characteristics || '', size: 18 })] })],
+                    }),
+                  ],
+                })),
+              ],
+            }),
+          ],
+        }],
+      });
+
+      const buffer = await Packer.toBuffer(doc);
+
+      res.setHeader('Content-Disposition', 'attachment; filename*=UTF-8\'\'selected-equipment.docx');
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      res.send(buffer);
+    } catch (error) {
+      console.error("Export selected equipment error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Полный экспорт инвентаризации с ролевыми ограничениями
   app.get('/api/export/inventory-full', requireAuth, requireRole(['admin', 'accountant']), async (req, res) => {
     try {
@@ -600,6 +776,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             Object.assign(rowData, {
               'Наименование имущества': item.name,
               'Инвентарный номер': item.inventoryNumber,
+              'Категория': (item as any).category || 'Техника',
               'Характеристики': item.characteristics || '',
               'Стоимость': item.cost
             });
@@ -611,6 +788,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ...baseData,
             'Наименование имущества': '',
             'Инвентарный номер': '',
+            'Категория': '',
             'Характеристики': '',
             'Стоимость': ''
           });
@@ -628,6 +806,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.send(buffer);
     } catch (error) {
       console.error("Export inventory full error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Импорт имущества на склад
+  app.post('/api/import/warehouse-equipment', requireAuth, requireRole(['admin', 'sysadmin', 'office-manager']), upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Файл не найден" });
+      }
+
+      const workbook = XLSX.read(req.file.buffer);
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json(worksheet);
+
+      let importedCount = 0;
+      let errors: string[] = [];
+
+      for (const row of data as any[]) {
+        try {
+          if (row['Наименование оборудования'] && row['Инвентарный номер']) {
+            const equipmentData = {
+              name: String(row['Наименование оборудования']).trim(),
+              inventoryNumber: String(row['Инвентарный номер'] || row['№ п/п'] || `INV-${Date.now()}-${importedCount}`).trim(),
+              characteristics: row['Характеристики'] ? String(row['Характеристики']).trim() : undefined,
+              cost: row['Стоимость'] ? String(row['Стоимость']).trim() : '0',
+              category: row['Категория'] ? String(row['Категория']).trim() : 'Техника',
+              employeeId: null, // На склад
+            };
+
+            await storage.createEquipment(equipmentData);
+            importedCount++;
+          }
+        } catch (error) {
+          console.error("Ошибка импорта оборудования:", error);
+          errors.push(`Ошибка импорта: ${row['Наименование оборудования'] || 'неизвестное оборудование'}`);
+        }
+      }
+
+      res.json({ 
+        message: `Импортировано ${importedCount} единиц оборудования на склад`, 
+        errors: errors.length > 0 ? errors : null 
+      });
+    } catch (error) {
+      console.error("Import warehouse equipment error:", error);
+      res.status(500).json({ message: "Ошибка импорта оборудования" });
+    }
+  });
+
+  // Шаблон для импорта имущества
+  app.get('/api/template/warehouse-equipment', requireAuth, requireRole(['admin', 'sysadmin', 'office-manager']), async (req, res) => {
+    try {
+      const templateData = [
+        {
+          '№ п/п': 1,
+          'Наименование оборудования': 'Ноутбук Dell Latitude',
+          'Характеристики': 'Intel i7, 16GB RAM, 512GB SSD',
+          'Стоимость': '85000',
+          'Категория': 'Техника'
+        },
+        {
+          '№ п/п': 2,
+          'Наименование оборудования': 'Стол офисный',
+          'Характеристики': '120x60 см, белый',
+          'Стоимость': '15000',
+          'Категория': 'Мебель'
+        }
+      ];
+
+      const ws = XLSX.utils.json_to_sheet(templateData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Шаблон');
+
+      const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+      res.setHeader('Content-Disposition', 'attachment; filename=template-warehouse-equipment.xlsx');
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.send(buffer);
+    } catch (error) {
+      console.error("Get warehouse template error:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });

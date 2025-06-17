@@ -49,6 +49,7 @@ export const equipment = pgTable("equipment", {
   cost: text("cost"),
   category: text("category").notNull().default("Техника"), // Техника или Мебель
   employeeId: integer("employee_id").references(() => employees.id),
+  isDecommissioned: boolean("is_decommissioned").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -78,6 +79,7 @@ export const insertEquipmentSchema = createInsertSchema(equipment).omit({
   cost: z.string().optional(),
   category: z.enum(["Техника", "Мебель"]).default("Техника"),
   employeeId: z.number().optional(),
+  isDecommissioned: z.boolean().optional(),
 });
 
 // Types

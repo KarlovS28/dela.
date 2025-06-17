@@ -337,6 +337,7 @@ export class MemStorage implements IStorage {
       cost: insertEquipment.cost,
       category: insertEquipment.category || 'Техника',
       employeeId: insertEquipment.employeeId ?? null,
+      isDecommissioned: insertEquipment.isDecommissioned || false,
       createdAt: new Date(),
     };
     this.equipment.set(id, equipment);
@@ -384,7 +385,20 @@ export class MemStorage implements IStorage {
   }
 
   async getWarehouseEquipment(): Promise<Equipment[]> {
-    return Array.from(this.equipment.values()).filter(eq => eq.employeeId === null);
+    return Array.from(this.equipment.values()).filter(eq => eq.employeeId === null && !eq.isDecommissioned);
+  }
+
+  async getDecommissionedEquipment(): Promise<Equipment[]> {
+    return Array.from(this.equipment.values()).filter(eq => eq.isDecommissioned);
+  }
+
+  async decommissionEquipment(id: number): Promise<Equipment> {
+    const equipment = this.equipment.get(id);
+    if (!equipment) throw new Error("Equipment not found");
+
+    const updatedEquipment = { ...equipment, isDecommissioned: true, employeeId: null };
+    this.equipment.set(id, updatedEquipment);
+    return updatedEquipment;
   }
 }
 

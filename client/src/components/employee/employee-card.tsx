@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { Download, FileText, Trash2, Upload, Plus, Edit, Save, X } from "lucide-react";
+import { Download, FileText, Trash2, Upload, Plus, Edit, Save, X, Archive } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import type { EmployeeWithEquipment } from "@shared/schema";
@@ -87,6 +87,39 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
     },
   });
 
+  // Списание оборудования сотрудника
+  const decommissionEquipment = useMutation({
+    mutationFn: async (equipmentId: number) => {
+      const response = await fetch(`/api/equipment/${equipmentId}/decommission`, {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to decommission equipment");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/employees/${employee?.id}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
+      toast({
+        title: "Успешно",
+        description: "Имущество списано",
+      });
+    },
+    onError: (error) => {
+      console.error("Decommission equipment error:", error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось списать имущество",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Добавление оборудования к сотруднику
   const addEquipment = useMutation({
     mutationFn: async (equipmentData: any) => {
       const response = await fetch("/api/equipment", {
@@ -871,9 +904,20 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                                       </AlertDialogFooter>
                                     </AlertDialogContent>
                                   </AlertDialog>
-                                  <Button size="sm" variant="ghost" onClick={() => moveToWarehouse.mutate(item.id)}>
-                                    На склад
-                                  </Button>
+                                  <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => moveToWarehouse.mutate(item.id)}
+                                      >
+                                        На склад
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => decommissionEquipment.mutate(item.id)}
+                                      >
+                                        <Archive className="w-4 h-4" />
+                                      </Button>
                                 </div>
                               </TableCell>
                             )}
