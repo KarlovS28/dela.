@@ -1,6 +1,3 @@
-// Конфигурация клиента React Query для управления состоянием и кешированием данных
-// Настраивает поведение запросов, повторы при ошибках и время актуальности кеша
-
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
@@ -38,7 +35,7 @@ export const getQueryFn: <T>(options: {
       // Для запросов типа ["/api/employees", 1] создаем "/api/employees/1"
       url = context.queryKey.join('/');
     }
-
+    
     const res = await fetch(url, {
       credentials: "include",
       signal: context.signal,
@@ -52,22 +49,23 @@ export const getQueryFn: <T>(options: {
     return await res.json();
   };
 
-// Конфигурация клиента React Query для управления серверным состоянием
-// Настраивает кеширование, повторные запросы и поведение по умолчанию
-import { QueryClient } from "@tanstack/react-query";
-
-// Создание экземпляра QueryClient с настройками по умолчанию
 export const queryClient = new QueryClient({
   defaultOptions: {
-    // Настройки для запросов (queries)
     queries: {
-      refetchOnWindowFocus: false,    // Не обновлять данные при фокусе на окне
-      staleTime: 5 * 60 * 1000,      // Время "свежести" данных - 5 минут
-      retry: false,                   // Не повторять неудачные запросы автоматически
+      queryFn: (context) => {
+        // For auth endpoint, return null on 401 instead of throwing
+        if (context.queryKey[0] === "/api/auth/me") {
+          return getQueryFn({ on401: "returnNull" })(context);
+        }
+        return getQueryFn({ on401: "throw" })(context);
+      },
+      refetchInterval: false,
+      refetchOnWindowFocus: false,
+      staleTime: Infinity,
+      retry: false,
     },
-    // Настройки для мутаций (mutations)
     mutations: {
-      retry: false,                   // Не повторять неудачные мутации автоматически
+      retry: false,
     },
   },
 });
