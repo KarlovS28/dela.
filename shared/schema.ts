@@ -1,27 +1,28 @@
-import { pgTable, text, serial, integer, boolean, timestamp, varchar } from "drizzle-orm/pg-core";
+
+import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Users table for authentication
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
+export const users = sqliteTable("users", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   fullName: text("full_name").notNull(),
   role: text("role").notNull(), // admin, sysadmin, accountant, office-manager
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: integer("created_at", { mode: 'timestamp' }).notNull().$default(() => new Date()),
 });
 
 // Departments table
-export const departments = pgTable("departments", {
-  id: serial("id").primaryKey(),
+export const departments = sqliteTable("departments", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull().unique(),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: integer("created_at", { mode: 'timestamp' }).notNull().$default(() => new Date()),
 });
 
 // Employees table
-export const employees = pgTable("employees", {
-  id: serial("id").primaryKey(),
+export const employees = sqliteTable("employees", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   fullName: text("full_name").notNull(),
   position: text("position").notNull(),
   grade: text("grade").notNull(),
@@ -36,21 +37,21 @@ export const employees = pgTable("employees", {
   orderDate: text("order_date"),
   responsibilityActNumber: text("responsibility_act_number"),
   responsibilityActDate: text("responsibility_act_date"),
-  isArchived: boolean("is_archived").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
+  isArchived: integer("is_archived", { mode: 'boolean' }).notNull().default(false),
+  createdAt: integer("created_at", { mode: 'timestamp' }).notNull().$default(() => new Date()),
 });
 
 // Equipment table
-export const equipment = pgTable("equipment", {
-  id: serial("id").primaryKey(),
+export const equipment = sqliteTable("equipment", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   inventoryNumber: text("inventory_number").notNull().unique(),
   characteristics: text("characteristics"),
   cost: text("cost"),
   category: text("category").notNull().default("Техника"), // Техника или Мебель
   employeeId: integer("employee_id").references(() => employees.id),
-  isDecommissioned: boolean("is_decommissioned").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
+  isDecommissioned: integer("is_decommissioned", { mode: 'boolean' }).notNull().default(false),
+  createdAt: integer("created_at", { mode: 'timestamp' }).notNull().$default(() => new Date()),
 });
 
 // Insert schemas

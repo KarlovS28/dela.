@@ -1,16 +1,13 @@
 
-
-import { drizzle } from "drizzle-orm/neon-http";
-import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import Database from "better-sqlite3";
 import * as schema from "@shared/schema";
+import { mkdirSync } from "fs";
+import { dirname } from "path";
 
-// Используем переменную окружения DATABASE_URL от Replit PostgreSQL
-const databaseUrl = process.env.DATABASE_URL;
+// Создаем директорию data если её нет
+const dbPath = "./data/database.sqlite";
+mkdirSync(dirname(dbPath), { recursive: true });
 
-if (!databaseUrl) {
-  throw new Error("DATABASE_URL environment variable is required. Please set up PostgreSQL database in Replit.");
-}
-
-const sql = neon(databaseUrl);
-export const db = drizzle(sql, { schema });
-
+const sqlite = new Database(dbPath);
+export const db = drizzle(sqlite, { schema });

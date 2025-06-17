@@ -402,6 +402,6 @@ export class MemStorage implements IStorage {
   }
 }
 
-import { PostgresStorage } from "./postgres-storage";
+import { SQLiteStorage } from "./sqlite-storage";
 
-export const storage = process.env.DATABASE_URL ? new PostgresStorage() : new MemStorage();
+export const storage = process.env.DATABASE_URL ? new MemStorage() : new SQLiteStorage();
