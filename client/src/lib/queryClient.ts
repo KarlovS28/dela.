@@ -52,28 +52,22 @@ export const getQueryFn: <T>(options: {
     return await res.json();
   };
 
-// Создание и экспорт клиента React Query с настройками по умолчанию
+// Конфигурация клиента React Query для управления серверным состоянием
+// Настраивает кеширование, повторные запросы и поведение по умолчанию
+import { QueryClient } from "@tanstack/react-query";
+
+// Создание экземпляра QueryClient с настройками по умолчанию
 export const queryClient = new QueryClient({
   defaultOptions: {
+    // Настройки для запросов (queries)
     queries: {
-      // Настройка логики повторных запросов при ошибках
-      retry: (failureCount, error: any) => {
-        // Не повторяем запросы при ошибке 401 (неавторизован)
-        if (error?.status === 401) {
-          return false;
-        }
-        // Повторяем до 3 раз для других ошибок
-        return failureCount < 3;
-      },
-      // Время актуальности кеша - 5 минут
-      // После этого времени данные считаются устаревшими и будут обновлены при следующем использовании
-      refetchInterval: false,
-      refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000, // 5 минут
-      retry: false,
+      refetchOnWindowFocus: false,    // Не обновлять данные при фокусе на окне
+      staleTime: 5 * 60 * 1000,      // Время "свежести" данных - 5 минут
+      retry: false,                   // Не повторять неудачные запросы автоматически
     },
+    // Настройки для мутаций (mutations)
     mutations: {
-      retry: false,
+      retry: false,                   // Не повторять неудачные мутации автоматически
     },
   },
 });

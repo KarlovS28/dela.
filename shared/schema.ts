@@ -5,7 +5,8 @@
 import { pgTable, text, serial, integer, boolean, timestamp, varchar } from "drizzle-orm/pg-core";
 // Импорт функции создания схем валидации на основе таблиц БД
 import { createInsertSchema } from "drizzle-zod";
-// Импорт библиотеки валидации Zod
+// Схемы валидации данных с помощью Zod для всего приложения
+// Обеспечивает типизацию и валидацию данных на клиенте и сервере
 import { z } from "zod";
 
 // Таблица пользователей для аутентификации и авторизации
@@ -76,7 +77,7 @@ export const insertDepartmentSchema = createInsertSchema(departments).omit({
   createdAt: true,
 });
 
-// Схема для создания сотрудника
+// Схема сотрудника для создания новой записи
 export const insertEmployeeSchema = createInsertSchema(employees).omit({
   id: true,
   createdAt: true,

@@ -1,12 +1,13 @@
-// Хук и контекст для управления аутентификацией пользователей в системе DELA
-// Предоставляет методы для входа, регистрации, выхода и проверки статуса пользователя
-
-import { createContext, useContext, useEffect, useState } from "react";
+// Хук и контекст для управления аутентификацией пользователей
+// Обеспечивает глобальное состояние аутентификации, вход, выход и регистрацию
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 // React Query для управления асинхронными запросами и кешированием
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-// Типы пользователя из общей схемы
+//import { useToast } from '@/hooks/use-toast';
+//import { isUnauthorizedError } from '@/lib/auth-utils';
 import type { User } from "@shared/schema";
 
+// Интерфейс пользователя системы
 // Интерфейс контекста аутентификации
 interface AuthContextType {
   user: User | null;                    // Текущий пользователь
