@@ -224,6 +224,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Employee routes
+  app.get('/api/employees/archived', requireAuth, requireRole(['admin', 'accountant']), async (req, res) => {
+    try {
+      const archivedEmployees = await storage.getArchivedEmployees();
+      res.json(archivedEmployees);
+    } catch (error) {
+      console.error("Get archived employees error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.get('/api/employees/:id', requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -240,16 +250,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(employee);
     } catch (error) {
       console.error("Get employee error:", error);
-      res.status(500).json({ message: "Internal server error" });
-    }
-  });
-
-  app.get('/api/employees/archived', requireAuth, requireRole(['admin', 'accountant']), async (req, res) => {
-    try {
-      const archivedEmployees = await storage.getArchivedEmployees();
-      res.json(archivedEmployees);
-    } catch (error) {
-      console.error("Get archived employees error:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
