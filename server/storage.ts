@@ -122,7 +122,7 @@ export class MemStorage implements IStorage {
         fullName: "Петрова Петра Петровна",
         position: "Проект-менеджер",
         grade: "Senior",
-        gender: "Ж",
+        gender: "Ж" as const,
         departmentId: 2,
         photoUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&h=100&fit=crop&crop=face"
       },
@@ -153,12 +153,14 @@ export class MemStorage implements IStorage {
         await this.createEquipment({
           name: "Ноутбук Apple MacBook Pro 16\"",
           inventoryNumber: `INV-${employee.id}-001`,
+          category: "Техника" as const,
           cost: "250,000 ₽",
           employeeId: employee.id
         });
         await this.createEquipment({
           name: "Монитор Dell UltraSharp 27\"",
           inventoryNumber: `INV-${employee.id}-002`,
+          category: "Техника" as const,
           cost: "45,000 ₽",
           employeeId: employee.id
         });
@@ -338,7 +340,7 @@ export class MemStorage implements IStorage {
       name: insertEquipment.name,
       inventoryNumber: insertEquipment.inventoryNumber,
       characteristics: insertEquipment.characteristics || null,
-      cost: insertEquipment.cost,
+      cost: insertEquipment.cost || null,
       category: insertEquipment.category || 'Техника',
       employeeId: insertEquipment.employeeId ?? null,
       isDecommissioned: insertEquipment.isDecommissioned || false,
@@ -406,4 +408,189 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+import { db } from "./db";
+import { eq } from "drizzle-orm";
+
+export class DatabaseStorage implements IStorage {
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const hashedPassword = await bcrypt.hash(insertUser.password, 10);
+    const [user] = await db
+      .insert(users)
+      .values({ ...insertUser, password: hashedPassword })
+      .returning();
+    return user;
+  }
+
+  async authenticateUser(email: string, password: string): Promise<User | null> {
+    const user = await this.getUserByEmail(email);
+    if (!user) return null;
+    
+    const isValid = await bcrypt.compare(password, user.password);
+    return isValid ? user : null;
+  }
+
+  async getDepartments(): Promise<Department[]> {
+    return await db.select().from(departments);
+  }
+
+  async getDepartmentsWithEmployees(): Promise<DepartmentWithEmployees[]> {
+    const allDepartments = await db.select().from(departments);
+    const allEmployees = await db.select().from(employees).where(eq(employees.isArchived, false));
+    const allEquipment = await db.select().from(equipment);
+
+    return allDepartments.map(dept => ({
+      ...dept,
+      employees: allEmployees
+        .filter(emp => emp.departmentId === dept.id)
+        .map(emp => ({
+          ...emp,
+          equipment: allEquipment.filter(eq => eq.employeeId === emp.id)
+        }))
+    }));
+  }
+
+  async createDepartment(insertDepartment: InsertDepartment): Promise<Department> {
+    const [department] = await db
+      .insert(departments)
+      .values(insertDepartment)
+      .returning();
+    return department;
+  }
+
+  async getEmployees(): Promise<Employee[]> {
+    return await db.select().from(employees);
+  }
+
+  async getEmployee(id: number): Promise<EmployeeWithEquipment | undefined> {
+    const [employee] = await db.select().from(employees).where(eq(employees.id, id));
+    if (!employee) return undefined;
+
+    const employeeEquipment = await db.select().from(equipment).where(eq(equipment.employeeId, id));
+    const [department] = employee.departmentId 
+      ? await db.select().from(departments).where(eq(departments.id, employee.departmentId))
+      : [undefined];
+
+    return {
+      ...employee,
+      equipment: employeeEquipment,
+      department
+    };
+  }
+
+  async createEmployee(insertEmployee: InsertEmployee): Promise<Employee> {
+    const [employee] = await db
+      .insert(employees)
+      .values(insertEmployee)
+      .returning();
+    return employee;
+  }
+
+  async updateEmployee(id: number, updateData: Partial<InsertEmployee>): Promise<Employee> {
+    const [employee] = await db
+      .update(employees)
+      .set(updateData)
+      .where(eq(employees.id, id))
+      .returning();
+    return employee;
+  }
+
+  async deleteEmployee(id: number): Promise<void> {
+    await db.delete(employees).where(eq(employees.id, id));
+  }
+
+  async archiveEmployee(id: number): Promise<Employee> {
+    // Перемещаем оборудование на склад (убираем привязку к сотруднику)
+    await db
+      .update(equipment)
+      .set({ employeeId: null })
+      .where(eq(equipment.employeeId, id));
+
+    // Архивируем сотрудника
+    const [employee] = await db
+      .update(employees)
+      .set({ isArchived: true })
+      .where(eq(employees.id, id))
+      .returning();
+    return employee;
+  }
+
+  async getEquipment(): Promise<Equipment[]> {
+    return await db.select().from(equipment);
+  }
+
+  async getEquipmentByEmployee(employeeId: number): Promise<Equipment[]> {
+    return await db.select().from(equipment).where(eq(equipment.employeeId, employeeId));
+  }
+
+  async createEquipment(insertEquipment: InsertEquipment): Promise<Equipment> {
+    const [equipmentItem] = await db
+      .insert(equipment)
+      .values(insertEquipment)
+      .returning();
+    return equipmentItem;
+  }
+
+  async updateEquipment(id: number, updateData: Partial<InsertEquipment>): Promise<Equipment> {
+    const [equipmentItem] = await db
+      .update(equipment)
+      .set(updateData)
+      .where(eq(equipment.id, id))
+      .returning();
+    return equipmentItem;
+  }
+
+  async deleteEquipment(id: number): Promise<void> {
+    await db.delete(equipment).where(eq(equipment.id, id));
+  }
+
+  async getArchivedEmployees(): Promise<EmployeeWithEquipment[]> {
+    const archivedEmployees = await db.select().from(employees).where(eq(employees.isArchived, true));
+    const allEquipment = await db.select().from(equipment);
+    const allDepartments = await db.select().from(departments);
+
+    return archivedEmployees.map(emp => ({
+      ...emp,
+      equipment: allEquipment.filter(eq => eq.employeeId === emp.id),
+      department: allDepartments.find(dept => dept.id === emp.departmentId)
+    }));
+  }
+
+  async getUsers(): Promise<User[]> {
+    return await db.select().from(users);
+  }
+
+  async updateUserRole(id: number, role: string): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ role })
+      .where(eq(users.id, id))
+      .returning();
+    return user || undefined;
+  }
+
+  async updateUserPassword(id: number, newPassword: string): Promise<User | undefined> {
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const [user] = await db
+      .update(users)
+      .set({ password: hashedPassword })
+      .where(eq(users.id, id))
+      .returning();
+    return user || undefined;
+  }
+
+  async deleteUser(id: number): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
+  }
+}
+
+export const storage = new DatabaseStorage();

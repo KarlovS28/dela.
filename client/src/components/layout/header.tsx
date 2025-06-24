@@ -16,9 +16,16 @@ export function Header() {
 
   const handleLogout = async () => {
     try {
-      await logout();
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+      queryClient.clear();
+      window.location.reload();
     } catch (error) {
-      console.error("Logout error:", error);
+      console.error("Logout failed:", error);
+      queryClient.clear();
+      window.location.reload();
     }
   };
 
