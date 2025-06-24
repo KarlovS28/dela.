@@ -1737,6 +1737,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Role management routes
+  app.get('/api/roles', requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const roles = await storage.getRoles();
+      res.json(roles);
+    } catch (error) {
+      console.error("Get roles error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.get('/api/roles/:id', requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid role ID" });
+      }
+
+      const role = await storage.getRole(id);
+      if (!role) {
+        return res.status(404).json({ message: "Role not found" });
+      }
+
+      res.json(role);
+    } catch (error) {
+      console.error("Get role error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post('/api/roles', requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const roleData = req.body;
+      const role = await storage.createRole(roleData);
+      res.json(role);
+    } catch (error) {
+      console.error("Create role error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.get('/api/permissions', requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const permissions = await storage.getPermissions();
+      res.json(permissions);
+    } catch (error) {
+      console.error("Get permissions error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post('/api/roles/:roleId/permissions/:permissionId', requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const roleId = parseInt(req.params.roleId);
+      const permissionId = parseInt(req.params.permissionId);
+
+      if (isNaN(roleId) || isNaN(permissionId)) {
+        return res.status(400).json({ message: "Invalid role or permission ID" });
+      }
+
+      const rolePermission = await storage.assignPermissionToRole(roleId, permissionId);
+      res.json(rolePermission);
+    } catch (error) {
+      console.error("Assign permission error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.delete('/api/roles/:roleId/permissions/:permissionId', requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const roleId = parseInt(req.params.roleId);
+      const permissionId = parseInt(req.params.permissionId);
+
+      if (isNaN(roleId) || isNaN(permissionId)) {
+        return res.status(400).json({ message: "Invalid role or permission ID" });
+      }
+
+      await storage.removePermissionFromRole(roleId, permissionId);
+      res.json({ message: "Permission removed successfully" });
+    } catch (error) {
+      console.error("Remove permission error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

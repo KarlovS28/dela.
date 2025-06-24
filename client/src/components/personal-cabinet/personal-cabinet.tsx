@@ -48,6 +48,7 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [showUserManagement, setShowUserManagement] = useState(false);
+  const [showRoleManagement, setShowRoleManagement] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const passwordForm = useForm<PasswordFormData>({
