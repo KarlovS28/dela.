@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, varchar, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -54,12 +54,55 @@ export const equipment = pgTable("equipment", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Roles table - для динамических ролей
+export const roles = pgTable("roles", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  displayName: text("display_name").notNull(),
+  description: text("description"),
+  isSystemRole: boolean("is_system_role").default(false), // Системные роли нельзя удалять
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Permissions table - права доступа
+export const permissions = pgTable("permissions", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  displayName: text("display_name").notNull(),
+  category: text("category").notNull(), // employees, departments, equipment, users, archive, etc.
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Role permissions - связь ролей и разрешений
+export const rolePermissions = pgTable("role_permissions", {
+  id: serial("id").primaryKey(),
+  roleId: integer("role_id").references(() => roles.id).notNull(),
+  permissionId: integer("permission_id").references(() => permissions.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
 }).extend({
-  role: z.enum(["admin", "sysadmin", "accountant", "office-manager"]),
+  role: z.string().min(1, "Роль обязательна"),
+});
+
+export const insertRoleSchema = createInsertSchema(roles).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertPermissionSchema = createInsertSchema(permissions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertRolePermissionSchema = createInsertSchema(rolePermissions).omit({
+  id: true,
+  createdAt: true,
 });
 
 export const insertDepartmentSchema = createInsertSchema(departments).omit({
@@ -98,6 +141,15 @@ export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
 export type Equipment = typeof equipment.$inferSelect;
 export type InsertEquipment = z.infer<typeof insertEquipmentSchema>;
 
+export type Role = typeof roles.$inferSelect;
+export type InsertRole = z.infer<typeof insertRoleSchema>;
+
+export type Permission = typeof permissions.$inferSelect;
+export type InsertPermission = z.infer<typeof insertPermissionSchema>;
+
+export type RolePermission = typeof rolePermissions.$inferSelect;
+export type InsertRolePermission = z.infer<typeof insertRolePermissionSchema>;
+
 // Combined types for API responses
 export type DepartmentWithEmployees = Department & {
   employees: (Employee & { equipment: Equipment[] })[];
@@ -106,4 +158,12 @@ export type DepartmentWithEmployees = Department & {
 export type EmployeeWithEquipment = Employee & {
   equipment: Equipment[];
   department?: Department;
+};
+
+export type RoleWithPermissions = Role & {
+  permissions: Permission[];
+};
+
+export type UserWithRole = User & {
+  roleDetails?: RoleWithPermissions;
 };

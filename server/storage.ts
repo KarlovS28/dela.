@@ -48,9 +48,48 @@ export interface IStorage {
   updateUserRole(id: number, role: string): Promise<User | undefined>;
   updateUserPassword(id: number, newPassword: string): Promise<User | undefined>;
   deleteUser(id: number): Promise<void>;
+
+  // Role management
+  getRoles(): Promise<Role[]>;
+  getRole(id: number): Promise<RoleWithPermissions | undefined>;
+  getRoleByName(name: string): Promise<RoleWithPermissions | undefined>;
+  createRole(role: InsertRole): Promise<Role>;
+  updateRole(id: number, role: Partial<InsertRole>): Promise<Role>;
+  deleteRole(id: number): Promise<void>;
+
+  // Permission management
+  getPermissions(): Promise<Permission[]>;
+  createPermission(permission: InsertPermission): Promise<Permission>;
+  updatePermission(id: number, permission: Partial<InsertPermission>): Promise<Permission>;
+  deletePermission(id: number): Promise<void>;
+
+  // Role-Permission management
+  assignPermissionToRole(roleId: number, permissionId: number): Promise<RolePermission>;
+  removePermissionFromRole(roleId: number, permissionId: number): Promise<void>;
+  getRolePermissions(roleId: number): Promise<Permission[]>;
+
+  // User permissions check
+  getUserPermissions(userId: number): Promise<Permission[]>;
+  userHasPermission(userId: number, permissionName: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
+  // Добавляем заглушки для новых методов управления ролями
+  async getRoles(): Promise<Role[]> { return []; }
+  async getRole(id: number): Promise<RoleWithPermissions | undefined> { return undefined; }
+  async getRoleByName(name: string): Promise<RoleWithPermissions | undefined> { return undefined; }
+  async createRole(role: InsertRole): Promise<Role> { throw new Error("Not implemented"); }
+  async updateRole(id: number, role: Partial<InsertRole>): Promise<Role> { throw new Error("Not implemented"); }
+  async deleteRole(id: number): Promise<void> { throw new Error("Not implemented"); }
+  async getPermissions(): Promise<Permission[]> { return []; }
+  async createPermission(permission: InsertPermission): Promise<Permission> { throw new Error("Not implemented"); }
+  async updatePermission(id: number, permission: Partial<InsertPermission>): Promise<Permission> { throw new Error("Not implemented"); }
+  async deletePermission(id: number): Promise<void> { throw new Error("Not implemented"); }
+  async assignPermissionToRole(roleId: number, permissionId: number): Promise<RolePermission> { throw new Error("Not implemented"); }
+  async removePermissionFromRole(roleId: number, permissionId: number): Promise<void> { throw new Error("Not implemented"); }
+  async getRolePermissions(roleId: number): Promise<Permission[]> { return []; }
+  async getUserPermissions(userId: number): Promise<Permission[]> { return []; }
+  async userHasPermission(userId: number, permissionName: string): Promise<boolean> { return false; }
   private users: Map<number, User>;
   private departments: Map<number, Department>;
   private employees: Map<number, Employee>;
@@ -409,12 +448,132 @@ export class MemStorage implements IStorage {
 }
 
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user || undefined;
+  }
+
+  // Role management methods
+  async getRoles(): Promise<Role[]> {
+    return await db.select().from(roles).orderBy(roles.name);
+  }
+
+  async getRole(id: number): Promise<RoleWithPermissions | undefined> {
+    const [role] = await db.select().from(roles).where(eq(roles.id, id));
+    if (!role) return undefined;
+
+    const rolePerms = await db
+      .select({ permission: permissions })
+      .from(rolePermissions)
+      .leftJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+      .where(eq(rolePermissions.roleId, id));
+
+    return {
+      ...role,
+      permissions: rolePerms.map(rp => rp.permission).filter(Boolean) as Permission[]
+    };
+  }
+
+  async getRoleByName(name: string): Promise<RoleWithPermissions | undefined> {
+    const [role] = await db.select().from(roles).where(eq(roles.name, name));
+    if (!role) return undefined;
+
+    const rolePerms = await db
+      .select({ permission: permissions })
+      .from(rolePermissions)
+      .leftJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+      .where(eq(rolePermissions.roleId, role.id));
+
+    return {
+      ...role,
+      permissions: rolePerms.map(rp => rp.permission).filter(Boolean) as Permission[]
+    };
+  }
+
+  async createRole(insertRole: InsertRole): Promise<Role> {
+    const [role] = await db.insert(roles).values(insertRole).returning();
+    return role;
+  }
+
+  async updateRole(id: number, updateData: Partial<InsertRole>): Promise<Role> {
+    const [role] = await db.update(roles).set(updateData).where(eq(roles.id, id)).returning();
+    return role;
+  }
+
+  async deleteRole(id: number): Promise<void> {
+    // Сначала удаляем связи с разрешениями
+    await db.delete(rolePermissions).where(eq(rolePermissions.roleId, id));
+    // Затем удаляем роль
+    await db.delete(roles).where(eq(roles.id, id));
+  }
+
+  // Permission management methods
+  async getPermissions(): Promise<Permission[]> {
+    return await db.select().from(permissions).orderBy(permissions.category, permissions.name);
+  }
+
+  async createPermission(insertPermission: InsertPermission): Promise<Permission> {
+    const [permission] = await db.insert(permissions).values(insertPermission).returning();
+    return permission;
+  }
+
+  async updatePermission(id: number, updateData: Partial<InsertPermission>): Promise<Permission> {
+    const [permission] = await db.update(permissions).set(updateData).where(eq(permissions.id, id)).returning();
+    return permission;
+  }
+
+  async deletePermission(id: number): Promise<void> {
+    // Сначала удаляем связи с ролями
+    await db.delete(rolePermissions).where(eq(rolePermissions.permissionId, id));
+    // Затем удаляем разрешение
+    await db.delete(permissions).where(eq(permissions.id, id));
+  }
+
+  // Role-Permission management
+  async assignPermissionToRole(roleId: number, permissionId: number): Promise<RolePermission> {
+    const [rolePermission] = await db
+      .insert(rolePermissions)
+      .values({ roleId, permissionId })
+      .returning();
+    return rolePermission;
+  }
+
+  async removePermissionFromRole(roleId: number, permissionId: number): Promise<void> {
+    await db
+      .delete(rolePermissions)
+      .where(
+        and(
+          eq(rolePermissions.roleId, roleId),
+          eq(rolePermissions.permissionId, permissionId)
+        )
+      );
+  }
+
+  async getRolePermissions(roleId: number): Promise<Permission[]> {
+    const rolePerms = await db
+      .select({ permission: permissions })
+      .from(rolePermissions)
+      .leftJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+      .where(eq(rolePermissions.roleId, roleId));
+
+    return rolePerms.map(rp => rp.permission).filter(Boolean) as Permission[];
+  }
+
+  // User permissions
+  async getUserPermissions(userId: number): Promise<Permission[]> {
+    const user = await this.getUser(userId);
+    if (!user) return [];
+
+    const role = await this.getRoleByName(user.role);
+    return role ? role.permissions : [];
+  }
+
+  async userHasPermission(userId: number, permissionName: string): Promise<boolean> {
+    const permissions = await this.getUserPermissions(userId);
+    return permissions.some(p => p.name === permissionName);
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
