@@ -18,7 +18,7 @@ interface ArchivedEmployeesProps {
 export function ArchivedEmployees({ open, onOpenChange }: ArchivedEmployeesProps) {
   const { toast } = useToast();
   
-  const { data: archivedEmployees, isLoading } = useQuery<EmployeeWithEquipment[]>({
+  const { data: archivedEmployees, isLoading, error } = useQuery<EmployeeWithEquipment[]>({
     queryKey: ["/api/employees/archived"],
     enabled: open,
   });
@@ -191,35 +191,12 @@ export function ArchivedEmployees({ open, onOpenChange }: ArchivedEmployeesProps
                     </div>
                   </div>
                   
-                  {/* Закрепленное имущество */}
+                  {/* Информация об имуществе */}
                   <div>
-                    <h4 className="font-medium mb-2">Закрепленное имущество:</h4>
-                    {employee.equipment && employee.equipment.length > 0 ? (
-                      <div className="overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>№</TableHead>
-                              <TableHead>Наименование</TableHead>
-                              <TableHead>Инвентарный номер</TableHead>
-                              <TableHead>Стоимость</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {employee.equipment.map((item, index) => (
-                              <TableRow key={item.id}>
-                                <TableCell>{index + 1}</TableCell>
-                                <TableCell>{item.name}</TableCell>
-                                <TableCell>{item.inventoryNumber}</TableCell>
-                                <TableCell>{item.cost}</TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    ) : (
-                      <p className="text-muted-foreground text-sm">Имущество не было закреплено</p>
-                    )}
+                    <h4 className="font-medium mb-2">Информация об имуществе:</h4>
+                    <p className="text-sm text-muted-foreground">
+                      При увольнении все имущество сотрудника было перемещено на склад
+                    </p>
                   </div>
                 </CardContent>
               </Card>

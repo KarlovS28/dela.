@@ -958,34 +958,13 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                     Акт мат. ответственности
                   </Button>
 
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive">
-                        Увольнение
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Уволить сотрудника?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Сотрудник будет перемещен в архив. Будет сгенерирован обходной лист и список имущества.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Отменить</AlertDialogCancel>
-                        <AlertDialogAction 
-                          onClick={() => {
-                            // Открываем только список имущества
-                            window.open(`/api/print/employee/${employee.id}/equipment`, '_blank');
-                            // Затем архивируем
-                            setTimeout(() => archiveEmployee.mutate(), 1000);
-                          }}
-                        >
-                          Уволить
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  <Button 
+                    variant="destructive"
+                    onClick={() => archiveEmployee.mutate()}
+                    disabled={archiveEmployee.isPending}
+                  >
+                    {archiveEmployee.isPending ? "Увольнение..." : "Увольнение"}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
