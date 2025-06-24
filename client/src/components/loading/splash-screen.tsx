@@ -15,10 +15,10 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
       setShowLetters(true);
     }, 500);
 
-    // Завершаем через 4 секунды
+    // Завершаем через 6 секунд
     const completeTimer = setTimeout(() => {
       onComplete();
-    }, 4000);
+    }, 6000);
 
     return () => {
       clearTimeout(letterTimer);
@@ -199,13 +199,22 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
 
         {/* Подзаголовок */}
         {showLetters && (
-          <p className={`text-lg ${
-            theme === 'dark' ? 'text-slate-300' : 'text-slate-600'
-          } animate-fade-in-up opacity-0`}
-            style={{ animationDelay: '1.5s', animationFillMode: 'forwards' }}
-          >
-            Система управления сотрудниками
-          </p>
+          <div className="text-center space-y-2">
+            <p className={`text-lg ${
+              theme === 'dark' ? 'text-slate-300' : 'text-slate-600'
+            } animate-fade-in-up opacity-0`}
+              style={{ animationDelay: '1.5s', animationFillMode: 'forwards' }}
+            >
+              Система управления сотрудниками
+            </p>
+            <div className={`flex justify-center space-x-1 ${
+              theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
+            }`}>
+              <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+              <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+            </div>
+          </div>
         )}
       </div>
     </div>
