@@ -594,7 +594,9 @@ export class DatabaseStorage implements IStorage {
 
   // Методы для совместимости с MemStorage
   async getWarehouseEquipment(): Promise<Equipment[]> {
-    return await db.select().from(equipment).where(eq(equipment.employeeId, null));
+    return await db.select().from(equipment).where(
+      equipment.employeeId.isNull()
+    );
   }
 
   async getDecommissionedEquipment(): Promise<Equipment[]> {

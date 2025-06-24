@@ -48,7 +48,7 @@ export const equipment = pgTable("equipment", {
   inventoryNumber: text("inventory_number").notNull().unique(),
   characteristics: text("characteristics"),
   cost: text("cost"),
-  category: text("category").notNull().default("Техника"), // Техника или Мебель
+  category: text("category", { enum: ["Техника", "Мебель"] }).notNull().default("Техника"),
   employeeId: integer("employee_id").references(() => employees.id),
   isDecommissioned: boolean("is_decommissioned").default(false),
   createdAt: timestamp("created_at").defaultNow(),

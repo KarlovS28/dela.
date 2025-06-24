@@ -300,6 +300,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/employees/:id/archive', requireAuth, requireRole(['admin', 'accountant']), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid employee ID" });
+      }
+      
       const employee = await storage.archiveEmployee(id);
       res.json(employee);
     } catch (error) {
@@ -851,7 +855,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               inventoryNumber,
               characteristics: row['Характеристики'] ? String(row['Характеристики']).trim() : undefined,
               cost: row['Стоимость'] ? String(row['Стоимость']).trim() : '0',
-              category: row['Категория'] ? String(row['Категория']).trim() : 'Техника',
+              category: row['Категория'] && String(row['Категория']).trim().toLowerCase().includes('мебель') 
+                ? 'Мебель' as const 
+                : 'Техника' as const,
               employeeId: null, // На склад
             };
 
@@ -1062,6 +1068,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 inventoryNumber,
                 characteristics: row['Характеристики'] ? String(row['Характеристики']).trim() : undefined,
                 cost: row['Стоимость'] || row['Стоимость имущества'] ? String(row['Стоимость'] || row['Стоимость имущества']).trim() : '0',
+                category: row['Категория'] && String(row['Категория']).trim().toLowerCase().includes('мебель') 
+                  ? 'Мебель' as const 
+                  : 'Техника' as const,
                 employeeId: lastEmployeeId,
               };
 

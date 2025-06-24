@@ -161,10 +161,13 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
 
   const updateEquipment = useMutation({
     mutationFn: async ({ equipmentId, data }: { equipmentId: number; data: any }) => {
+      const controller = new AbortController();
+      
       const response = await fetch(`/api/equipment/${equipmentId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
+        signal: controller.signal,
         body: JSON.stringify({
           ...data,
           category: data.category || 'Техника'
