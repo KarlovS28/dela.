@@ -5,6 +5,7 @@ import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertUserSchema, insertEmployeeSchema, insertEquipmentSchema } from "@shared/schema";
+import { initializeRolesAndPermissions } from "./init-roles";
 import { z } from "zod";
 import session from "express-session";
 import MemoryStore from "memorystore";
@@ -26,6 +27,16 @@ const MemoryStoreSession = MemoryStore(session);
 const upload = multer({ storage: multer.memoryStorage() });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Инициализируем роли и разрешения при запуске
+  setTimeout(async () => {
+    try {
+      await initializeRolesAndPermissions();
+      console.log("Roles and permissions initialized");
+    } catch (error) {
+      console.error("Failed to initialize roles and permissions:", error);
+    }
+  }, 3000);
+
   // Session middleware
   app.use(session({
     secret: process.env.SESSION_SECRET || "dela-secret-key-change-in-production",

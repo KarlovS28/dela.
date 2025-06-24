@@ -3,6 +3,9 @@ import {
   departments,
   employees,
   equipment,
+  roles,
+  permissions,
+  rolePermissions,
   type User,
   type InsertUser,
   type Department,
@@ -11,8 +14,16 @@ import {
   type InsertEmployee,
   type Equipment,
   type InsertEquipment,
+  type Role,
+  type InsertRole,
+  type Permission,
+  type InsertPermission,
+  type RolePermission,
+  type InsertRolePermission,
   type DepartmentWithEmployees,
   type EmployeeWithEquipment,
+  type RoleWithPermissions,
+  type UserWithRole,
 } from "@shared/schema";
 import bcrypt from "bcrypt";
 

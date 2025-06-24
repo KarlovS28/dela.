@@ -15,11 +15,12 @@ import { UserManagement } from "@/components/admin/user-management";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { canImportExport, canViewArchive } from "@/lib/auth-utils";
-import { Download, Upload, FileText, FileSpreadsheet, Archive } from "lucide-react";
+import { Download, Upload, FileText, FileSpreadsheet, Archive, Shield } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiRequest } from "@/lib/queryClient";
 import { Warehouse } from "@/components/warehouse/warehouse";
 import { DecommissionedEquipment } from "@/components/decommissioned/decommissioned-equipment";
+import { RoleManagement } from "@/components/admin/role-management";
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, "Введите текущий пароль"),
@@ -418,6 +419,28 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
                 </Button>
               )}
 
+          {/* Role Management for Admin */}
+          {user?.role === 'admin' && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Управление ролями</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-4">
+                  Создание новых ролей и управление правами доступа пользователей
+                </p>
+                <Button
+                  onClick={() => setShowRoleManagement(true)}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <Shield className="w-4 h-4 mr-2" />
+                  Открыть управление ролями
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Управление пользователями - только для администратора */}
           {user?.role === 'admin' && (
             <div className="mt-6">
@@ -441,6 +464,11 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
     <DecommissionedEquipment 
       open={showDecommissioned} 
       onOpenChange={setShowDecommissioned} 
+    />
+
+    <RoleManagement
+      open={showRoleManagement}
+      onOpenChange={setShowRoleManagement}
     />
   </>
   );
