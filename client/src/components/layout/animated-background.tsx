@@ -8,14 +8,14 @@ export function AnimatedBackground() {
         left: 0,
         width: '100%',
         height: '100%',
-        zIndex: -1,
-        opacity: 0.6,
+        zIndex: 1,
+        opacity: 0.8,
         pointerEvents: 'none',
         overflow: 'hidden',
         animation: 'backgroundPulse 12s ease-in-out infinite alternate'
       }}
-      className="dark:opacity-80 dark:brightness-150 dark:saturate-[1.8] dark:contrast-120 
-                 light:opacity-40 light:brightness-110 light:saturate-120 light:contrast-90"
+      className="dark:opacity-90 dark:brightness-[1.8] dark:saturate-[2] dark:contrast-[1.3]
+                 opacity-60 brightness-[1.3] saturate-[1.5] contrast-[1.1]"
     >
       <svg 
         viewBox="0 0 100 100" 
