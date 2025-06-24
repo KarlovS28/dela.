@@ -25,13 +25,16 @@ function Router() {
   }
 
   return (
-    <Switch>
-      {isAuthenticated ? (
-        <Route path="/" component={Home} />
-      ) : (
-        <Route path="/" component={Login} />
-      )}
-    </Switch>
+    <>
+      <AnimatedBackground />
+      <Switch>
+        {isAuthenticated ? (
+          <Route path="/" component={Home} />
+        ) : (
+          <Route path="/" component={Login} />
+        )}
+      </Switch>
+    </>
   );
 }
 

@@ -4,6 +4,42 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Анимированный градиентный фон */
+@keyframes backgroundPulse {
+  0% {
+    transform: scale(1) rotate(0deg);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.02) rotate(1deg);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.05) rotate(2deg);
+    opacity: 0.6;
+  }
+}
+
+/* Для темной темы - более интенсивная анимация */
+.dark #bg-wrap {
+  animation: backgroundPulseDark 10s ease-in-out infinite alternate !important;
+}
+
+@keyframes backgroundPulseDark {
+  0% {
+    transform: scale(1) rotate(0deg);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.03) rotate(-1deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.06) rotate(2deg);
+    opacity: 0.8;
+  }
+}
+
 :root {
   --background: hsl(0, 0%, 100%);
   --foreground: hsl(240, 10%, 3.9%);
