@@ -283,6 +283,8 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
       queryClient.invalidateQueries({ queryKey: ["/api/warehouse/equipment"] });
       queryClient.invalidateQueries({ queryKey: ["/api/employees/archived"] });
       onOpenChange(false);
+      // Переход на главную страницу после увольнения
+      window.location.href = '/';
       toast({
         title: "Успешно",
         description: "Сотрудник перемещен в архив, все его имущество перемещено на склад",

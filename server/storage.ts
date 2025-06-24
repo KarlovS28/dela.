@@ -564,11 +564,9 @@ export class DatabaseStorage implements IStorage {
     const archivedEmployees = await db.select().from(employees).where(eq(employees.isArchived, true));
     const allDepartments = await db.select().from(departments);
 
-    // Для архивных сотрудников показываем пустой список оборудования, 
-    // так как при увольнении все оборудование перемещается на склад
     return archivedEmployees.map(emp => ({
       ...emp,
-      equipment: [], // Пустой список, так как оборудование на складе
+      equipment: [], // Пустой список, оборудование на складе после увольнения
       department: allDepartments.find(dept => dept.id === emp.departmentId)
     }));
   }
@@ -602,10 +600,8 @@ export class DatabaseStorage implements IStorage {
 
   // Методы для совместимости с MemStorage
   async getWarehouseEquipment(): Promise<Equipment[]> {
-    const { isNull } = await import("drizzle-orm");
-    return await db.select().from(equipment).where(
-      isNull(equipment.employeeId)
-    );
+    const allEquipment = await db.select().from(equipment);
+    return allEquipment.filter(item => item.employeeId === null);
   }
 
   async getDecommissionedEquipment(): Promise<Equipment[]> {
