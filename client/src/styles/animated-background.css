@@ -1,0 +1,29 @@
+/* Анимированный градиентный фон */
+#bg-wrap {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+#bg-wrap svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Темная тема - более яркие цвета */
+.dark #bg-wrap {
+  opacity: 0.15;
+}
+
+/* Светлая тема - приглушенные цвета */
+.light #bg-wrap {
+  opacity: 0.08;
+}
