@@ -13,6 +13,25 @@ import NotFound from "@/pages/not-found";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    // Показываем splash screen в течение 6 секунд
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 6000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Показываем splash screen первые 6 секунд
+  if (showSplash) {
+    return (
+      <SplashScreen 
+        onComplete={() => setShowSplash(false)} 
+      />
+    );
+  }
 
   if (isLoading) {
     return (
