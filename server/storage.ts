@@ -105,7 +105,7 @@ export class MemStorage implements IStorage {
         fullName: "Иванов Иван Иванович",
         position: "Директор",
         grade: "Executive",
-        gender: "М",
+        gender: "М" as const,
         departmentId: 1,
         photoUrl: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&h=100&fit=crop&crop=face",
         passportSeries: "1234",
@@ -130,7 +130,7 @@ export class MemStorage implements IStorage {
         fullName: "Петров Петр Петрович",
         position: "Senior Developer",
         grade: "Senior",
-        gender: "М",
+        gender: "М" as const,
         departmentId: 6,
         photoUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
         passportSeries: "5678",
@@ -454,7 +454,7 @@ export class DatabaseStorage implements IStorage {
         .filter(emp => emp.departmentId === dept.id)
         .map(emp => ({
           ...emp,
-          equipment: allEquipment.filter(eq => eq.employeeId === emp.id)
+          equipment: allEquipment.filter(equipmentItem => equipmentItem.employeeId === emp.id)
         }))
     }));
   }
@@ -560,7 +560,7 @@ export class DatabaseStorage implements IStorage {
 
     return archivedEmployees.map(emp => ({
       ...emp,
-      equipment: allEquipment.filter(eq => eq.employeeId === emp.id),
+      equipment: allEquipment.filter(equipmentItem => equipmentItem.employeeId === emp.id),
       department: allDepartments.find(dept => dept.id === emp.departmentId)
     }));
   }
@@ -590,6 +590,24 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUser(id: number): Promise<void> {
     await db.delete(users).where(eq(users.id, id));
+  }
+
+  // Методы для совместимости с MemStorage
+  async getWarehouseEquipment(): Promise<Equipment[]> {
+    return await db.select().from(equipment).where(eq(equipment.employeeId, null));
+  }
+
+  async getDecommissionedEquipment(): Promise<Equipment[]> {
+    return await db.select().from(equipment).where(eq(equipment.isDecommissioned, true));
+  }
+
+  async decommissionEquipment(id: number): Promise<Equipment> {
+    const [equipmentItem] = await db
+      .update(equipment)
+      .set({ isDecommissioned: true, employeeId: null })
+      .where(eq(equipment.id, id))
+      .returning();
+    return equipmentItem;
   }
 }
 
