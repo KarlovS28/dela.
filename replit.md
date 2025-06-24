@@ -123,7 +123,7 @@
 
 ## Recent Changes
 
-### Dynamic Role Management & Animated Background (June 24, 2025)
+### Dynamic Role Management System (June 24, 2025)
 - ✓ Система динамических ролей и разрешений для администратора
 - ✓ Новые таблицы: roles, permissions, role_permissions в PostgreSQL
 - ✓ API маршруты управления ролями (/api/roles, /api/permissions)
@@ -132,8 +132,6 @@
 - ✓ Гибкая система разрешений по категориям (employees, departments, equipment, users, reports, documents)
 - ✓ Возможность создания новых ролей и назначения разрешений через интерфейс
 - ✓ Защита системных ролей от удаления
-- ✓ Добавлен анимированный градиентный фон с плавными переходами
-- ✓ Адаптивная прозрачность фона для светлой и темной темы
 
 ### Database Integration & Employee Termination System (June 24, 2025)
 - ✓ Полная интеграция с PostgreSQL для постоянного хранения данных
