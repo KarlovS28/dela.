@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { PersonalCabinet } from "@/components/personal-cabinet/personal-cabinet";
 import { LogoIcon } from "@/components/ui/logo";
+import { DownloadLogo } from "@/components/ui/download-logo";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/components/theme-provider";
 import { Moon, Sun, User, LogOut } from "lucide-react";
