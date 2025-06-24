@@ -509,6 +509,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async archiveEmployee(id: number): Promise<Employee> {
+    // Получаем сотрудника с его оборудованием для сохранения истории
+    const employeeWithEquipment = await this.getEmployee(id);
+    if (!employeeWithEquipment) {
+      throw new Error("Employee not found");
+    }
+
     // Перемещаем оборудование на склад (убираем привязку к сотруднику)
     await db
       .update(equipment)
@@ -521,6 +527,7 @@ export class DatabaseStorage implements IStorage {
       .set({ isArchived: true })
       .where(eq(employees.id, id))
       .returning();
+    
     return employee;
   }
 
@@ -555,12 +562,13 @@ export class DatabaseStorage implements IStorage {
 
   async getArchivedEmployees(): Promise<EmployeeWithEquipment[]> {
     const archivedEmployees = await db.select().from(employees).where(eq(employees.isArchived, true));
-    const allEquipment = await db.select().from(equipment);
     const allDepartments = await db.select().from(departments);
 
+    // Для архивных сотрудников показываем пустой список оборудования, 
+    // так как при увольнении все оборудование перемещается на склад
     return archivedEmployees.map(emp => ({
       ...emp,
-      equipment: allEquipment.filter(equipmentItem => equipmentItem.employeeId === emp.id),
+      equipment: [], // Пустой список, так как оборудование на складе
       department: allDepartments.find(dept => dept.id === emp.departmentId)
     }));
   }
@@ -594,8 +602,9 @@ export class DatabaseStorage implements IStorage {
 
   // Методы для совместимости с MemStorage
   async getWarehouseEquipment(): Promise<Equipment[]> {
+    const { isNull } = await import("drizzle-orm");
     return await db.select().from(equipment).where(
-      equipment.employeeId.isNull()
+      isNull(equipment.employeeId)
     );
   }
 

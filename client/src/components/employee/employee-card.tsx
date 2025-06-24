@@ -267,19 +267,6 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
 
   const archiveEmployee = useMutation({
     mutationFn: async () => {
-      // Сначала перемещаем все оборудование на склад
-      if (employee?.equipment) {
-        for (const item of employee.equipment) {
-          await fetch(`/api/equipment/${item.id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ employeeId: null }),
-          });
-        }
-      }
-
-      // Затем архивируем сотрудника
       const response = await fetch(`/api/employees/${employeeId}/archive`, {
         method: "POST",
         credentials: "include",
@@ -294,10 +281,11 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/warehouse/equipment"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/employees/archived"] });
       onOpenChange(false);
       toast({
         title: "Успешно",
-        description: "Сотрудник перемещен в архив, техника перемещена на склад",
+        description: "Сотрудник перемещен в архив, все его имущество перемещено на склад",
       });
     },
     onError: (error) => {
