@@ -29,6 +29,7 @@ export async function initializeRolesAndPermissions() {
     
     // Документы и отчеты
     { name: "documents.view", displayName: "Просмотр документов", category: "documents", description: "Доступ к паспортным данным и документам" },
+    { name: "documents.view_passport", displayName: "Просмотр паспортных данных", category: "documents", description: "Просмотр паспортных данных сотрудников" },
     { name: "documents.print", displayName: "Печать документов", category: "documents", description: "Генерация и печать документов" },
     { name: "reports.export", displayName: "Экспорт отчетов", category: "reports", description: "Экспорт данных в Excel и другие форматы" },
     { name: "reports.import", displayName: "Импорт данных", category: "reports", description: "Импорт данных из Excel файлов" },

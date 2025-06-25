@@ -183,7 +183,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/departments', requireAuth, async (req, res) => {
     try {
       const departments = await storage.getDepartmentsWithEmployees();
-      res.json(departments);
+      
+      // Проверяем разрешение на просмотр паспортных данных
+      const userId = req.session.userId!;
+      const canViewPassport = await storage.userHasPermission(userId, 'documents.view_passport');
+      
+      if (!canViewPassport) {
+        // Скрываем паспортные данные у всех сотрудников
+        const sanitizedDepartments = departments.map(dept => ({
+          ...dept,
+          employees: dept.employees.map(emp => ({
+            ...emp,
+            passportSeries: undefined,
+            passportNumber: undefined,
+            passportIssuedBy: undefined,
+            passportDate: undefined,
+            address: undefined
+          }))
+        }));
+        res.json(sanitizedDepartments);
+      } else {
+        res.json(departments);
+      }
     } catch (error) {
       console.error("Get departments error:", error);
       res.status(500).json({ message: "Internal server error" });
@@ -268,7 +289,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/employees/archived', requireAuth, requireRole(['admin', 'accountant']), async (req, res) => {
     try {
       const archivedEmployees = await storage.getArchivedEmployees();
-      res.json(archivedEmployees);
+      
+      // Проверяем разрешение на просмотр паспортных данных
+      const userId = req.session.userId!;
+      const canViewPassport = await storage.userHasPermission(userId, 'documents.view_passport');
+      
+      if (!canViewPassport) {
+        // Скрываем паспортные данные
+        const sanitizedEmployees = archivedEmployees.map(emp => ({
+          ...emp,
+          passportSeries: undefined,
+          passportNumber: undefined,
+          passportIssuedBy: undefined,
+          passportDate: undefined,
+          address: undefined
+        }));
+        res.json(sanitizedEmployees);
+      } else {
+        res.json(archivedEmployees);
+      }
     } catch (error) {
       console.error("Get archived employees error:", error);
       res.status(500).json({ message: "Internal server error" });
@@ -288,7 +327,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Employee not found" });
       }
 
-      res.json(employee);
+      // Проверяем разрешение на просмотр паспортных данных
+      const userId = req.session.userId!;
+      const canViewPassport = await storage.userHasPermission(userId, 'documents.view_passport');
+      
+      if (!canViewPassport) {
+        // Скрываем паспортные данные, если нет разрешения
+        const sanitizedEmployee = {
+          ...employee,
+          passportSeries: undefined,
+          passportNumber: undefined,
+          passportIssuedBy: undefined,
+          passportDate: undefined,
+          address: undefined
+        };
+        res.json(sanitizedEmployee);
+      } else {
+        res.json(employee);
+      }
     } catch (error) {
       console.error("Get employee error:", error);
       res.status(500).json({ message: "Internal server error" });

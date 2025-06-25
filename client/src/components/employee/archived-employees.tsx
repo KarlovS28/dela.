@@ -1,10 +1,10 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { usePermissions } from "@/hooks/use-permissions";
 import { Button } from "@/components/ui/button";
 import { PrinterCheck, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -16,8 +16,9 @@ interface ArchivedEmployeesProps {
 }
 
 export function ArchivedEmployees({ open, onOpenChange }: ArchivedEmployeesProps) {
+  const { canViewPassportData } = usePermissions();
   const { toast } = useToast();
-  
+
   const { data: archivedEmployees, isLoading, error } = useQuery<EmployeeWithEquipment[]>({
     queryKey: ["/api/employees/archived"],
     enabled: open,
@@ -108,7 +109,7 @@ export function ArchivedEmployees({ open, onOpenChange }: ArchivedEmployeesProps
         <DialogHeader>
           <DialogTitle>Архив уволенных сотрудников</DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-6">
           {archivedEmployees && archivedEmployees.length > 0 ? (
             archivedEmployees.map((employee) => (
@@ -134,7 +135,7 @@ export function ArchivedEmployees({ open, onOpenChange }: ArchivedEmployeesProps
                         <Badge variant="destructive" className="mt-2">Уволен</Badge>
                       </div>
                     </div>
-                    
+
                     <div className="flex space-x-2">
                       <Button
                         size="sm"
@@ -155,26 +156,28 @@ export function ArchivedEmployees({ open, onOpenChange }: ArchivedEmployeesProps
                     </div>
                   </div>
                 </CardHeader>
-                
+
                 <CardContent>
                   {/* Паспортные данные */}
-                  <div className="mb-4">
-                    <h4 className="font-medium mb-2">Паспортные данные:</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Серия и номер:</span>
-                        <p>{employee.passportSeries} {employee.passportNumber}</p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Дата выдачи:</span>
-                        <p>{employee.passportDate}</p>
-                      </div>
-                      <div className="md:col-span-2">
-                        <span className="text-muted-foreground">Адрес:</span>
-                        <p>{employee.address}</p>
+                  {canViewPassportData ? (
+                    <div className="mb-4">
+                      <h4 className="font-medium mb-2">Паспортные данные:</h4>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Серия и номер:</span>
+                          <p>{employee.passportSeries} {employee.passportNumber}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Дата выдачи:</span>
+                          <p>{employee.passportDate}</p>
+                        </div>
+                        <div className="md:col-span-2">
+                          <span className="text-muted-foreground">Адрес:</span>
+                          <p>{employee.address}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  ) : null}
 
                   {/* Документы о приеме */}
                   <div className="mb-4">
@@ -190,7 +193,7 @@ export function ArchivedEmployees({ open, onOpenChange }: ArchivedEmployeesProps
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Информация об имуществе */}
                   <div>
                     <h4 className="font-medium mb-2">Информация об имуществе:</h4>

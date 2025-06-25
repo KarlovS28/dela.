@@ -586,17 +586,39 @@ export class DatabaseStorage implements IStorage {
   }
 
   // User permissions
+  async userHasPermission(userId: number, permissionName: string): Promise<boolean> {
+    try {
+      const user = await db.select()
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+
+      if (!user[0]) return false;
+
+      // Админ имеет все разрешения
+      if (user[0].role === 'admin') return true;
+
+      // Проверяем разрешения через роль
+      const userPermissions = await db
+        .select({ permission: permissions })
+        .from(roles)
+        .innerJoin(rolePermissions, eq(roles.id, rolePermissions.roleId))
+        .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+        .where(eq(roles.name, user[0].role));
+
+      return userPermissions.some(p => p.permission.name === permissionName);
+    } catch (error) {
+      console.error("Error checking user permission:", error);
+      return false;
+    }
+  }
+
   async getUserPermissions(userId: number): Promise<Permission[]> {
     const user = await this.getUser(userId);
     if (!user) return [];
 
     const role = await this.getRoleByName(user.role);
     return role ? role.permissions : [];
-  }
-
-  async userHasPermission(userId: number, permissionName: string): Promise<boolean> {
-    const permissions = await this.getUserPermissions(userId);
-    return permissions.some(p => p.name === permissionName);
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
@@ -856,7 +878,7 @@ export class DatabaseStorage implements IStorage {
     return request;
   }
 
-  async updateRegistrationRequestStatus(id: number, status: 'pending' | 'approved' | 'rejected') {
+  async updateRegistrationRequestStatus(id: number, status: 'pending' | 'approved' | 'rejected'){
     const [request] = await db
       .update(schema.registrationRequests)
       .set({ 

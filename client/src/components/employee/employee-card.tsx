@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
+import { usePermissions } from "@/hooks/use-permissions";
 import { Download, FileText, Trash2, Upload, Plus, Edit, Save, X, Archive } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/use-auth";
@@ -33,6 +34,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { canViewPassportData } = usePermissions();
 
   // Fetch employee data
   const { data: employee, isLoading, error } = useQuery({
@@ -162,7 +164,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
   const updateEquipment = useMutation({
     mutationFn: async ({ equipmentId, data }: { equipmentId: number; data: any }) => {
       const controller = new AbortController();
-      
+
       const response = await fetch(`/api/equipment/${equipmentId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -558,7 +560,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 Паспортные данные
-                {canEdit && (
+                {canEdit && canViewPassportData && (
                   <div className="flex gap-2">
                     {editingSection === 'passport' ? (
                       <>
@@ -582,7 +584,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {editingSection === 'passport' ? (
+              {canViewPassportData ? (editingSection === 'passport' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label>Серия паспорта</Label>
@@ -643,7 +645,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                     <p>{employee.address || 'Не указан'}</p>
                   </div>
                 </div>
-              )}
+              )) : <p>Нет прав для просмотра паспортных данных</p>}
             </CardContent>
           </Card>
 
@@ -906,7 +908,8 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                                           Это действие нельзя отменить. Имущество будет удалено из системы.
                                         </AlertDialogDescription>
                                       </AlertDialogHeader>
-                                      <AlertDialogFooter>
+                                      <AlertDialog```python
+Footer>
                                         <AlertDialogCancel>Отменить</AlertDialogCancel>
                                         <AlertDialogAction onClick={() => deleteEquipment.mutate(item.id)}>
                                           Удалить
