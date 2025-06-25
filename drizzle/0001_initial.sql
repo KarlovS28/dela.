@@ -1,4 +1,3 @@
-
 -- Users table
 CREATE TABLE IF NOT EXISTS "users" (
 	"id" serial PRIMARY KEY NOT NULL,
@@ -6,6 +5,7 @@ CREATE TABLE IF NOT EXISTS "users" (
 	"password" text NOT NULL,
 	"full_name" text NOT NULL,
 	"role" text NOT NULL,
+	"photo_url" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "users_email_unique" UNIQUE("email")
 );

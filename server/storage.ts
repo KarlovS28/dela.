@@ -59,6 +59,7 @@ export interface IStorage {
   updateUserRole(id: number, role: string): Promise<User | undefined>;
   updateUserPassword(id: number, newPassword: string): Promise<User | undefined>;
   deleteUser(id: number): Promise<void>;
+  updateUserPhoto(id: number, photoUrl: string): Promise<User | undefined>;
 
   // Role management
   getRoles(): Promise<Role[]>;
@@ -459,6 +460,10 @@ export class MemStorage implements IStorage {
     return updatedUser;
   }
 
+  async updateUserPhoto(id: number, photoUrl: string): Promise<User | undefined> {
+    throw new Error("Not implemented");
+  }
+
   async getWarehouseEquipment(): Promise<Equipment[]> {
     return Array.from(this.equipment.values()).filter(eq => eq.employeeId === null && !eq.isDecommissioned);
   }
@@ -732,7 +737,7 @@ export class DatabaseStorage implements IStorage {
   async updateEmployee(id: number, updateData: Partial<InsertEmployee>, userId?: number): Promise<Employee> {
     // Получаем старые данные для аудита
     const oldEmployee = await this.getEmployee(id);
-    
+
     const [employee] = await db
       .update(employees)
       .set(updateData)
@@ -854,7 +859,7 @@ export class DatabaseStorage implements IStorage {
   async updateEquipment(id: number, updateData: Partial<InsertEquipment>, userId?: number): Promise<Equipment> {
     // Получаем старые данные для аудита
     const [oldEquipment] = await db.select().from(equipment).where(eq(equipment.id, id));
-    
+
     const [equipmentItem] = await db
       .update(equipment)
       .set(updateData)
@@ -1089,6 +1094,41 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return request;
   }
+
+    async updateUserPhoto(id: number, photoUrl: string, userId?: number): Promise<User | undefined> {
+        // Получаем старые данные для аудита
+        const oldUser = await this.getUser(id);
+
+        const [user] = await db
+            .update(users)
+            .set({ photoUrl })
+            .where(eq(users.id, id))
+            .returning();
+
+        // Логируем изменение фото пользователя
+        if (userId && oldUser) {
+            await this.createAuditLog({
+                userId,
+                action: 'update',
+                entityType: 'user',
+                entityId: user.id,
+                oldValues: JSON.stringify(oldUser),
+                newValues: JSON.stringify(user),
+                description: `Обновлено фото пользователя: ${user.fullName}`
+            });
+
+            // Уведомляем других пользователей (можно не уведомлять об изменении фото)
+            // await this.notifyUsersAboutChange(
+            //     userId,
+            //     'Изменение фото пользователя',
+            //     `Обновлено фото пользователя: ${user.fullName}`,
+            //     'user_update',
+            //     user.id
+            // );
+        }
+
+        return user || undefined;
+    }
 }
 
 class DatabaseStorageWithInit extends DatabaseStorage {

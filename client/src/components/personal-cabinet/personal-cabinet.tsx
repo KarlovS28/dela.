@@ -22,6 +22,9 @@ import { Warehouse } from "@/components/warehouse/warehouse";
 import { DecommissionedEquipment } from "@/components/decommissioned/decommissioned-equipment";
 import { RoleManagement } from "@/components/admin/role-management";
 import { RegistrationRequests } from "@/components/admin/registration-requests";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Camera } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, "Введите текущий пароль"),
@@ -51,6 +54,7 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [showRoleManagement, setShowRoleManagement] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const passwordForm = useForm<PasswordFormData>({
     resolver: zodResolver(passwordSchema),
@@ -225,6 +229,70 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
     }
   };
 
+    const updateProfilePhoto = useMutation({
+    mutationFn: async (formData: FormData) => {
+      const response = await fetch(`/api/users/${user?.id}/photo`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to upload photo");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      toast({
+        title: "Успешно",
+        description: "Фото профиля обновлено",
+      });
+    },
+    onError: (error) => {
+      console.error("Photo upload error:", error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось загрузить фото",
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setIsUploading(false);
+    }
+  });
+
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    // Проверка размера файла (максимум 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Ошибка",
+        description: "Размер файла не должен превышать 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Проверка типа файла
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Ошибка",
+        description: "Файл должен быть изображением",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append("photo", file);
+    updateProfilePhoto.mutate(formData);
+  };
+
   if (!user) return null;
 
   const canManageData = canImportExport(user.role);
@@ -244,19 +312,19 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
               <User className="h-4 w-4" />
               Профиль
             </TabsTrigger>
-            
+
             <TabsTrigger value="export-import" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               Экспорт/Импорт
             </TabsTrigger>
-            
+
             {(user?.role === 'admin' || user?.role === 'accountant') && (
               <TabsTrigger value="archive" className="flex items-center gap-2">
                 <Archive className="h-4 w-4" />
                 Архив
               </TabsTrigger>
             )}
-            
+
             {user?.role === 'admin' && (
               <>
                 <TabsTrigger value="roles" className="flex items-center gap-2">
@@ -273,11 +341,50 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
 
           <TabsContent value="profile" className="space-y-6">
           {/* Personal Info */}
-          <Card>
+                    <Card>
             <CardHeader>
               <CardTitle>Личные данные</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
+            <div className="flex items-center space-x-4">
+              <div className="relative">
+                <Avatar className="h-20 w-20">
+                  <AvatarImage src={user.photoUrl || undefined} />
+                  <AvatarFallback className="text-lg">
+                    {user.fullName.split(' ').map(n => n[0]).join('')}
+                  </AvatarFallback>
+                </Avatar>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                >
+                  {isUploading ? (
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  ) : (
+                    <Camera className="h-4 w-4" />
+                  )}
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoUpload}
+                  className="hidden"
+                />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold">{user.fullName}</h3>
+                <p className="text-muted-foreground">{user.email}</p>
+                {/* <Badge variant="secondary" className="mt-1">
+                  {roleLabels[user.role] || user.role}
+                </Badge> */}
+              </div>
+            </div>
+          </CardContent>
+          <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">ФИО</Label>

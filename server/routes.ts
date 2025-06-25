@@ -516,6 +516,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Загрузка фотографии профиля пользователя
+  app.post('/api/users/:id/photo', requireAuth, upload.single('photo'), async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const currentUserId = req.session.userId;
+
+      // Пользователи могут менять только свою фотографию (кроме админов)
+      if (userId !== currentUserId && req.session.userRole !== 'admin') {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ message: "Файл не найден" });
+      }
+
+      // Проверка размера файла (максимум 5MB)
+      if (req.file.size > 5 * 1024 * 1024) {
+        return res.status(400).json({ message: "Размер файла не должен превышать 5MB" });
+      }
+
+      // Проверка типа файла
+      if (!req.file.mimetype.startsWith('image/')) {
+        return res.status(400).json({ message: "Файл должен быть изображением" });
+      }
+
+      // В реальном приложении здесь была бы загрузка в облачное хранилище
+      // Для демонстрации сохраняем как base64
+      const photoBuffer = req.file.buffer;
+      const photoBase64 = `data:${req.file.mimetype};base64,${photoBuffer.toString('base64')}`;
+
+      const updatedUser = await storage.updateUserPhoto(userId, photoBase64);
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Не возвращаем пароль
+      const { password: _, ...userWithoutPassword } = updatedUser;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error('User photo upload error:', error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Загрузка шаблонов документов
   app.post('/api/templates/responsibility-act', requireAuth, requireRole(['admin', 'accountant']), upload.single('template'), async (req, res) => {
     try {
