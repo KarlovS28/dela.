@@ -39,6 +39,13 @@ pm2 start ecosystem.config.js --env production
 
 ### 1. База данных PostgreSQL
 
+#### Для Replit:
+1. Откройте новую вкладку и введите "Database"
+2. Нажмите "create a database" 
+3. В разделе "Secrets" автоматически появится `DATABASE_URL`
+4. Скопируйте значение `DATABASE_URL` в ваш `.env` файл
+
+#### Для локального сервера:
 Создайте базу данных и пользователя:
 
 ```sql

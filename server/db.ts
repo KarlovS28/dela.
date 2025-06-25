@@ -20,7 +20,7 @@ const client = postgres(process.env.DATABASE_URL, {
   max: 10,
   idle_timeout: 20,
   connect_timeout: 60,
-  ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+  ssl: 'require', // Всегда используем SSL для Replit PostgreSQL
 });
 
 export const db = drizzle(client, { schema });
