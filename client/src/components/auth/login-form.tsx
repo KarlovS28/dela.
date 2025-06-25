@@ -86,15 +86,6 @@ export function LoginForm({ onSwitchToRegister }: LoginFormProps) {
           <Button type="submit" className="w-full" disabled={isLoginLoading}>
             {isLoginLoading ? "Вход..." : "Войти"}
           </Button>
-
-          <Button
-            type="button"
-            variant="ghost"
-            className="w-full"
-            onClick={onSwitchToRegister}
-          >
-            Нет аккаунта? Зарегистрироваться
-          </Button>
         </form>
       </CardContent>
     </Card>

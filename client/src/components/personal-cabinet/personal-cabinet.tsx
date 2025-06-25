@@ -233,12 +233,45 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Личный кабинет</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <Tabs defaultValue="profile" className="w-full">
+          <TabsList className={`grid w-full ${user?.role === 'admin' ? 'grid-cols-5' : 'grid-cols-3'}`}>
+            <TabsTrigger value="profile" className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              Профиль
+            </TabsTrigger>
+            
+            <TabsTrigger value="export-import" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Экспорт/Импорт
+            </TabsTrigger>
+            
+            {(user?.role === 'admin' || user?.role === 'accountant') && (
+              <TabsTrigger value="archive" className="flex items-center gap-2">
+                <Archive className="h-4 w-4" />
+                Архив
+              </TabsTrigger>
+            )}
+            
+            {user?.role === 'admin' && (
+              <>
+                <TabsTrigger value="roles" className="flex items-center gap-2">
+                  <Shield className="h-4 w-4" />
+                  Роли
+                </TabsTrigger>
+                <TabsTrigger value="register" className="flex items-center gap-2">
+                  <UserPlus className="h-4 w-4" />
+                  Регистрация
+                </TabsTrigger>
+              </>
+            )}
+          </TabsList>
+
+          <TabsContent value="profile" className="space-y-6">
           {/* Personal Info */}
           <Card>
             <CardHeader>
@@ -443,13 +476,73 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
             </Card>
           )}
 
-          {/* Управление пользователями - только для администратора */}
-          {user?.role === 'admin' && (
-            <div className="mt-6">
-              <UserManagement />
-            </div>
+          </TabsContent>
+
+          <TabsContent value="export-import">
+            <Card>
+              <CardHeader>
+                <CardTitle>Экспорт и импорт данных</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Export Section */}
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Экспорт</h4>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={handleExportInventory}
+                    disabled={isExporting}
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    {isExporting ? "Экспорт..." : "Инвентаризация (полные данные)"}
+                  </Button>
+                </div>
+
+                <Separator />
+
+                {/* Import Section */}
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Импорт</h4>
+                  <div className="space-y-2">
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isImporting}
+                    >
+                      <Upload className="mr-2 h-4 w-4" />
+                      {isImporting ? "Импорт..." : "Загрузить файл Excel"}
+                    </Button>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleImportFile}
+                      accept=".xlsx,.xls"
+                      className="hidden"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {(user?.role === 'admin' || user?.role === 'accountant') && (
+            <TabsContent value="archive">
+              <ArchivedEmployees />
+            </TabsContent>
           )}
-        </div>
+
+          {user?.role === 'admin' && (
+            <>
+              <TabsContent value="roles">
+                <RoleManagement />
+              </TabsContent>
+              <TabsContent value="register">
+                <UserRegistration />
+              </TabsContent>
+            </>
+          )}
+        </Tabs>
       </DialogContent>
     </Dialog>
 
