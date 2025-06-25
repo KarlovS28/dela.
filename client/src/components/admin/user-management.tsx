@@ -191,7 +191,7 @@ export function UserManagement() {
           <TableHeader>
             <TableRow>
               <TableHead>ФИО</TableHead>
-              <TableHead className="hidden sm:table-cell">Email</TableHead>
+              <TableHead>Email</TableHead>
               <TableHead>Роль</TableHead>
               <TableHead className="hidden md:table-cell">Дата регистрации</TableHead>
               <TableHead>Действия</TableHead>
@@ -201,7 +201,7 @@ export function UserManagement() {
             {users?.map((user) => (
               <TableRow key={user.id}>
                 <TableCell className="font-medium text-xs sm:text-sm">{user.fullName}</TableCell>
-                <TableCell className="hidden sm:table-cell text-xs sm:text-sm">{user.email}</TableCell>
+                <TableCell className="text-xs sm:text-sm">{user.email}</TableCell>
                 <TableCell>
                   {editingUserId === user.id ? (
                     <div className="flex items-center gap-2">
