@@ -2,8 +2,6 @@
 import { db } from "./db";
 import { roles, permissions, rolePermissions } from "@shared/schema";
 import { eq } from "drizzle-orm";
-import { users } from "@shared/schema";
-import bcrypt from 'bcrypt';
 
 export async function initializeRolesAndPermissions() {
   // Создаем базовые разрешения
@@ -14,21 +12,21 @@ export async function initializeRolesAndPermissions() {
     { name: "employees.edit", displayName: "Редактирование сотрудников", category: "employees", description: "Редактирование данных сотрудников" },
     { name: "employees.archive", displayName: "Архивирование сотрудников", category: "employees", description: "Увольнение и архивирование сотрудников" },
     { name: "employees.view_archive", displayName: "Просмотр архива", category: "employees", description: "Доступ к архиву уволенных сотрудников" },
-
+    
     // Отделы
     { name: "departments.view", displayName: "Просмотр отделов", category: "departments", description: "Просмотр структуры отделов" },
     { name: "departments.manage", displayName: "Управление отделами", category: "departments", description: "Создание и редактирование отделов" },
-
+    
     // Оборудование
     { name: "equipment.view", displayName: "Просмотр оборудования", category: "equipment", description: "Просмотр списка оборудования" },
     { name: "equipment.manage", displayName: "Управление оборудованием", category: "equipment", description: "Добавление, редактирование и удаление оборудования" },
     { name: "equipment.warehouse", displayName: "Управление складом", category: "equipment", description: "Доступ к складскому оборудованию" },
-
+    
     // Пользователи и роли
     { name: "users.view", displayName: "Просмотр пользователей", category: "users", description: "Просмотр списка пользователей системы" },
     { name: "users.manage", displayName: "Управление пользователями", category: "users", description: "Создание, редактирование и удаление пользователей" },
     { name: "roles.manage", displayName: "Управление ролями", category: "roles", description: "Создание и настройка ролей и разрешений" },
-
+    
     // Документы и отчеты
     { name: "documents.view", displayName: "Просмотр документов", category: "documents", description: "Доступ к паспортным данным и документам" },
     { name: "documents.print", displayName: "Печать документов", category: "documents", description: "Генерация и печать документов" },
@@ -138,25 +136,6 @@ export async function initializeRolesAndPermissions() {
       }
     }
   }
-  
-    // Создаем администратора по умолчанию
-    const [existingAdmin] = await db.select().from(users).where(eq(users.email, 'admin@admin.com'));
-    if (!existingAdmin) {
-      console.log("Creating default admin user...");
-      const hashedPassword = await bcrypt.hash('admin123', 10);
-
-      if (adminRole) {
-        await db.insert(users).values({
-          email: 'admin@admin.com',
-          password: hashedPassword,
-          fullName: 'Администратор системы',
-          roleId: adminRole.id // Связываем с ролью администратора
-        }).onConflictDoNothing();
-        console.log("Default admin user created: admin@admin.com / admin123");
-      } else {
-        console.warn("Admin role not found, cannot create default admin user.");
-      }
-    }
 
   console.log("Roles and permissions initialized successfully");
 }
