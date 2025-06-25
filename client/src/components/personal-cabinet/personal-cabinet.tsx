@@ -15,7 +15,7 @@ import { UserManagement } from "@/components/admin/user-management";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { canImportExport, canViewArchive } from "@/lib/auth-utils";
-import { Download, Upload, FileText, FileSpreadsheet, Archive, Shield } from "lucide-react";
+import { Download, Upload, FileText, FileSpreadsheet, Archive, Shield, User, Settings, UserPlus } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiRequest } from "@/lib/queryClient";
 import { Warehouse } from "@/components/warehouse/warehouse";
@@ -241,7 +241,7 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
         <Tabs defaultValue="profile" className="w-full">
           <TabsList className={`grid w-full ${user?.role === 'admin' ? 'grid-cols-5' : 'grid-cols-3'}`}>
             <TabsTrigger value="profile" className="flex items-center gap-2">
-              <UserIcon className="h-4 w-4" />
+              <User className="h-4 w-4" />
               Профиль
             </TabsTrigger>
             
