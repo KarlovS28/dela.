@@ -21,6 +21,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Warehouse } from "@/components/warehouse/warehouse";
 import { DecommissionedEquipment } from "@/components/decommissioned/decommissioned-equipment";
 import { RoleManagement } from "@/components/admin/role-management";
+import { UserRegistration } from "@/components/admin/user-registration";
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, "Введите текущий пароль"),

@@ -75,16 +75,16 @@ export function AnimatedLogo({
           <circle cx="60" cy="60" r="50" fill="url(#animatedGradient)" filter="url(#animatedGlow)"/>
           <circle cx="60" cy="60" r="35" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1"/>
           <path 
-            d="M35 35 L35 85 L50 85 Q65 85 65 70 L65 50 Q65 35 50 35 Z M45 45 L50 45 Q55 45 55 50 L55 70 Q55 75 50 75 L45 75 Z" 
+            d="M40 40 L40 80 L52 80 Q64 80 64 68 L64 52 Q64 40 52 40 Z M48 48 L52 48 Q56 48 56 52 L56 68 Q56 72 52 72 L48 72 Z" 
             fill="white" 
             opacity="0.95"
           />
-          <circle cx="75" cy="75" r="4" fill="white" opacity="0.95"/>
+          <circle cx="68" cy="68" r="3" fill="white" opacity="0.95"/>
         </svg>
       </div>
 
       {/* Анимированный текст */}
-      <div className="flex items-center">
+      <div className="flex items-center -space-x-1">
         {letters.map((letter, index) => (
           <div key={index} className="relative inline-block perspective-1000">
             {/* Страница, которая перелистывается */}
@@ -96,8 +96,8 @@ export function AnimatedLogo({
                 rounded-sm shadow-lg transform-gpu
               `}
               style={{
-                width: letter === '.' ? '20px' : '45px',
-                height: '60px',
+                width: letter === '.' ? '18px' : '38px',
+                height: '56px',
                 animationDelay: `${index * 0.4}s`,
                 transformOrigin: 'left center',
                 backfaceVisibility: 'hidden'
@@ -107,7 +107,7 @@ export function AnimatedLogo({
             {/* Буква */}
             <span
               className={`
-                relative z-10 inline-block text-6xl font-bold tracking-tight
+                relative z-10 inline-block text-5xl font-bold tracking-tight
                 ${theme === 'dark' ? 'text-white' : 'text-slate-800'}
                 ${index <= currentLetter ? 'animate-letter-reveal' : 'opacity-0'}
                 ${letter === '.' ? 'text-blue-500' : ''}
@@ -115,7 +115,7 @@ export function AnimatedLogo({
               style={{
                 animationDelay: `${index * 0.4 + 0.2}s`,
                 animationFillMode: 'forwards',
-                width: letter === '.' ? '20px' : '45px',
+                width: letter === '.' ? '18px' : '38px',
                 textAlign: 'center'
               }}
             >

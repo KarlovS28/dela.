@@ -21,7 +21,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
   }, [onComplete]);
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center ${
+    <div className={`fixed inset-0 z-50 flex items-center justify-center splash-screen ${
       theme === 'dark' 
         ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900' 
         : 'bg-gradient-to-br from-slate-50 via-white to-slate-100'
@@ -95,7 +95,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
       <div className="relative z-10 flex flex-col items-center space-y-8">
         <AnimatedLogo 
           size={120} 
-          className="animate-fade-in" 
+          className="animate-fade-in animated-logo" 
           autoStart={true}
         />
 

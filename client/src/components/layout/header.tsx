@@ -74,14 +74,14 @@ export function Header() {
               {/* User Profile */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center space-x-3 h-auto p-2">
-                    <Avatar className="w-10 h-10 border-2 border-primary">
+                  <Button variant="ghost" className="flex items-center space-x-2 sm:space-x-3 h-auto p-1 sm:p-2">
+                    <Avatar className="w-8 h-8 sm:w-10 sm:h-10 border-2 border-primary">
                       <AvatarImage src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face" />
-                      <AvatarFallback>
+                      <AvatarFallback className="text-xs sm:text-sm">
                         {user?.fullName?.split(" ").map(n => n[0]).join("") || "U"}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="hidden md:block text-left">
+                    <div className="hidden sm:block text-left">
                       <p className="text-sm font-medium">{user?.fullName}</p>
                       <p className="text-xs text-muted-foreground">
                         {user?.role ? getRoleDisplayName(user.role) : ""}
