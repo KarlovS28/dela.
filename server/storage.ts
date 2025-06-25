@@ -107,7 +107,7 @@ export class MemStorage implements IStorage {
   async getRolePermissions(roleId: number): Promise<Permission[]> { return []; }
   async getUserPermissions(userId: number): Promise<Permission[]> { return []; }
   async userHasPermission(userId: number, permissionName: string): Promise<boolean> { return false; }
-  
+
   async getNotifications(userId: number): Promise<Notification[]> { return []; }
   async createNotification(notification: InsertNotification): Promise<Notification> { throw new Error("Not implemented"); }
   async markNotificationAsRead(notificationId: number, userId: number): Promise<void> { throw new Error("Not implemented"); }
@@ -470,7 +470,8 @@ export class MemStorage implements IStorage {
 }
 
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, or, isNull, ne, like, inArray, desc } from "drizzle-orm";
+import * as schema from "@shared/schema";
 
 export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
@@ -615,7 +616,7 @@ export class DatabaseStorage implements IStorage {
   async authenticateUser(email: string, password: string): Promise<User | null> {
     const user = await this.getUserByEmail(email);
     if (!user) return null;
-    
+
     const isValid = await bcrypt.compare(password, user.password);
     return isValid ? user : null;
   }
@@ -708,7 +709,7 @@ export class DatabaseStorage implements IStorage {
       .set({ isArchived: true })
       .where(eq(employees.id, id))
       .returning();
-    
+
     return employee;
   }
 
@@ -797,6 +798,62 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return equipmentItem;
   }
+
+  // Метод для получения уведомлений (заглушка)
+  async getNotifications() {
+    // TODO: Реализовать получение уведомлений
+    return [];
+  }
+
+  // Методы для работы с запросами на регистрацию
+  async createRegistrationRequest(data: { email: string; password: string; fullName: string; role: string }) {
+    const [request] = await db
+      .insert(schema.registrationRequests)
+      .values({
+        email: data.email,
+        password: data.password,
+        fullName: data.fullName,
+        role: data.role,
+        status: 'pending',
+      })
+      .returning();
+    return request;
+  }
+
+  async getRegistrationRequests() {
+    return await db
+      .select()
+      .from(schema.registrationRequests)
+      .orderBy(desc(schema.registrationRequests.createdAt));
+  }
+
+  async getRegistrationRequestById(id: number) {
+    const [request] = await db
+      .select()
+      .from(schema.registrationRequests)
+      .where(eq(schema.registrationRequests.id, id));
+    return request;
+  }
+
+  async getRegistrationRequestByEmail(email: string) {
+    const [request] = await db
+      .select()
+      .from(schema.registrationRequests)
+      .where(eq(schema.registrationRequests.email, email));
+    return request;
+  }
+
+  async updateRegistrationRequestStatus(id: number, status: 'pending' | 'approved' | 'rejected') {
+    const [request] = await db
+      .update(schema.registrationRequests)
+      .set({ 
+        status,
+        updatedAt: new Date(),
+      })
+      .where(eq(schema.registrationRequests.id, id))
+      .returning();
+    return request;
+  }
 }
 
 class DatabaseStorageWithInit extends DatabaseStorage {
@@ -804,7 +861,7 @@ class DatabaseStorageWithInit extends DatabaseStorage {
     // Создаем администратора по умолчанию
     const adminEmail = "admin@admin.com";
     const adminExists = await this.getUserByEmail(adminEmail);
-    
+
     if (!adminExists) {
       const hashedPassword = await bcrypt.hash("POik09MN!", 10);
       await this.createUser({

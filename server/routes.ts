@@ -12,6 +12,7 @@ import MemoryStore from "memorystore";
 import * as XLSX from "xlsx"; // Библиотека для работы с Excel файлами
 import multer from "multer"; // Middleware для загрузки файлов
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType } from "docx"; // Библиотека для создания DOCX документов
+import bcrypt from 'bcrypt';
 
 // Extend session interface
 declare module 'express-session' {
@@ -76,6 +77,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Email and password are required" });
       }
 
+      // Сначала проверяем, есть ли неподтвержденный запрос на регистрацию
+      const pendingRequest = await storage.getRegistrationRequestByEmail(email);
+      if (pendingRequest && pendingRequest.status === 'pending') {
+        return res.status(403).json({
+          message: "Ваш запрос на регистрацию ещё не подтвержден администратором. Пожалуйста, дождитесь подтверждения."
+        });
+      }
+
+      if (pendingRequest && pendingRequest.status === 'rejected') {
+        return res.status(403).json({
+          message: "Ваш запрос на регистрацию был отклонен администратором."
+        });
+      }
+
       const user = await storage.authenticateUser(email, password);
       if (!user) {
         return res.status(401).json({ message: "Invalid credentials" });
@@ -93,37 +108,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/auth/register', async (req, res) => {
+  // Создание запроса на регистрацию
+  app.post("/api/auth/register", async (req, res) => {
     try {
-      if (!req.session?.userId) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
-      
-      const currentUser = await storage.getUser(req.session.userId);
-      if (!currentUser || currentUser.role !== 'admin') {
-        return res.status(403).json({ message: "Только администраторы могут регистрировать пользователей" });
-      }
-
       const { email, password, fullName, role = "accountant" } = req.body;
 
+      if (!email || !password || !fullName) {
+        return res.status(400).json({ message: "Все поля обязательны" });
+      }
+
+      // Проверяем, существует ли пользователь
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
         return res.status(400).json({ message: "Пользователь с таким email уже существует" });
       }
 
+      // Проверяем, есть ли уже запрос на регистрацию с таким email
+      const existingRequest = await storage.getRegistrationRequestByEmail(email);
+      if (existingRequest) {
+        return res.status(400).json({ message: "Запрос на регистрацию с таким email уже существует" });
+      }
+
+      // Хешируем пароль
       const hashedPassword = await bcrypt.hash(password, 10);
-      const user = await storage.createUser({
+
+      // Создаем запрос на регистрацию
+      const request = await storage.createRegistrationRequest({
         email,
         password: hashedPassword,
         fullName,
-        role
+        role,
       });
 
-      const { password: _, ...userWithoutPassword } = user;
-      res.status(201).json(userWithoutPassword);
+      res.status(201).json({
+        message: "Запрос на регистрацию создан",
+        requestId: request.id,
+      });
     } catch (error) {
-      console.error("Registration error:", error);
-      res.status(500).json({ message: "Ошибка при регистрации пользователя" });
+      console.error("Registration request error:", error);
+      res.status(500).json({ message: "Ошибка сервера" });
     }
   });
 
@@ -258,7 +281,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid employee ID" });
       }
-      
+
       const employee = await storage.getEmployee(id);
 
       if (!employee) {
@@ -321,7 +344,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid employee ID" });
       }
-      
+
       const employee = await storage.archiveEmployee(id);
       res.json(employee);
     } catch (error) {
@@ -448,9 +471,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Для демонстрации просто возвращаем успех
       console.log('Uploaded responsibility act template:', req.file.originalname, req.file.size, 'bytes');
 
-      res.json({ 
+      res.json({
         message: "Шаблон акта материальной ответственности успешно загружен",
-        filename: req.file.originalname 
+        filename: req.file.originalname
       });
     } catch (error) {
       console.error('Template upload error:', error);
@@ -468,9 +491,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Для демонстрации просто возвращаем успех
       console.log('Uploaded termination checklist template:', req.file.originalname, req.file.size, 'bytes');
 
-      res.json({ 
+      res.json({
         message: "Шаблон обходного листа успешно загружен",
-        filename: req.file.originalname 
+        filename: req.file.originalname
       });
     } catch (error) {
       console.error('Template upload error:', error);
@@ -491,14 +514,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         if (equipment.length === 0) {
           data.push({
-              '№ п/п': index++,
-              'ФИО сотрудника': employee.fullName,
-              'Наименование имущества': '',
-              'Инвентарный номер': '',
-              'Категория': '',
-              'Характеристики': '',
-              'Стоимость имущества': ''
-            });
+            '№ п/п': index++,
+            'ФИО сотрудника': employee.fullName,
+            'Наименование имущества': '',
+            'Инвентарный номер': '',
+            'Категория': '',
+            'Характеристики': '',
+            'Стоимость имущества': ''
+          });
         } else {
           // Поддержка нескольких единиц имущества для одного сотрудника
           equipment.forEach((item, equipmentIndex) => {
@@ -759,7 +782,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
 
         // Полные данные только для админа и бухгалтера
-        if (['admin', 'accountant'].includes(userRole!)) {
+        if (['admin', 'accountant'].includes(user<replit_final_file>
+Role!)) {
           Object.assign(baseData, {
             'Грейд': employee.grade,
             'Серия паспорта': employee.passportSeries || '',
@@ -861,7 +885,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           if (row['Наименование оборудования'] && row['Инвентарный номер']) {
             const inventoryNumber = String(row['Инвентарный номер']).trim();
-            
+
             // Проверяем, не существует ли уже такой инвентарный номер
             if (existingInventoryNumbers.has(inventoryNumber)) {
               skippedCount++;
@@ -873,8 +897,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               inventoryNumber,
               characteristics: row['Характеристики'] ? String(row['Характеристики']).trim() : undefined,
               cost: row['Стоимость'] ? String(row['Стоимость']).trim() : '0',
-              category: row['Категория'] && String(row['Категория']).trim().toLowerCase().includes('мебель') 
-                ? 'Мебель' as const 
+              category: row['Категория'] && String(row['Категория']).trim().toLowerCase().includes('мебель')
+                ? 'Мебель' as const
                 : 'Техника' as const,
               employeeId: null, // На склад
             };
@@ -889,9 +913,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      res.json({ 
-        message: `Импортировано ${importedCount} единиц оборудования на склад${skippedCount > 0 ? `, пропущено ${skippedCount} существующих` : ''}`, 
-        errors: errors.length > 0 ? errors : null 
+      res.json({
+        message: `Импортировано ${importedCount} единиц оборудования на склад${skippedCount > 0 ? `, пропущено ${skippedCount} существующих` : ''}`,
+        errors: errors.length > 0 ? errors : null
       });
     } catch (error) {
       console.error("Import warehouse equipment error:", error);
@@ -1056,7 +1080,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Добавляем оборудование, если оно указано и не дублируется
             if (row['Наименование имущества'] && row['Инвентарный номер']) {
               const inventoryNumber = String(row['Инвентарный номер']).trim();
-              
+
               if (!existingInventoryNumbers.has(inventoryNumber)) {
                 const equipmentData = {
                   name: String(row['Наименование имущества']).trim(),
@@ -1071,23 +1095,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 equipmentCount++;
               }
             }
-          } 
+          }
           // Если ФИО пустое, но есть оборудование - привязываем к последнему сотруднику
-          else if ((!row['ФИО'] || String(row['ФИО']).trim() === '') && 
-                   row['Наименование имущества'] && 
-                   row['Инвентарный номер'] && 
-                   lastEmployeeId) {
+          else if ((!row['ФИО'] || String(row['ФИО']).trim() === '') &&
+            row['Наименование имущества'] &&
+            row['Инвентарный номер'] &&
+            lastEmployeeId) {
 
             const inventoryNumber = String(row['Инвентарный номер']).trim();
-            
+
             if (!existingInventoryNumbers.has(inventoryNumber)) {
               const equipmentData = {
                 name: String(row['Наименование имущества']).trim(),
                 inventoryNumber,
                 characteristics: row['Характеристики'] ? String(row['Характеристики']).trim() : undefined,
                 cost: row['Стоимость'] || row['Стоимость имущества'] ? String(row['Стоимость'] || row['Стоимость имущества']).trim() : '0',
-                category: row['Категория'] && String(row['Категория']).trim().toLowerCase().includes('мебель') 
-                  ? 'Мебель' as const 
+                category: row['Категория'] && String(row['Категория']).trim().toLowerCase().includes('мебель')
+                  ? 'Мебель' as const
                   : 'Техника' as const,
                 employeeId: lastEmployeeId,
               };
@@ -1103,9 +1127,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      res.json({ 
-        message: `Импортировано ${importedCount} новых сотрудников${equipmentCount > 0 ? `, ${equipmentCount} единиц оборудования` : ''}${createdDepartments > 0 ? `, создано ${createdDepartments} отделов` : ''}${skippedCount > 0 ? `, пропущено ${skippedCount} существующих сотрудников` : ''}`, 
-        errors: errors.length > 0 ? errors : null 
+      res.json({
+        message: `Импортировано ${importedCount} новых сотрудников${equipmentCount > 0 ? `, ${equipmentCount} единиц оборудования` : ''}${createdDepartments > 0 ? `, создано ${createdDepartments} отделов` : ''}${skippedCount > 0 ? `, пропущено ${skippedCount} существующих сотрудников` : ''}`,
+        errors: errors.length > 0 ? errors : null
       });
     } catch (error) {
       console.error("Import employees error:", error);
@@ -1150,9 +1174,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      res.json({ 
-        message: `Импортировано ${importedCount} единиц оборудования`, 
-        errors: errors.length > 0 ? errors : null 
+      res.json({
+        message: `Импортировано ${importedCount} единиц оборудования`,
+        errors: errors.length > 0 ? errors : null
       });
     } catch (error) {
       console.error("Import equipment error:", error);
@@ -1355,27 +1379,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   return new TableRow({
                     children: [
                       new TableCell({
-                        children: [new Paragraph({ 
+                        children: [new Paragraph({
                           children: [new TextRun({ text: (index + 1).toString(), size: 18 })],
                           alignment: AlignmentType.CENTER,
                           spacing: { line: 240 }
                         })],
                       }),
                       new TableCell({
-                        children: [new Paragraph({ 
+                        children: [new Paragraph({
                           children: [new TextRun({ text: item?.name || "", size: 18 })],
                           spacing: { line: 240 }
                         })],
                       }),
                       new TableCell({
-                        children: [new Paragraph({ 
+                        children: [new Paragraph({
                           children: [new TextRun({ text: item?.inventoryNumber || "", size: 18 })],
                           alignment: AlignmentType.CENTER,
                           spacing: { line: 240 }
                         })],
                       }),
                       new TableCell({
-                        children: [new Paragraph({ 
+                        children: [new Paragraph({
                           children: [new TextRun({ text: item?.cost || "", size: 18 })],
                           alignment: AlignmentType.RIGHT,
                           spacing: { line: 240 }
@@ -1388,32 +1412,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 new TableRow({
                   children: [
                     new TableCell({
-                      children: [new Paragraph({ 
+                      children: [new Paragraph({
                         children: [new TextRun({ text: "", size: 18 })],
                         alignment: AlignmentType.CENTER,
                         spacing: { line: 240 }
                       })],
                     }),
                     new TableCell({
-                      children: [new Paragraph({ 
+                      children: [new Paragraph({
                         children: [new TextRun({ text: "Итого:", bold: true, size: 18 })],
                         alignment: AlignmentType.RIGHT,
                         spacing: { line: 240 }
                       })],
                     }),
                     new TableCell({
-                      children: [new Paragraph({ 
+                      children: [new Paragraph({
                         children: [new TextRun({ text: "", size: 18 })],
                         alignment: AlignmentType.CENTER,
                         spacing: { line: 240 }
                       })],
                     }),
                     new TableCell({
-                      children: [new Paragraph({ 
-                        children: [new TextRun({ 
-                          text: employee.equipment?.reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0).toFixed(2) || "0.00", 
-                          bold: true, 
-                          size: 18 
+                      children: [new Paragraph({
+                        children: [new TextRun({
+                          text: employee.equipment?.reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0).toFixed(2) || "0.00",
+                          bold: true,
+                          size: 18
                         })],
                         alignment: AlignmentType.RIGHT,
                         spacing: { line: 240 }
@@ -1464,25 +1488,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
               spacing: { after: 400, line: 240 },
               indent: { firstLine: 360 }
             }),
-            new Paragraph({ 
+            new Paragraph({
               children: [new TextRun({ text: "Заказчик                                                                          Работник", bold: true, size: 20 })],
               spacing: { after: 400, line: 240 },
               indent: { firstLine: 360 }
             }),
-            new Paragraph({ 
+            new Paragraph({
               children: [new TextRun({ text: "", size: 20 })],
               spacing: { after: 400, line: 240 },
               indent: { firstLine: 360 }
             }),
-            new Paragraph({ 
+            new Paragraph({
               children: [new TextRun({ text: "", size: 20 })],
               spacing: { after: 400, line: 240 },
               indent: { firstLine: 360 }
             }),
-            new Paragraph({ 
-              children: [new TextRun({ 
-                text: `________________(Скородедов Ф.И.)                            ________________(${employee.fullName.split(' ')[0]} ${employee.fullName.split(' ')[1]?.charAt(0) || ''}.${employee.fullName.split(' ')[2]?.charAt(0) || ''}.`, 
-                size: 20 
+            new Paragraph({
+              children: [new TextRun({
+                text: `________________(Скородедов Ф.И.)                            ________________(${employee.fullName.split(' ')[0]} ${employee.fullName.split(' ')[1]?.charAt(0) || ''}.${employee.fullName.split(' ')[2]?.charAt(0) || ''}.`,
+                size: 20
               })],
               spacing: { line: 240 },
               indent: { firstLine: 360 }
@@ -1831,7 +1855,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const httpServer = createServer(app);
   // Notification routes
-  app.get('/api/notifications', requireAuth, async (req, res) => {
+  app.get("/api/notifications", requireAuth, async (req, res) => {
     try {
       const notifications = await storage.getNotifications(req.session.userId);
       res.json(notifications);
@@ -1859,6 +1883,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Mark all notifications as read error:", error);
       res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Получение запросов на регистрацию (только для администраторов)
+  app.get("/api/registration-requests", requireAuth, requireRole(["admin"]), async (req, res) => {
+    try {
+      const requests = await storage.getRegistrationRequests();
+      res.json(requests);
+    } catch (error) {
+      console.error("Get registration requests error:", error);
+      res.status(500).json({ message: "Ошибка сервера" });
+    }
+  });
+
+  // Одобрение запроса на регистрацию
+  app.put("/api/registration-requests/:id/approve", requireAuth, requireRole(["admin"]), async (req, res) => {
+    try {
+      const requestId = parseInt(req.params.id);
+      const request = await storage.getRegistrationRequestById(requestId);
+
+      if (!request) {
+        return res.status(404).json({ message: "Запрос не найден" });
+      }
+
+      if (request.status !== 'pending') {
+        return res.status(400).json({ message: "Запрос уже обработан" });
+      }
+
+      // Создаем пользователя
+      const user = await storage.createUser({
+        email: request.email,
+        password: request.password, // пароль уже захеширован
+        fullName: request.fullName,
+        role: request.role,
+      });
+
+      // Обновляем статус запроса
+      await storage.updateRegistrationRequestStatus(requestId, 'approved');
+
+      res.json({ message: "Запрос одобрен, пользователь создан", userId: user.id });
+    } catch (error) {
+      console.error("Approve registration request error:", error);
+      res.status(500).json({ message: "Ошибка сервера" });
+    }
+  });
+
+  // Отклонение запроса на регистрацию
+  app.put("/api/registration-requests/:id/reject", requireAuth, requireRole(["admin"]), async (req, res) => {
+    try {
+      const requestId = parseInt(req.params.id);
+      const request = await storage.getRegistrationRequestById(requestId);
+
+      if (!request) {
+        return res.status(404).json({ message: "Запрос не найден" });
+      }
+
+      if (request.status !== 'pending') {
+        return res.status(400).json({ message: "Запрос уже обработан" });
+      }
+
+      // Обновляем статус запроса
+      await storage.updateRegistrationRequestStatus(requestId, 'rejected');
+
+      res.json({ message: "Запрос отклонен" });
+    } catch (error) {
+      console.error("Reject registration request error:", error);
+      res.status(500).json({ message: "Ошибка сервера" });
     }
   });
 

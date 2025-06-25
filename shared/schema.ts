@@ -121,6 +121,22 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
   createdAt: true,
 });
 
+// Таблица запросов на регистрацию
+export const registrationRequests = pgTable("registration_requests", {
+  id: serial("id").primaryKey(),
+  email: varchar("email", { length: 255 }).unique().notNull(),
+  password: text("password").notNull(), // уже захешированный пароль
+  fullName: varchar("full_name", { length: 255 }).notNull(),
+  role: varchar("role", { length: 50 }).notNull(),
+  status: varchar("status", { length: 20 }).default('pending').notNull(), // pending, approved, rejected
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type RegistrationRequest = typeof registrationRequests.$inferSelect;
+export type InsertRegistrationRequest = typeof registrationRequests.$inferInsert;
+export const insertRegistrationRequestSchema = createInsertSchema(registrationRequests);
+
 export const insertDepartmentSchema = createInsertSchema(departments).omit({
   id: true,
   createdAt: true,

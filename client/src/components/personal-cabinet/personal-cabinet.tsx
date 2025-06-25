@@ -15,13 +15,13 @@ import { UserManagement } from "@/components/admin/user-management";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { canImportExport, canViewArchive } from "@/lib/auth-utils";
-import { Download, Upload, FileText, FileSpreadsheet, Archive, Shield, User, Settings, UserPlus } from "lucide-react";
+import { Download, Upload, FileText, FileSpreadsheet, Archive, Shield, User, Settings, UserCheck } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiRequest } from "@/lib/queryClient";
 import { Warehouse } from "@/components/warehouse/warehouse";
 import { DecommissionedEquipment } from "@/components/decommissioned/decommissioned-equipment";
 import { RoleManagement } from "@/components/admin/role-management";
-import { UserRegistration } from "@/components/admin/user-registration";
+import { RegistrationRequests } from "@/components/admin/registration-requests";
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, "Введите текущий пароль"),
@@ -264,8 +264,8 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
                   Роли
                 </TabsTrigger>
                 <TabsTrigger value="register" className="flex items-center gap-2">
-                  <UserPlus className="h-4 w-4" />
-                  Регистрация
+                  <UserCheck className="h-4 w-4" />
+                  Запросы
                 </TabsTrigger>
               </>
             )}
@@ -541,7 +541,7 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
                 </div>
               </TabsContent>
               <TabsContent value="register">
-                <UserRegistration />
+                <RegistrationRequests />
               </TabsContent>
             </>
           )}

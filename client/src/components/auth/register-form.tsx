@@ -41,13 +41,13 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
     try {
       await register(data);
       toast({
-        title: "Успешная регистрация",
-        description: "Добро пожаловать в систему dela!",
+        title: "Запрос отправлен",
+        description: "Ваш запрос на регистрацию отправлен администратору для рассмотрения",
       });
     } catch (error) {
       toast({
-        title: "Ошибка регистрации",
-        description: "Пользователь с таким email уже существует",
+        title: "Ошибка отправки запроса",
+        description: "Пользователь с таким email уже существует или запрос уже отправлен",
         variant: "destructive",
       });
     }
@@ -118,7 +118,7 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
           </div>
 
           <Button type="submit" className="w-full" disabled={isRegisterLoading}>
-            {isRegisterLoading ? "Регистрация..." : "Зарегистрироваться"}
+            {isRegisterLoading ? "Отправка запроса..." : "Отправить запрос на регистрацию"}
           </Button>
 
           <Button
