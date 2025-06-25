@@ -779,8 +779,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'ФИО': employee.fullName,
           'Пол': employee.gender || '',
           'Должность': employee.position,
-          'Отдел': departmentMap.get(employee.departmentId!)```text
- || ''
+          'Отдел': departmentMap.get(employee.departmentId!) || ''
         };
 
         // Полные данные только для админа и бухгалтера
