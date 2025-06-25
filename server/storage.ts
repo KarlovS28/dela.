@@ -788,4 +788,35 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-export const storage = new DatabaseStorage();
+class DatabaseStorageWithInit extends DatabaseStorage {
+  private async initializeDefaultData() {
+    // Создаем администратора по умолчанию
+    const adminEmail = "admin@admin.com";
+    const adminExists = await this.getUserByEmail(adminEmail);
+    
+    if (!adminExists) {
+      const hashedPassword = await bcrypt.hash("POik09MN!", 10);
+      await this.createUser({
+        email: adminEmail,
+        password: hashedPassword,
+        fullName: "Системный администратор",
+        role: "admin"
+      });
+    }
+  }
+
+  async initialize() {
+    await this.initializeDefaultData();
+  }
+}
+
+export const storage = new DatabaseStorageWithInit();
+
+// Инициализируем данные по умолчанию
+(async () => {
+  try {
+    await storage.initialize();
+  } catch (error) {
+    console.error('Error initializing default data:', error);
+  }
+})();

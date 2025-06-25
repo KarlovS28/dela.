@@ -110,6 +110,53 @@
   animation: letter-reveal 0.4s ease-out forwards;
 }
 
+/* Адаптивность для мобильных устройств */
+@media screen and (max-width: 768px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .text-6xl {
+    font-size: 2.5rem;
+    line-height: 1;
+  }
+  
+  .text-5xl {
+    font-size: 2rem;
+    line-height: 1;
+  }
+}
+
+/* iPhone 12-16 Pro Max оптимизация */
+@media screen and (max-width: 428px) and (max-height: 926px) {
+  .splash-screen {
+    padding: 2rem 1rem;
+  }
+  
+  .animated-logo {
+    transform: scale(0.8);
+  }
+}
+
+/* iPhone 12-16 Mini оптимизация */
+@media screen and (max-width: 375px) and (max-height: 812px) {
+  .splash-screen {
+    padding: 1.5rem 0.75rem;
+  }
+  
+  .animated-logo {
+    transform: scale(0.7);
+  }
+}
+
+/* Планшеты */
+@media screen and (min-width: 768px) and (max-width: 1024px) {
+  .container {
+    max-width: 95%;
+  }
+}
+
 :root {
   --background: hsl(0, 0%, 100%);
   --foreground: hsl(240, 10%, 3.9%);

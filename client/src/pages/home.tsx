@@ -13,7 +13,7 @@ export default function Home() {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-destructive mb-4">Ошибка загрузки данных</h2>
             <p className="text-muted-foreground">Попробуйте обновить страницу</p>

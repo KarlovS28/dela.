@@ -49,25 +49,26 @@ export function Header() {
   return (
     <>
       <header className="bg-background border-b border-border sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+          <div className="flex justify-between items-center h-14 sm:h-16">
             {/* Logo */}
             <div className="flex items-center">
               <h1 className="text-3xl font-bold text-primary">dela.</h1>
             </div>
 
             {/* User Menu */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-1 sm:space-x-2">
               {/* Theme Toggle */}
               <Button
                 variant="ghost"
-                size="icon"
+                size="icon" 
+                className="h-8 w-8 sm:h-10 sm:w-10"
                 onClick={toggleTheme}
               >
                 {theme === "dark" ? (
-                  <Sun className="h-5 w-5" />
+                  <Sun className="h-4 w-4" />
                 ) : (
-                  <Moon className="h-5 w-5" />
+                  <Moon className="h-4 w-4" />
                 )}
               </Button>
 

@@ -84,7 +84,7 @@ export function AnimatedLogo({
       </div>
 
       {/* Анимированный текст */}
-      <div className="flex items-center -space-x-1">
+      <div className="flex items-center -space-x-2">
         {letters.map((letter, index) => (
           <div key={index} className="relative inline-block perspective-1000">
             {/* Страница, которая перелистывается */}
@@ -96,8 +96,8 @@ export function AnimatedLogo({
                 rounded-sm shadow-lg transform-gpu
               `}
               style={{
-                width: letter === '.' ? '18px' : '38px',
-                height: '56px',
+                width: letter === '.' ? '16px' : '32px',
+                height: '52px',
                 animationDelay: `${index * 0.4}s`,
                 transformOrigin: 'left center',
                 backfaceVisibility: 'hidden'
@@ -115,7 +115,7 @@ export function AnimatedLogo({
               style={{
                 animationDelay: `${index * 0.4 + 0.2}s`,
                 animationFillMode: 'forwards',
-                width: letter === '.' ? '18px' : '38px',
+                width: letter === '.' ? '16px' : '32px',
                 textAlign: 'center'
               }}
             >
