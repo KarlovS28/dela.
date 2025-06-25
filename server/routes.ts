@@ -13,7 +13,7 @@ import * as XLSX from "xlsx"; // Библиотека для работы с Exc
 import multer from "multer"; // Middleware для загрузки файлов
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, HeadingLevel } from "docx"; // Библиотека для создания DOCX документов
 import bcrypt from 'bcrypt';
-import ExcelJS from "exceljs";
+import * as ExcelJS from "exceljs";
 
 // Extend session interface
 declare module 'express-session' {
