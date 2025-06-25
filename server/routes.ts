@@ -782,8 +782,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
 
         // Полные данные только для админа и бухгалтера
-        if (['admin', 'accountant'].includes(user<replit_final_file>
-Role!)) {
+        if (['admin', 'accountant'].includes(userRole!)) {
           Object.assign(baseData, {
             'Грейд': employee.grade,
             'Серия паспорта': employee.passportSeries || '',

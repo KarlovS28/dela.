@@ -83,9 +83,9 @@ export interface IStorage {
   getUserPermissions(userId: number): Promise<Permission[]>;
   userHasPermission(userId: number, permissionName: string): Promise<boolean>;
 
-  // Notification management
-  getNotifications(userId: number): Promise<Notification[]>;
-  createNotification(notification: InsertNotification): Promise<Notification>;
+  // Notification management (заглушки для совместимости)
+  getNotifications(userId: number): Promise<any[]>;
+  createNotification(notification: any): Promise<any>;
   markNotificationAsRead(notificationId: number, userId: number): Promise<void>;
   markAllNotificationsAsRead(userId: number): Promise<void>;
 }
@@ -108,8 +108,8 @@ export class MemStorage implements IStorage {
   async getUserPermissions(userId: number): Promise<Permission[]> { return []; }
   async userHasPermission(userId: number, permissionName: string): Promise<boolean> { return false; }
 
-  async getNotifications(userId: number): Promise<Notification[]> { return []; }
-  async createNotification(notification: InsertNotification): Promise<Notification> { throw new Error("Not implemented"); }
+  async getNotifications(userId: number): Promise<any[]> { return []; }
+  async createNotification(notification: any): Promise<any> { throw new Error("Not implemented"); }
   async markNotificationAsRead(notificationId: number, userId: number): Promise<void> { throw new Error("Not implemented"); }
   async markAllNotificationsAsRead(userId: number): Promise<void> { throw new Error("Not implemented"); }
   private users: Map<number, User>;
@@ -799,10 +799,23 @@ export class DatabaseStorage implements IStorage {
     return equipmentItem;
   }
 
-  // Метод для получения уведомлений (заглушка)
-  async getNotifications() {
+  // Методы для работы с уведомлениями (заглушки)
+  async getNotifications(userId: number) {
     // TODO: Реализовать получение уведомлений
     return [];
+  }
+
+  async createNotification(notification: any) {
+    // TODO: Реализовать создание уведомлений
+    throw new Error("Not implemented");
+  }
+
+  async markNotificationAsRead(notificationId: number, userId: number) {
+    // TODO: Реализовать отметку как прочитанное
+  }
+
+  async markAllNotificationsAsRead(userId: number) {
+    // TODO: Реализовать отметку всех как прочитанных
   }
 
   // Методы для работы с запросами на регистрацию
