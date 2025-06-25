@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { PersonalCabinet } from "@/components/personal-cabinet/personal-cabinet";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { LogoIcon } from "@/components/ui/logo";
 import { DownloadLogo } from "@/components/ui/download-logo";
 import { useAuth } from "@/hooks/use-auth";
@@ -71,6 +72,9 @@ export function Header() {
                   <Moon className="h-4 w-4" />
                 )}
               </Button>
+
+              {/* Notifications */}
+              <NotificationBell />
 
               {/* User Profile */}
               <DropdownMenu>

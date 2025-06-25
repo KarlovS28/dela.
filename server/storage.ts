@@ -82,6 +82,12 @@ export interface IStorage {
   // User permissions check
   getUserPermissions(userId: number): Promise<Permission[]>;
   userHasPermission(userId: number, permissionName: string): Promise<boolean>;
+
+  // Notification management
+  getNotifications(userId: number): Promise<Notification[]>;
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  markNotificationAsRead(notificationId: number, userId: number): Promise<void>;
+  markAllNotificationsAsRead(userId: number): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -101,6 +107,11 @@ export class MemStorage implements IStorage {
   async getRolePermissions(roleId: number): Promise<Permission[]> { return []; }
   async getUserPermissions(userId: number): Promise<Permission[]> { return []; }
   async userHasPermission(userId: number, permissionName: string): Promise<boolean> { return false; }
+  
+  async getNotifications(userId: number): Promise<Notification[]> { return []; }
+  async createNotification(notification: InsertNotification): Promise<Notification> { throw new Error("Not implemented"); }
+  async markNotificationAsRead(notificationId: number, userId: number): Promise<void> { throw new Error("Not implemented"); }
+  async markAllNotificationsAsRead(userId: number): Promise<void> { throw new Error("Not implemented"); }
   private users: Map<number, User>;
   private departments: Map<number, Department>;
   private employees: Map<number, Employee>;

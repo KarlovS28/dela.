@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Shield, Key } from "lucide-react";
+import { Trash2, Shield, Key, Edit2 } from "lucide-react";
 
 interface User {
   id: number;
@@ -38,7 +38,9 @@ const roleBadgeVariants: Record<string, string> = {
 export function UserManagement() {
   const [editingUserId, setEditingUserId] = useState<number | null>(null);
   const [passwordDialogUserId, setPasswordDialogUserId] = useState<number | null>(null);
+  const [nameDialogUserId, setNameDialogUserId] = useState<number | null>(null);
   const [newPassword, setNewPassword] = useState("");
+  const [newFullName, setNewFullName] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
