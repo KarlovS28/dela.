@@ -354,7 +354,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/employees', requireAuth, requireRole(['admin', 'sysadmin']), async (req, res) => {
     try {
       const employeeData = insertEmployeeSchema.parse(req.body);
-      const employee = await storage.createEmployee(employeeData);
+      const employee = await storage.createEmployee(employeeData, req.session.userId);
       res.json(employee);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -379,11 +379,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .filter(key => allowedFields.includes(key))
           .reduce((obj, key) => ({ ...obj, [key]: updateData[key] }), {});
 
-        const employee = await storage.updateEmployee(id, filteredData);
+        const employee = await storage.updateEmployee(id, filteredData, req.session.userId);
         res.json(employee);
       } else if (userRole === 'accountant' || userRole === 'admin') {
         // Accountant and admin can update all fields
-        const employee = await storage.updateEmployee(id, updateData);
+        const employee = await storage.updateEmployee(id, updateData, req.session.userId);
         res.json(employee);
       } else {
         res.status(403).json({ message: "Forbidden" });
@@ -401,7 +401,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid employee ID" });
       }
 
-      const employee = await storage.archiveEmployee(id);
+      const employee = await storage.archiveEmployee(id, req.session.userId);
       res.json(employee);
     } catch (error) {
       console.error("Archive employee error:", error);
@@ -413,7 +413,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/equipment', requireAuth, requireRole(['admin', 'sysadmin', 'office-manager']), async (req, res) => {
     try {
       const equipmentData = insertEquipmentSchema.parse(req.body);
-      const equipment = await storage.createEquipment(equipmentData);
+      const equipment = await storage.createEquipment(equipmentData, req.session.userId);
       res.json(equipment);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -428,7 +428,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const updateData = req.body;
-      const equipment = await storage.updateEquipment(id, updateData);
+      const equipment = await storage.updateEquipment(id, updateData, req.session.userId);
       res.json(equipment);
     } catch (error) {
       console.error("Update equipment error:", error);
@@ -2005,6 +2005,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Reject registration request error:", error);
       res.status(500).json({ message: "Ошибка сервера" });
+    }
+  });
+
+  // Получение истории изменений (аудит-логи)
+  app.get("/api/audit-logs", requireAuth, requireRole(["admin"]), async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 100;
+      const logs = await storage.getAuditLogs(limit);
+      res.json(logs);
+    } catch (error) {
+      console.error("Get audit logs error:", error);
+      res.status(500).json({ message: "Internal server error" });
     }
   });
 

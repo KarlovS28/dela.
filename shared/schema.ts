@@ -82,45 +82,6 @@ export const rolePermissions = pgTable("role_permissions", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const notifications = pgTable("notifications", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
-  title: text("title").notNull(),
-  message: text("message").notNull(),
-  type: text("type").notNull(),
-  relatedId: integer("related_id"),
-  isRead: boolean("is_read").default(false).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-// Insert schemas
-export const insertUserSchema = createInsertSchema(users).omit({
-  id: true,
-  createdAt: true,
-}).extend({
-  role: z.string().min(1, "Роль обязательна"),
-});
-
-export const insertRoleSchema = createInsertSchema(roles).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertPermissionSchema = createInsertSchema(permissions).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertRolePermissionSchema = createInsertSchema(rolePermissions).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertNotificationSchema = createInsertSchema(notifications).omit({
-  id: true,
-  createdAt: true,
-});
-
 // Таблица запросов на регистрацию
 export const registrationRequests = pgTable("registration_requests", {
   id: serial("id").primaryKey(),
@@ -131,6 +92,29 @@ export const registrationRequests = pgTable("registration_requests", {
   status: varchar("status", { length: 20 }).default('pending').notNull(), // pending, approved, rejected
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  type: text("type").notNull(), // employee_update, role_change, equipment_change, etc.
+  relatedId: integer("related_id"), // ID связанной записи (сотрудника, оборудования и т.д.)
+  isRead: boolean("is_read").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const auditLog = pgTable("audit_log", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  action: text("action").notNull(), // create, update, delete, archive
+  entityType: text("entity_type").notNull(), // employee, equipment, user, etc.
+  entityId: integer("entity_id").notNull(),
+  oldValues: text("old_values"), // JSON строка со старыми значениями
+  newValues: text("new_values"), // JSON строка с новыми значениями
+  description: text("description").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export type RegistrationRequest = typeof registrationRequests.$inferSelect;

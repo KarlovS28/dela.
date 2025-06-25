@@ -83,11 +83,16 @@ export interface IStorage {
   getUserPermissions(userId: number): Promise<Permission[]>;
   userHasPermission(userId: number, permissionName: string): Promise<boolean>;
 
-  // Notification management (заглушки для совместимости)
+  // Notification management
   getNotifications(userId: number): Promise<any[]>;
   createNotification(notification: any): Promise<any>;
   markNotificationAsRead(notificationId: number, userId: number): Promise<void>;
   markAllNotificationsAsRead(userId: number): Promise<void>;
+
+  // Audit management
+  createAuditLog(auditData: any): Promise<any>;
+  getAuditLogs(limit?: number): Promise<any[]>;
+  notifyUsersAboutChange(excludeUserId: number, title: string, message: string, type: string, relatedId?: number): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -112,6 +117,9 @@ export class MemStorage implements IStorage {
   async createNotification(notification: any): Promise<any> { throw new Error("Not implemented"); }
   async markNotificationAsRead(notificationId: number, userId: number): Promise<void> { throw new Error("Not implemented"); }
   async markAllNotificationsAsRead(userId: number): Promise<void> { throw new Error("Not implemented"); }
+  async createAuditLog(auditData: any): Promise<any> { throw new Error("Not implemented"); }
+  async getAuditLogs(limit?: number): Promise<any[]> { return []; }
+  async notifyUsersAboutChange(excludeUserId: number, title: string, message: string, type: string, relatedId?: number): Promise<void> { throw new Error("Not implemented"); }
   private users: Map<number, User>;
   private departments: Map<number, Department>;
   private employees: Map<number, Employee>;
@@ -691,20 +699,68 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async createEmployee(insertEmployee: InsertEmployee): Promise<Employee> {
+  async createEmployee(insertEmployee: InsertEmployee, userId?: number): Promise<Employee> {
     const [employee] = await db
       .insert(employees)
       .values(insertEmployee)
       .returning();
+
+    // Логируем создание сотрудника
+    if (userId) {
+      await this.createAuditLog({
+        userId,
+        action: 'create',
+        entityType: 'employee',
+        entityId: employee.id,
+        newValues: JSON.stringify(employee),
+        description: `Создан новый сотрудник: ${employee.fullName}`
+      });
+
+      // Уведомляем других пользователей
+      await this.notifyUsersAboutChange(
+        userId,
+        'Новый сотрудник',
+        `Добавлен новый сотрудник: ${employee.fullName}`,
+        'employee_create',
+        employee.id
+      );
+    }
+
     return employee;
   }
 
-  async updateEmployee(id: number, updateData: Partial<InsertEmployee>): Promise<Employee> {
+  async updateEmployee(id: number, updateData: Partial<InsertEmployee>, userId?: number): Promise<Employee> {
+    // Получаем старые данные для аудита
+    const oldEmployee = await this.getEmployee(id);
+    
     const [employee] = await db
       .update(employees)
       .set(updateData)
       .where(eq(employees.id, id))
       .returning();
+
+    // Логируем изменение сотрудника
+    if (userId && oldEmployee) {
+      await this.createAuditLog({
+        userId,
+        action: 'update',
+        entityType: 'employee',
+        entityId: employee.id,
+        oldValues: JSON.stringify(oldEmployee),
+        newValues: JSON.stringify(employee),
+        description: `Обновлены данные сотрудника: ${employee.fullName}`
+      });
+
+      // Уведомляем других пользователей
+      await this.notifyUsersAboutChange(
+        userId,
+        'Изменение данных сотрудника',
+        `Обновлены данные сотрудника: ${employee.fullName}`,
+        'employee_update',
+        employee.id
+      );
+    }
+
     return employee;
   }
 
@@ -712,7 +768,7 @@ export class DatabaseStorage implements IStorage {
     await db.delete(employees).where(eq(employees.id, id));
   }
 
-  async archiveEmployee(id: number): Promise<Employee> {
+  async archiveEmployee(id: number, userId?: number): Promise<Employee> {
     // Получаем сотрудника с его оборудованием для сохранения истории
     const employeeWithEquipment = await this.getEmployee(id);
     if (!employeeWithEquipment) {
@@ -732,6 +788,28 @@ export class DatabaseStorage implements IStorage {
       .where(eq(employees.id, id))
       .returning();
 
+    // Логируем архивирование
+    if (userId) {
+      await this.createAuditLog({
+        userId,
+        action: 'archive',
+        entityType: 'employee',
+        entityId: employee.id,
+        oldValues: JSON.stringify(employeeWithEquipment),
+        newValues: JSON.stringify(employee),
+        description: `Архивирован сотрудник: ${employee.fullName}`
+      });
+
+      // Уведомляем других пользователей
+      await this.notifyUsersAboutChange(
+        userId,
+        'Сотрудник архивирован',
+        `Сотрудник ${employee.fullName} был архивирован`,
+        'employee_archive',
+        employee.id
+      );
+    }
+
     return employee;
   }
 
@@ -743,20 +821,68 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(equipment).where(eq(equipment.employeeId, employeeId));
   }
 
-  async createEquipment(insertEquipment: InsertEquipment): Promise<Equipment> {
+  async createEquipment(insertEquipment: InsertEquipment, userId?: number): Promise<Equipment> {
     const [equipmentItem] = await db
       .insert(equipment)
       .values(insertEquipment)
       .returning();
+
+    // Логируем создание оборудования
+    if (userId) {
+      await this.createAuditLog({
+        userId,
+        action: 'create',
+        entityType: 'equipment',
+        entityId: equipmentItem.id,
+        newValues: JSON.stringify(equipmentItem),
+        description: `Добавлено новое оборудование: ${equipmentItem.name}`
+      });
+
+      // Уведомляем других пользователей
+      await this.notifyUsersAboutChange(
+        userId,
+        'Новое оборудование',
+        `Добавлено оборудование: ${equipmentItem.name}`,
+        'equipment_create',
+        equipmentItem.id
+      );
+    }
+
     return equipmentItem;
   }
 
-  async updateEquipment(id: number, updateData: Partial<InsertEquipment>): Promise<Equipment> {
+  async updateEquipment(id: number, updateData: Partial<InsertEquipment>, userId?: number): Promise<Equipment> {
+    // Получаем старые данные для аудита
+    const [oldEquipment] = await db.select().from(equipment).where(eq(equipment.id, id));
+    
     const [equipmentItem] = await db
       .update(equipment)
       .set(updateData)
       .where(eq(equipment.id, id))
       .returning();
+
+    // Логируем изменение оборудования
+    if (userId && oldEquipment) {
+      await this.createAuditLog({
+        userId,
+        action: 'update',
+        entityType: 'equipment',
+        entityId: equipmentItem.id,
+        oldValues: JSON.stringify(oldEquipment),
+        newValues: JSON.stringify(equipmentItem),
+        description: `Обновлено оборудование: ${equipmentItem.name}`
+      });
+
+      // Уведомляем других пользователей
+      await this.notifyUsersAboutChange(
+        userId,
+        'Изменение оборудования',
+        `Обновлено оборудование: ${equipmentItem.name}`,
+        'equipment_update',
+        equipmentItem.id
+      );
+    }
+
     return equipmentItem;
   }
 
@@ -821,23 +947,97 @@ export class DatabaseStorage implements IStorage {
     return equipmentItem;
   }
 
-  // Методы для работы с уведомлениями (заглушки)
+  // Методы для работы с уведомлениями
   async getNotifications(userId: number) {
-    // TODO: Реализовать получение уведомлений
-    return [];
+    return await db
+      .select()
+      .from(schema.notifications)
+      .where(eq(schema.notifications.userId, userId))
+      .orderBy(desc(schema.notifications.createdAt));
   }
 
-  async createNotification(notification: any) {
-    // TODO: Реализовать создание уведомлений
-    throw new Error("Not implemented");
+  async createNotification(notification: schema.InsertNotification) {
+    const [created] = await db
+      .insert(schema.notifications)
+      .values(notification)
+      .returning();
+    return created;
   }
 
   async markNotificationAsRead(notificationId: number, userId: number) {
-    // TODO: Реализовать отметку как прочитанное
+    await db
+      .update(schema.notifications)
+      .set({ isRead: true })
+      .where(
+        and(
+          eq(schema.notifications.id, notificationId),
+          eq(schema.notifications.userId, userId)
+        )
+      );
   }
 
   async markAllNotificationsAsRead(userId: number) {
-    // TODO: Реализовать отметку всех как прочитанных
+    await db
+      .update(schema.notifications)
+      .set({ isRead: true })
+      .where(eq(schema.notifications.userId, userId));
+  }
+
+  // Методы для работы с аудитом
+  async createAuditLog(auditData: schema.InsertAuditLog) {
+    const [created] = await db
+      .insert(schema.auditLog)
+      .values(auditData)
+      .returning();
+    return created;
+  }
+
+  async getAuditLogs(limit: number = 100) {
+    const logs = await db
+      .select({
+        id: schema.auditLog.id,
+        action: schema.auditLog.action,
+        entityType: schema.auditLog.entityType,
+        entityId: schema.auditLog.entityId,
+        oldValues: schema.auditLog.oldValues,
+        newValues: schema.auditLog.newValues,
+        description: schema.auditLog.description,
+        createdAt: schema.auditLog.createdAt,
+        user: {
+          id: users.id,
+          fullName: users.fullName,
+          email: users.email,
+          role: users.role
+        }
+      })
+      .from(schema.auditLog)
+      .leftJoin(users, eq(schema.auditLog.userId, users.id))
+      .orderBy(desc(schema.auditLog.createdAt))
+      .limit(limit);
+
+    return logs;
+  }
+
+  // Служебный метод для отправки уведомлений всем пользователям о изменениях
+  async notifyUsersAboutChange(
+    excludeUserId: number,
+    title: string,
+    message: string,
+    type: string,
+    relatedId?: number
+  ) {
+    const allUsers = await this.getUsers();
+    const usersToNotify = allUsers.filter(user => user.id !== excludeUserId);
+
+    for (const user of usersToNotify) {
+      await this.createNotification({
+        userId: user.id,
+        title,
+        message,
+        type,
+        relatedId
+      });
+    }
   }
 
   // Методы для работы с запросами на регистрацию

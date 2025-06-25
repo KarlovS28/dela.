@@ -1,14 +1,12 @@
 
--- Создание таблиц для системы управления сотрудниками
-
--- Users table for authentication
+-- Users table
 CREATE TABLE IF NOT EXISTS "users" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"email" text NOT NULL,
 	"password" text NOT NULL,
 	"full_name" text NOT NULL,
 	"role" text NOT NULL,
-	"created_at" timestamp DEFAULT now(),
+	"created_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "users_email_unique" UNIQUE("email")
 );
 
@@ -16,8 +14,7 @@ CREATE TABLE IF NOT EXISTS "users" (
 CREATE TABLE IF NOT EXISTS "departments" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
-	"created_at" timestamp DEFAULT now(),
-	CONSTRAINT "departments_name_unique" UNIQUE("name")
+	"created_at" timestamp DEFAULT now() NOT NULL
 );
 
 -- Employees table
@@ -26,7 +23,7 @@ CREATE TABLE IF NOT EXISTS "employees" (
 	"full_name" text NOT NULL,
 	"position" text NOT NULL,
 	"grade" text NOT NULL,
-	"gender" text DEFAULT 'М' NOT NULL,
+	"gender" text NOT NULL,
 	"department_id" integer,
 	"photo_url" text,
 	"passport_series" text,
@@ -38,8 +35,8 @@ CREATE TABLE IF NOT EXISTS "employees" (
 	"order_date" text,
 	"responsibility_act_number" text,
 	"responsibility_act_date" text,
-	"is_archived" boolean DEFAULT false,
-	"created_at" timestamp DEFAULT now()
+	"is_archived" boolean DEFAULT false NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL
 );
 
 -- Equipment table
@@ -51,8 +48,8 @@ CREATE TABLE IF NOT EXISTS "equipment" (
 	"cost" text,
 	"category" text DEFAULT 'Техника' NOT NULL,
 	"employee_id" integer,
-	"is_decommissioned" boolean DEFAULT false,
-	"created_at" timestamp DEFAULT now(),
+	"is_decommissioned" boolean DEFAULT false NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "equipment_inventory_number_unique" UNIQUE("inventory_number")
 );
 
@@ -62,8 +59,7 @@ CREATE TABLE IF NOT EXISTS "roles" (
 	"name" text NOT NULL,
 	"display_name" text NOT NULL,
 	"description" text,
-	"is_system_role" boolean DEFAULT false,
-	"created_at" timestamp DEFAULT now(),
+	"created_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "roles_name_unique" UNIQUE("name")
 );
 
@@ -72,9 +68,9 @@ CREATE TABLE IF NOT EXISTS "permissions" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"display_name" text NOT NULL,
-	"category" text NOT NULL,
 	"description" text,
-	"created_at" timestamp DEFAULT now(),
+	"category" text NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "permissions_name_unique" UNIQUE("name")
 );
 
@@ -83,7 +79,19 @@ CREATE TABLE IF NOT EXISTS "role_permissions" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"role_id" integer NOT NULL,
 	"permission_id" integer NOT NULL,
-	"created_at" timestamp DEFAULT now()
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+
+-- Registration requests table
+CREATE TABLE IF NOT EXISTS "registration_requests" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"email" text NOT NULL,
+	"password" text NOT NULL,
+	"full_name" text NOT NULL,
+	"role" text NOT NULL,
+	"status" text DEFAULT 'pending' NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 
 -- Notifications table
@@ -98,20 +106,20 @@ CREATE TABLE IF NOT EXISTS "notifications" (
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 
--- Registration requests table
-CREATE TABLE IF NOT EXISTS "registration_requests" (
+-- Audit log table
+CREATE TABLE IF NOT EXISTS "audit_log" (
 	"id" serial PRIMARY KEY NOT NULL,
-	"email" varchar(255) NOT NULL,
-	"password" text NOT NULL,
-	"full_name" varchar(255) NOT NULL,
-	"role" varchar(50) NOT NULL,
-	"status" varchar(20) DEFAULT 'pending' NOT NULL,
-	"created_at" timestamp DEFAULT now() NOT NULL,
-	"updated_at" timestamp DEFAULT now() NOT NULL,
-	CONSTRAINT "registration_requests_email_unique" UNIQUE("email")
+	"user_id" integer NOT NULL,
+	"action" text NOT NULL,
+	"entity_type" text NOT NULL,
+	"entity_id" integer NOT NULL,
+	"old_values" text,
+	"new_values" text,
+	"description" text NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL
 );
 
--- Add foreign key constraints
+-- Foreign key constraints
 DO $$ BEGIN
  ALTER TABLE "employees" ADD CONSTRAINT "employees_department_id_departments_id_fk" FOREIGN KEY ("department_id") REFERENCES "departments"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
@@ -137,25 +145,13 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
- ALTER TABLE "notifications" ADD CONSTRAINT "notifications_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE cascade ON UPDATE no action;
+ ALTER TABLE "notifications" ADD CONSTRAINT "notifications_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 
--- Insert default admin user
-INSERT INTO "users" ("email", "password", "full_name", "role") 
-VALUES ('admin@admin.com', '$2b$10$XQKqzqzqzqzqzqzqzqzqzOeJ3J3J3J3J3J3J3J3J3J3J3J3J3J3J3', 'Системный администратор', 'admin')
-ON CONFLICT (email) DO NOTHING;
-
--- Insert default departments
-INSERT INTO "departments" ("name") VALUES 
-('Администрация'),
-('Менеджмент'),
-('Аккаунтинг'),
-('Дизайн'),
-('3D & motion'),
-('Разработка'),
-('Офис'),
-('unit'),
-('div.academy')
-ON CONFLICT (name) DO NOTHING;
+DO $$ BEGIN
+ ALTER TABLE "audit_log" ADD CONSTRAINT "audit_log_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
