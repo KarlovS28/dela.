@@ -241,7 +241,7 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
         <Tabs defaultValue="profile" className="w-full">
           <TabsList className={`grid w-full ${user?.role === 'admin' ? 'grid-cols-5' : 'grid-cols-3'}`}>
             <TabsTrigger value="profile" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
+              <UserIcon className="h-4 w-4" />
               Профиль
             </TabsTrigger>
             
