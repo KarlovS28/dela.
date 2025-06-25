@@ -877,12 +877,17 @@ class DatabaseStorageWithInit extends DatabaseStorage {
 
     if (!adminExists) {
       const hashedPassword = await bcrypt.hash("POik09MN!", 10);
-      await this.createUser({
-        email: adminEmail,
-        password: hashedPassword,
-        fullName: "Системный администратор",
-        role: "admin"
-      });
+      try {
+        await this.createUser({
+          email: adminEmail,
+          password: "POik09MN!",
+          fullName: "Системный администратор",
+          role: "admin"
+        });
+        console.log("Admin user created successfully");
+      } catch (error) {
+        console.error("Error creating admin user:", error);
+      }
     }
   }
 
