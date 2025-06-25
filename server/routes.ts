@@ -11,8 +11,9 @@ import session from "express-session";
 import MemoryStore from "memorystore";
 import * as XLSX from "xlsx"; // Библиотека для работы с Excel файлами
 import multer from "multer"; // Middleware для загрузки файлов
-import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType } from "docx"; // Библиотека для создания DOCX документов
+import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, HeadingLevel } from "docx"; // Библиотека для создания DOCX документов
 import bcrypt from 'bcrypt';
+import ExcelJS from "exceljs";
 
 // Extend session interface
 declare module 'express-session' {
@@ -778,7 +779,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'ФИО': employee.fullName,
           'Пол': employee.gender || '',
           'Должность': employee.position,
-          'Отдел': departmentMap.get(employee.departmentId!) || ''
+          'Отдел': departmentMap.get(employee.departmentId!)```text
+ || ''
         };
 
         // Полные данные только для админа и бухгалтера
@@ -1949,6 +1951,609 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Reject registration request error:", error);
       res.status(500).json({ message: "Ошибка сервера" });
+    }
+  });
+
+  // Export inventory full data
+  app.get("/api/export/inventory-full", requireAuth, requireRole(['admin', 'accountant']), async (req, res) => {
+    try {
+      const employees = await storage.getEmployees();
+      const departments = await storage.getDepartments();
+      const departmentMap = new Map(departments.map(d => [d.id, d.name]));
+      const userRole = req.session.userRole;
+
+      const data = [];
+
+      for (const employee of employees.filter(emp => !emp.isArchived)) {
+        const equipment = await storage.getEquipmentByEmployee(employee.id);
+
+        // Базовые данные для всех ролей
+        const baseData = {
+          'ФИО': employee.fullName,
+          'Пол': employee.gender || '',
+          'Должность': employee.position,
+          'Отдел': departmentMap.get(employee.departmentId!) || ''
+        };
+
+        // Полные данные только для админа и бухгалтера
+        if (['admin', 'accountant'].includes(userRole!)) {
+          Object.assign(baseData, {
+            'Грейд': employee.grade,
+            'Серия паспорта': employee.passportSeries || '',
+            'Номер паспорта': employee.passportNumber || '',
+            'Кем выдан': employee.passportIssuedBy || '',
+            'Дата выдачи паспорта': employee.passportDate || '',
+            'Адрес прописки': employee.address || '',
+            'Номер приказа о приеме': employee.orderNumber || '',
+            'Дата приказа о приеме': employee.orderDate || '',
+            'Номер акта мат. ответственности': employee.responsibilityActNumber || '',
+            'Дата акта мат. ответственности': employee.responsibilityActDate || ''
+          });
+        }
+
+        // Добавляем данные об оборудовании - поддержка нескольких единиц имущества
+        if (equipment.length > 0) {
+          equipment.forEach((item, index) => {
+            // Для дополнительных строк оборудования оставляем только ФИО
+            const rowData = index === 0 ? { ...baseData } : {
+              'ФИО': employee.fullName,
+              'Пол': '',
+              'Должность': '',
+              'Отдел': ''
+            };
+
+            // Очищаем дополнительные поля для последующих строк оборудования
+            if (index > 0 && ['admin', 'accountant'].includes(userRole!)) {
+              Object.assign(rowData, {
+                'Грейд': '',
+                'Серия паспорта': '',
+                'Номер паспорта': '',
+                'Кем выдан': '',
+                'Дата выдачи паспорта': '',
+                'Адрес прописки': '',
+                'Номер приказа о приеме': '',
+                'Дата приказа о приеме': '',
+                'Номер акта мат. ответственности': '',
+                'Дата акта мат. ответственности': ''
+              });
+            }
+
+            Object.assign(rowData, {
+              'Наименование имущества': item.name,
+              'Инвентарный номер': item.inventoryNumber,
+              'Категория': (item as any).category || 'Техника',
+              'Характеристики': item.characteristics || '',
+              'Стоимость': item.cost
+            });
+            data.push(rowData);
+          });
+        } else {
+          // Сотрудник без оборудования
+          data.push({
+            ...baseData,
+            'Наименование имущества': '',
+            'Инвентарный номер': '',
+            'Категория': '',
+            'Характеристики': '',
+            'Стоимость': ''
+          });
+        }
+      }
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Инвентаризация');
+
+      const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+      res.setHeader('Content-Disposition', 'attachment; filename=inventory-full.xlsx');
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.send(buffer);
+    } catch (error) {
+      console.error("Export inventory full error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Отчет инвентаризации в DOCX
+  app.get("/api/reports/inventory-docx", requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const employees = await storage.getEmployees();
+      const equipment = await storage.getEquipment();
+      const departments = await storage.getDepartments();
+
+      // Группировка имущества
+      const warehouseEquipment = equipment.filter(item => !item.employeeId && !item.isDecommissioned);
+      const inUseEquipment = equipment.filter(item => item.employeeId && !item.isDecommissioned);
+
+      // Подсчет стоимости
+      const calculateTotalCost = (items: any[]) => {
+        return items.reduce((total, item) => {
+          const cost = parseFloat(item.cost || '0');
+          return total + (isNaN(cost) ? 0 : cost);
+        }, 0);
+      };
+
+      const warehouseTotalCost = calculateTotalCost(warehouseEquipment);
+      const inUseTotalCost = calculateTotalCost(inUseEquipment);
+
+      const doc = new Document({
+        sections: [
+          {
+            properties: {},
+            children: [
+              new Paragraph({
+                text: "ОТЧЕТ ИНВЕНТАРИЗАЦИИ",
+                heading: HeadingLevel.HEADING_1,
+                alignment: AlignmentType.CENTER,
+              }),
+              new Paragraph({
+                text: `Дата составления: ${new Date().toLocaleDateString('ru-RU')}`,
+                alignment: AlignmentType.RIGHT,
+                spacing: { after: 400 },
+              }),
+
+              // Имущество на складе
+              new Paragraph({
+                text: "ИМУЩЕСТВО НА СКЛАДЕ",
+                heading: HeadingLevel.HEADING_2,
+                spacing: { before: 400, after: 200 },
+              }),
+              new Paragraph({
+                text: `Общее количество единиц на складе: ${warehouseEquipment.length}`,
+                spacing: { after: 200 },
+              }),
+              new Paragraph({
+                text: `Общая стоимость имущества на складе: ${warehouseTotalCost.toLocaleString('ru-RU')} руб.`,
+                spacing: { after: 400 },
+              }),
+
+              // Таблица складского имущества
+              new Table({
+                width: {
+                  size: 100,
+                  type: WidthType.PERCENTAGE,
+                },
+                rows: [
+                  new TableRow({
+                    children: [
+                      new TableCell({ children: [new Paragraph("Наименование")] }),
+                      new TableCell({ children: [new Paragraph("Инв. номер")] }),
+                      new TableCell({ children: [new Paragraph("Категория")] }),
+                      new TableCell({ children: [new Paragraph("Стоимость")] }),
+                    ],
+                  }),
+                  ...warehouseEquipment.map(item => new TableRow({
+                    children: [
+                      new TableCell({ children: [new Paragraph(item.name)] }),
+                      new TableCell({ children: [new Paragraph(item.inventoryNumber)] }),
+                      new TableCell({ children: [new Paragraph((item as any).category || 'Техника')] }),
+                      new TableCell({ children: [new Paragraph(item.cost || '0')] }),
+                    ],
+                  })),
+                ],
+              }),
+
+              // Имущество в работе
+              new Paragraph({
+                text: "ИМУЩЕСТВО В РАБОТЕ",
+                heading: HeadingLevel.HEADING_2,
+                spacing: { before: 600, after: 200 },
+              }),
+              new Paragraph({
+                text: `Общее количество единиц в работе: ${inUseEquipment.length}`,
+                spacing: { after: 200 },
+              }),
+              new Paragraph({
+                text: `Общая стоимость имущества в работе: ${inUseTotalCost.toLocaleString('ru-RU')} руб.`,
+                spacing: { after: 400 },
+              }),
+
+              // Таблица имущества в работе
+              new Table({
+                width: {
+                  size: 100,
+                  type: WidthType.PERCENTAGE,
+                },
+                rows: [
+                  new TableRow({
+                    children: [
+                      new TableCell({ children: [new Paragraph("Наименование")] }),
+                      new TableCell({ children: [new Paragraph("Инв. номер")] }),
+                      new TableCell({ children: [new Paragraph("Ответственный")] }),
+                      new TableCell({ children: [new Paragraph("Отдел")] }),
+                      new TableCell({ children: [new Paragraph("Стоимость")] }),
+                    ],
+                  }),
+                  ...inUseEquipment.map(item => {
+                    const employee = employees.find(emp => emp.id === item.employeeId);
+                    const department = departments.find(dept => dept.id === employee?.departmentId);
+                    return new TableRow({
+                      children: [
+                        new TableCell({ children: [new Paragraph(item.name)] }),
+                        new TableCell({ children: [new Paragraph(item.inventoryNumber)] }),
+                        new TableCell({ children: [new Paragraph(employee?.fullName || 'Не указан')] }),
+                        new TableCell({ children: [new Paragraph(department?.name || 'Не указан')] }),
+                        new TableCell({ children: [new Paragraph(item.cost || '0')] }),
+                      ],
+                    });
+                  }),
+                ],
+              }),
+
+              // Итоги
+              new Paragraph({
+                text: "ИТОГИ",
+                heading: HeadingLevel.HEADING_2,
+                spacing: { before: 600, after: 200 },
+              }),
+              new Paragraph({
+                text: `Общее количество единиц имущества: ${equipment.filter(item => !item.isDecommissioned).length}`,
+                spacing: { after: 200 },
+              }),
+              new Paragraph({
+                text: `Общая стоимость всего имущества: ${(warehouseTotalCost + inUseTotalCost).toLocaleString('ru-RU')} руб.`,
+                spacing: { after: 200 },
+              }),
+            ],
+          },
+        ],
+      });
+
+      const buffer = await Packer.toBuffer(doc);
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      res.setHeader('Content-Disposition', 'attachment; filename="отчет-инвентаризации.docx"');
+      res.send(buffer);
+
+    } catch (error) {
+      console.error("Inventory report error:", error);
+      res.status(500).json({ message: "Ошибка генерации отчета" });
+    }
+  });
+
+  // Список сотрудников в Excel
+  app.get("/api/reports/employees-excel", requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const employees = await storage.getEmployees();
+      const departments = await storage.getDepartments();
+      const equipment = await storage.getEquipment();
+
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Сотрудники');
+
+      worksheet.columns = [
+        { header: 'ФИО', key: 'fullName', width: 30 },
+        { header: 'Должность', key: 'position', width: 25 },
+        { header: 'Грейд', key: 'grade', width: 15 },
+        { header: 'Отдел', key: 'department', width: 25 },
+        { header: 'Закрепленное имущество', key: 'equipment', width: 50 },
+      ];
+
+      employees.forEach(employee => {
+        const department = departments.find(d => d.id === employee.departmentId);
+        const employeeEquipment = equipment.filter(eq => eq.employeeId === employee.id && !eq.isDecommissioned);
+        const equipmentList = employeeEquipment.map(eq => `${eq.name} (${eq.inventoryNumber})`).join('; ');
+
+        worksheet.addRow({
+          fullName: employee.fullName,
+          position: employee.position,
+          grade: employee.grade,
+          department: department?.name || 'Не указан',
+          equipment: equipmentList || 'Нет закрепленного имущества',
+        });
+      });
+
+      worksheet.getRow(1).font = { bold: true };
+      worksheet.getRow(1).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFCCCCCC' }
+      };
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename="список-сотрудников.xlsx"');
+
+      await workbook.xlsx.write(res);
+      res.send();
+
+    } catch (error) {
+      console.error("Employees list error:", error);
+      res.status(500).json({ message: "Ошибка генерации списка сотрудников" });
+    }
+  });
+
+  // Get current user
+  app.get('/api/auth/me', requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "No user ID in session" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      //const { password: _, ...userWithoutPassword } = user;
+      //res.json({ ...userWithoutPassword, permissions: userPermissions });
+      res.json(user);
+    } catch (error) {
+      console.error("Get user error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Маршруты для генерации DOCX документов
+  app.get('/api/docx/responsibility-act/:id', requireAuth, requireRole(['admin', 'accountant']), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const employee = await storage.getEmployee(id);
+      if (!employee) {
+        return res.status(404).json({ message: "Employee not found" });
+      }
+
+      const equipment = await storage.getEquipmentByEmployee(id);
+      employee.equipment = equipment;
+
+      // Создание документа DOCX для акта материальной ответственности согласно новому шаблону
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children: [
+            // Заголовок документа
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `Акт приема-передачи № ${employee.responsibilityActNumber || '__'}`,
+                  bold: true,
+                  size: 24,
+                }),
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 200 },
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "материальных ценностей исполнителю",
+                  bold: true,
+                  size: 24,
+                }),
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 400 },
+            }),
+
+            // Дата документа
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `« ${employee.responsibilityActDate ? new Date(employee.responsibilityActDate).getDate().toString().padStart(2, '0') : '__'} »   ${employee.responsibilityActDate ? new Date(employee.responsibilityActDate).toLocaleDateString('ru-RU', { month: 'long' }) : '_______'}           20${employee.responsibilityActDate ? new Date(employee.responsibilityActDate).getFullYear().toString().slice(-2) : '__'}     г.`,
+                  size: 22,
+                }),
+              ],
+              alignment: AlignmentType.RIGHT,
+              spacing: { after: 400 },
+            }),
+
+            // Основной текст акта
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `Общество с ограниченной ответственностью «МассПроект», далее именуемый "Работодатель", в лице директора Скородедова Филиппа Игоревича, действующего на основании Устава, c одной стороны и ${employee.gender === 'Ж' ? 'гражданка' : 'гражданин'} ${employee.fullName || '_____________________________'} (паспортные данные ${employee.passportSeries || '______'} № ${employee.passportNumber || '________'} выдан ${employee.passportDate || '__.__._____ '} ${employee.passportIssuedBy || '_____________________________________________________'}, зарегистрированный по адресу: ${employee.address || '________________________________________________________________'}, именуемый в дальнейшем "Работник", с другой стороны, составили настоящий акт о следующем:`,
+                  size: 22,
+                }),
+              ],
+              spacing: { after: 400 },
+              alignment: AlignmentType.JUSTIFIED,
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `1. В соответствии с Трудовым договором № ${employee.orderNumber || '__-___'} от ${employee.orderDate || '__.__.______ г.'} и Договором о полной материальной ответственности работника № ${employee.responsibilityActNumber || '__-____'} от ${employee.responsibilityActDate || '__.__._____г.'} Работодатель передал, а Работник принял следующие материальные ценности для выполнения своих должностных обязанностей:`,
+                  size: 22,
+                }),
+              ],
+              spacing: { after: 400 },
+              alignment: AlignmentType.JUSTIFIED,
+            }),
+
+            // Таблица с материальными ценностями
+            new Table({
+              width: {
+                size: 100,
+                type: WidthType.PERCENTAGE,
+              },
+              rows: [
+                // Заголовок таблицы
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      children: [new Paragraph({
+                        children: [new TextRun({ text: "№ п/п", bold: true, size: 20 })],
+                        alignment: AlignmentType.CENTER,
+                        spacing: { line: 240 }
+                      })],
+                                            width: { size: 10, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({
+                        children: [new TextRun({ text: "Наименование материальных ценностей", bold: true, size: 20 })],
+                        alignment: AlignmentType.CENTER,
+                        spacing: { line: 240 }
+                      })],
+                      width: { size: 55, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({
+                        children: [new TextRun({ text: "Инвентаризационный номер", bold: true, size: 20 })],
+                        alignment: AlignmentType.CENTER,
+                        spacing: { line: 240 }
+                      })],
+                      width: { size: 20, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({
+                        children: [new TextRun({ text: "Сумма, руб.", bold: true, size: 20 })],
+                        alignment: AlignmentType.CENTER,
+                        spacing: { line: 240 }
+                      })],
+                      width: { size: 15, type: WidthType.PERCENTAGE },
+                    }),
+                  ],
+                }),
+                // Строки с оборудованием
+                ...employee.equipment?.map((item, index) => {
+                  return new TableRow({
+                    children: [
+                      new TableCell({
+                        children: [new Paragraph({
+                          children: [new TextRun({ text: (index + 1).toString(), size: 18 })],
+                          alignment: AlignmentType.CENTER,
+                          spacing: { line: 240 }
+                        })],
+                      }),
+                      new TableCell({
+                        children: [new Paragraph({
+                          children: [new TextRun({ text: item?.name || "", size: 18 })],
+                          spacing: { line: 240 }
+                        })],
+                      }),
+                      new TableCell({
+                        children: [new Paragraph({
+                          children: [new TextRun({ text: item?.inventoryNumber || "", size: 18 })],
+                          alignment: AlignmentType.CENTER,
+                          spacing: { line: 240 }
+                        })],
+                      }),
+                      new TableCell({
+                        children: [new Paragraph({
+                          children: [new TextRun({ text: item?.cost || "", size: 18 })],
+                          alignment: AlignmentType.RIGHT,
+                          spacing: { line: 240 }
+                        })],
+                      }),
+                    ],
+                  });
+                }) || [],
+                 new TableRow({
+                  children: [
+                    new TableCell({
+                      children: [new Paragraph({
+                        children: [new TextRun({ text: "", size: 18 })],
+                        alignment: AlignmentType.CENTER,
+                        spacing: { line: 240 }
+                      })],
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({
+                        children: [new TextRun({ text: "Итого:", bold: true, size: 18 })],
+                        alignment: AlignmentType.RIGHT,
+                        spacing: { line: 240 }
+                      })],
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({
+                        children: [new TextRun({ text: "", size: 18 })],
+                        alignment: AlignmentType.CENTER,
+                        spacing: { line: 240 }
+                      })],
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({
+                        children: [new TextRun({
+                          text: equipment?.reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0).toFixed(2) || "0.00",
+                          bold: true,
+                          size: 18
+                        })],
+                        alignment: AlignmentType.RIGHT,
+                        spacing: { line: 240 }
+                      })],
+                    }),
+                  ],
+                }),
+              ],
+            }),
+
+            // Пункты акта
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "2.Материальные ценности проверены и посчитаны в присутствии сторон.",
+                  size: 22,
+                }),
+              ],
+              spacing: { before: 300, after: 200 },
+              alignment: AlignmentType.JUSTIFIED,
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "3.Настоящий акт составлен в двух экземплярах, по одному для каждой стороны.",
+                  size: 22,
+                }),
+              ],
+              spacing: { after: 200 },
+              alignment: AlignmentType.JUSTIFIED,
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "4.Подписи сторон.",
+                  size: 22,
+                }),
+              ],
+              spacing: { after: 400 },
+              alignment: AlignmentType.JUSTIFIED,
+            }),
+
+            // Подписи
+            new Paragraph({
+              children: [new TextRun({ text: "", size: 20 })],
+              spacing: { after: 400, line: 240 },
+              indent: { firstLine: 360 }
+            }),
+            new Paragraph({
+              children: [new TextRun({ text: "Заказчик                                                                          Работник", bold: true, size: 20 })],
+              spacing: { after: 400, line: 240 },
+              indent: { firstLine: 360 }
+            }),
+            new Paragraph({
+              children: [new TextRun({ text: "", size: 20 })],
+              spacing: { after: 400, line: 240 },
+              indent: { firstLine: 360 }
+            }),
+            new Paragraph({
+              children: [new TextRun({ text: "", size: 20 })],
+              spacing: { after: 400, line: 240 },
+              indent: { firstLine: 360 }
+            }),
+            new Paragraph({
+              children: [new TextRun({
+                text: `________________(Скородедов Ф.И.)                            ________________(${employee.fullName.split(' ')[0]} ${employee.fullName.split(' ')[1]?.charAt(0) || ''}.${employee.fullName.split(' ')[2]?.charAt(0) || ''}.`,
+                size: 20
+              })],
+              spacing: { line: 240 },
+              indent: { firstLine: 360 }
+            }),
+          ],
+        }],
+      });
+
+      const buffer = await Packer.toBuffer(doc);
+
+      res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(`Акт_материальной_ответственности_${employee.fullName}.docx`)}`);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      res.send(buffer);
+    } catch (error) {
+      console.error("Generate responsibility act error:", error);
+      res.status(500).json({ message: "Internal server error" });
     }
   });
 

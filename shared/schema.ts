@@ -202,4 +202,5 @@ export type RoleWithPermissions = Role & {
 
 export type UserWithRole = User & {
   roleDetails?: RoleWithPermissions;
+  permissions?: string[];
 };

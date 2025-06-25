@@ -23,9 +23,21 @@ export function canManageDepartments(userRole: string): boolean {
   return userRole === "admin";
 }
 
-export function canImportExport(userRole: string): boolean {
-  return ["admin", "accountant"].includes(userRole);
-}
+export const canImportExport = (role: string) => {
+  return role === 'admin' || role === 'accountant';
+};
+
+export const canViewPassport = (userPermissions: string[]) => {
+  return userPermissions.includes('documents.passport');
+};
+
+export const canDownloadInventoryReport = (userPermissions: string[]) => {
+  return userPermissions.includes('reports.inventory');
+};
+
+export const canDownloadEmployeesList = (userPermissions: string[]) => {
+  return userPermissions.includes('reports.employees_list');
+};
 
 export function canViewAllPersonalData(userRole: string): boolean {
   return ["admin", "accountant"].includes(userRole);
