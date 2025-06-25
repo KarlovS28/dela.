@@ -535,7 +535,10 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
           {user?.role === 'admin' && (
             <>
               <TabsContent value="roles">
-                <RoleManagement />
+                <div className="space-y-6">
+                  <RoleManagement />
+                  <UserManagement />
+                </div>
               </TabsContent>
               <TabsContent value="register">
                 <UserRegistration />
