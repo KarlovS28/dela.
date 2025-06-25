@@ -1,7 +1,4 @@
-Adding permissions support to the User interface in the useAuth hook.
-```
 
-```typescript
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { User } from "@shared/schema";
