@@ -908,8 +908,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                                           Это действие нельзя отменить. Имущество будет удалено из системы.
                                         </AlertDialogDescription>
                                       </AlertDialogHeader>
-                                      <AlertDialog```python
-Footer>
+                                      <AlertDialogFooter>
                                         <AlertDialogCancel>Отменить</AlertDialogCancel>
                                         <AlertDialogAction onClick={() => deleteEquipment.mutate(item.id)}>
                                           Удалить
