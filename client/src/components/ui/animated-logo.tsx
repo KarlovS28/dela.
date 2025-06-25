@@ -75,16 +75,16 @@ export function AnimatedLogo({
           <circle cx="60" cy="60" r="50" fill="url(#animatedGradient)" filter="url(#animatedGlow)"/>
           <circle cx="60" cy="60" r="35" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1"/>
           <path 
-            d="M42 45 L42 75 L54 75 Q66 75 66 63 L66 57 Q66 45 54 45 Z M50 53 L54 53 Q58 53 58 57 L58 63 Q58 67 54 67 L50 67 Z" 
+            d="M38 42 L38 78 L54 78 Q70 78 70 64 L70 56 Q70 42 54 42 Z M48 52 L54 52 Q60 52 60 56 L60 64 Q60 68 54 68 L48 68 Z" 
             fill="white" 
             opacity="0.95"
           />
-          <circle cx="70" cy="70" r="2.5" fill="white" opacity="0.95"/>
+          <circle cx="74" cy="72" r="3" fill="white" opacity="0.95"/>
         </svg>
       </div>
 
       {/* Анимированный текст */}
-      <div className="flex items-center gap-0.5">
+      <div className="flex items-center" style={{ gap: '4px' }}>
         {letters.map((letter, index) => (
           <div key={index} className="relative inline-block perspective-1000">
             {/* Страница, которая перелистывается */}
@@ -96,8 +96,8 @@ export function AnimatedLogo({
                 rounded-sm shadow-lg transform-gpu
               `}
               style={{
-                width: letter === '.' ? '6px' : '30px',
-                height: '48px',
+                width: letter === '.' ? '8px' : '32px',
+                height: '50px',
                 animationDelay: `${index * 0.4}s`,
                 transformOrigin: 'left center',
                 backfaceVisibility: 'hidden'
@@ -115,7 +115,7 @@ export function AnimatedLogo({
               style={{
                 animationDelay: `${index * 0.4 + 0.2}s`,
                 animationFillMode: 'forwards',
-                width: letter === '.' ? '6px' : '30px',
+                width: letter === '.' ? '8px' : '32px',
                 textAlign: 'center'
               }}
             >
