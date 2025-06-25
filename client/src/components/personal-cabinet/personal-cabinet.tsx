@@ -14,7 +14,7 @@ import { ExcelExport } from "@/components/export/excel-export";
 import { UserManagement } from "@/components/admin/user-management";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { canImportExport, canViewArchive, canDownloadInventoryReport, canDownloadEmployeesList } from "@/lib/auth-utils";
+import { canImportExport, canViewArchive } from "@/lib/auth-utils";
 import { Download, Upload, FileText, FileSpreadsheet, Archive, Shield, User, Settings, UserCheck } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiRequest } from "@/lib/queryClient";
@@ -222,78 +222,6 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-    }
-  };
-
-  // Функция скачивания отчета инвентаризации
-  const handleDownloadInventoryReport = async () => {
-    try {
-      setIsExporting(true);
-      const response = await fetch('/api/reports/inventory-docx', {
-        method: 'GET',
-        credentials: 'include'
-      });
-
-      if (!response.ok) throw new Error('Ошибка загрузки отчета');
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'отчет-инвентаризации.docx';
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast({
-        title: "Отчет скачан",
-        description: "Отчет инвентаризации успешно загружен",
-      });
-    } catch (error) {
-      toast({
-        title: "Ошибка",
-        description: "Не удалось скачать отчет",
-        variant: "destructive",
-      });
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  // Функция скачивания списка сотрудников
-  const handleDownloadEmployeesList = async () => {
-    try {
-      setIsExporting(true);
-      const response = await fetch('/api/reports/employees-excel', {
-        method: 'GET',
-        credentials: 'include'
-      });
-
-      if (!response.ok) throw new Error('Ошибка загрузки списка');
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'список-сотрудников.xlsx';
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast({
-        title: "Список скачан",
-        description: "Список сотрудников успешно загружен",
-      });
-    } catch (error) {
-      toast({
-        title: "Ошибка",
-        description: "Не удалось скачать список",
-        variant: "destructive",
-      });
-    } finally {
-      setIsExporting(false);
     }
   };
 
@@ -559,41 +487,15 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
                 {/* Export Section */}
                 <div>
                   <h4 className="text-sm font-medium mb-2">Экспорт</h4>
-                  <div className="space-y-2">
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start"
-                      onClick={handleExportInventory}
-                      disabled={isExporting}
-                    >
-                      <FileText className="mr-2 h-4 w-4" />
-                      {isExporting ? "Экспорт..." : "Инвентаризация (Excel)"}
-                    </Button>
-                    
-                    {user?.permissions && canDownloadInventoryReport(user.permissions) && (
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start"
-                        onClick={handleDownloadInventoryReport}
-                        disabled={isExporting}
-                      >
-                        <FileText className="mr-2 h-4 w-4" />
-                        {isExporting ? "Создание..." : "Отчет инвентаризации (DOCX)"}
-                      </Button>
-                    )}
-                    
-                    {user?.permissions && canDownloadEmployeesList(user.permissions) && (
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start"
-                        onClick={handleDownloadEmployeesList}
-                        disabled={isExporting}
-                      >
-                        <FileSpreadsheet className="mr-2 h-4 w-4" />
-                        {isExporting ? "Создание..." : "Список сотрудников (Excel)"}
-                      </Button>
-                    )}
-                  </div>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={handleExportInventory}
+                    disabled={isExporting}
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    {isExporting ? "Экспорт..." : "Инвентаризация (полные данные)"}
+                  </Button>
                 </div>
 
                 <Separator />

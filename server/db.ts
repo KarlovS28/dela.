@@ -6,8 +6,9 @@ import * as schema from "@shared/schema";
 neonConfig.webSocketConstructor = ws;
 
 if (!process.env.DATABASE_URL) {
-  console.error("DATABASE_URL is not set. Using default connection string.");
-  process.env.DATABASE_URL = "postgresql://postgres:password@localhost:5432/dela_db";
+  throw new Error(
+    "DATABASE_URL must be set. Did you forget to provision a database?",
+  );
 }
 
 export const pool = new Pool({ connectionString: process.env.DATABASE_URL });

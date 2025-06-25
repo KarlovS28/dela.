@@ -13,7 +13,6 @@ import { Download, FileText, Trash2, Upload, Plus, Edit, Save, X, Archive } from
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import type { EmployeeWithEquipment } from "@shared/schema";
-import { canViewPassport } from "@/lib/auth-utils";
 
 interface EmployeeCardProps {
   employeeId: number;
@@ -51,8 +50,6 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
     },
     enabled: !!employeeId && open,
   });
-
-  const canSeePassport = user?.permissions ? canViewPassport(user.permissions) : false;
 
   // Мутации
   const updateEmployee = useMutation({
@@ -165,7 +162,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
   const updateEquipment = useMutation({
     mutationFn: async ({ equipmentId, data }: { equipmentId: number; data: any }) => {
       const controller = new AbortController();
-
+      
       const response = await fetch(`/api/equipment/${equipmentId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -557,35 +554,34 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
           </Card>
 
           {/* Passport Info Section */}
-          {canSeePassport && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  Паспортные данные
-                  {canEdit && (
-                    <div className="flex gap-2">
-                      {editingSection === 'passport' ? (
-                        <>
-                          <Button size="sm" onClick={handleSaveSection}>
-                            <Save className="w-4 h-4 mr-2" />
-                            Сохранить
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={handleCancelEdit}>
-                            <X className="w-4 h-4 mr-2" />
-                            Отменить
-                          </Button>
-                        </>
-                      ) : (
-                        <Button size="sm" variant="outline" onClick={() => handleEditSection('passport')}>
-                          <Edit className="w-4 h-4 mr-2" />
-                          Редактировать
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                Паспортные данные
+                {canEdit && (
+                  <div className="flex gap-2">
+                    {editingSection === 'passport' ? (
+                      <>
+                        <Button size="sm" onClick={handleSaveSection}>
+                          <Save className="w-4 h-4 mr-2" />
+                          Сохранить
                         </Button>
-                      )}
-                    </div>
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+                        <Button size="sm" variant="outline" onClick={handleCancelEdit}>
+                          <X className="w-4 h-4 mr-2" />
+                          Отменить
+                        </Button>
+                      </>
+                    ) : (
+                      <Button size="sm" variant="outline" onClick={() => handleEditSection('passport')}>
+                        <Edit className="w-4 h-4 mr-2" />
+                        Редактировать
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
               {editingSection === 'passport' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -648,9 +644,8 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                   </div>
                 </div>
               )}
-              </CardContent>
-            </Card>
-          )}
+            </CardContent>
+          </Card>
 
           {/* Documents Section - visible only for admin and accountant */}
           {canViewDocs && (
@@ -911,7 +906,8 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                                           Это действие нельзя отменить. Имущество будет удалено из системы.
                                         </AlertDialogDescription>
                                       </AlertDialogHeader>
-                                      <AlertDialogFooter>                                        <AlertDialogCancel>Отменить</AlertDialogCancel>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Отменить</AlertDialogCancel>
                                         <AlertDialogAction onClick={() => deleteEquipment.mutate(item.id)}>
                                           Удалить
                                         </AlertDialogAction>
