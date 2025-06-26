@@ -100,7 +100,7 @@ CREATE TABLE IF NOT EXISTS "registration_requests" (
 	"email" text NOT NULL,
 	"password" text NOT NULL,
 	"full_name" text NOT NULL,
-	"role" text DEFAULT 'accountant' NOT NULL,
+	"role" text NOT NULL,
 	"status" text DEFAULT 'pending' NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
@@ -120,13 +120,13 @@ CREATE TABLE IF NOT EXISTS "audit_log" (
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 
+-- Add foreign key for audit_log
 DO $$ BEGIN
  ALTER TABLE "audit_log" ADD CONSTRAINT "audit_log_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 
--- Add foreign key for audit_log
 DO $$ BEGIN
  ALTER TABLE "audit_log" ADD CONSTRAINT "audit_log_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION

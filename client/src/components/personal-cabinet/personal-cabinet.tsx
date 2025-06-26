@@ -370,6 +370,42 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
     }
   };
 
+  // Экспорт списка сотрудников с техникой
+  const handleExportEmployeesList = async () => {
+    try {
+      setIsExporting(true);
+      const response = await fetch('/api/export/employees-with-equipment', {
+        method: 'GET',
+        credentials: 'include'
+      });
+
+      if (!response.ok) throw new Error('Ошибка экспорта');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `список_сотрудников_${new Date().toLocaleDateString('ru-RU')}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Экспорт завершен",
+        description: "Список сотрудников загружен",
+      });
+    } catch (error) {
+      toast({
+        title: "Ошибка экспорта",
+        description: "Не удалось экспортировать список сотрудников",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const actionLabels: Record<string, string> = {
     create: "Создание",
     update: "Изменение",
@@ -400,7 +436,7 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
         </DialogHeader>
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className={`grid w-full ${user?.role === 'admin' ? 'grid-cols-6' : 'grid-cols-3'}`}>
+          <TabsList className={`grid w-full ${user?.role === 'admin' ? 'grid-cols-5' : user?.role === 'accountant' ? 'grid-cols-4' : 'grid-cols-3'}`}>
             <TabsTrigger value="profile" className="flex items-center gap-2">
               <User className="h-4 w-4" />
               Профиль
@@ -411,7 +447,12 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
               Экспорт/Импорт
             </TabsTrigger>
 
-            {(user?.role === 'admin' || user?.role === 'accountant') && (
+            <TabsTrigger value="employees-list" className="flex items-center gap-2">
+              <Download className="h-4 w-4" />
+              Список сотрудников
+            </TabsTrigger>
+
+            {user?.role === 'accountant' && (
               <TabsTrigger value="archive" className="flex items-center gap-2">
                 <Archive className="h-4 w-4" />
                 Архив
@@ -646,8 +687,8 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
             </CardContent>
           </Card>
 
-          {/* Archive Access */}
-          {canViewArchive && (
+          {/* Archive Access - только для бухгалтера */}
+          {user?.role === 'accountant' && (
                 <Button
                   onClick={() => setShowArchivedEmployees(true)}
                   variant="outline"
@@ -730,7 +771,28 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
             </Card>
           </TabsContent>
 
-          {(user?.role === 'admin' || user?.role === 'accountant') && (
+          <TabsContent value="employees-list">
+            <Card>
+              <CardHeader>
+                <CardTitle>Список сотрудников</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-muted-foreground">
+                  Скачайте актуальный список всех сотрудников с указанием ФИО, отдела, грейда и закрепленной техники.
+                </p>
+                <Button
+                  onClick={handleExportEmployeesList}
+                  disabled={isExporting}
+                  className="w-full"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  {isExporting ? "Подготовка файла..." : "Скачать список сотрудников"}
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {user?.role === 'accountant' && (
             <TabsContent value="archive">
               <ArchivedEmployees />
             </TabsContent>

@@ -2102,5 +2102,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Экспорт списка сотрудников с техникой
+  app.get('/api/export/employees-with-equipment', requireAuth, async (req, res) => {
+    try {
+      const employees = await storage.getEmployees();
+      const departments = await storage.getDepartments();
+      const departmentMap = new Map(departments.map(d => [d.id, d.name]));
+
+      const data = [];
+
+      for (const employee of employees.filter(emp => !emp.isArchived)) {
+        const equipment = await storage.getEquipmentByEmployee(employee.id);
+
+        if (equipment.length > 0) {
+          equipment.forEach((item, index) => {
+            data.push({
+              'ФИО': index === 0 ? employee.fullName : '', // ФИО только в первой строке
+              'Отдел': index === 0 ? (departmentMap.get(employee.departmentId!) || '') : '',
+              'Грейд': index === 0 ? employee.grade : '',
+              'Наименование техники': item.name,
+              'Инвентарный номер': item.inventoryNumber,
+              'Категория': (item as any).category || 'Техника',
+              'Характеристики': item.characteristics || '',
+              'Стоимость': item.cost || ''
+            });
+          });
+        } else {
+          // Сотрудник без техники
+          data.push({
+            'ФИО': employee.fullName,
+            'Отдел': departmentMap.get(employee.departmentId!) || '',
+            'Грейд': employee.grade,
+            'Наименование техники': 'Не закреплена',
+            'Инвентарный номер': '',
+            'Категория': '',
+            'Характеристики': '',
+            'Стоимость': ''
+          });
+        }
+      }
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Список сотрудников');
+
+      const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+      res.setHeader('Content-Disposition', 'attachment; filename=employees-with-equipment.xlsx');
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.send(buffer);
+    } catch (error) {
+      console.error("Export employees with equipment error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   return httpServer;
 }
