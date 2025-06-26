@@ -299,7 +299,7 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/svg+xml'];
     const fileName = file.name.toLowerCase();
     const hasValidExtension = fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png') || fileName.endsWith('.svg');
-    
+
     if (!allowedTypes.includes(file.type) && !hasValidExtension) {
       toast({
         title: "Ошибка",
@@ -452,7 +452,7 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
               Список сотрудников
             </TabsTrigger>
 
-            
+
 
             {user?.role === 'admin' && (
               <>
@@ -788,16 +788,17 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
                 <Button
                   onClick={handleExportEmployeesList}
                   disabled={isExporting}
-                  className="w-full"
+                  className="flex items-center gap-2 min-h-[44px] w-full sm:w-auto text-sm sm:text-base"
                 >
-                  <Download className="w-4 h-4 mr-2" />
-                  {isExporting ? "Подготовка файла..." : "Скачать список сотрудников"}
+                  <Download className="w-4 h-4" />
+                  <span className="hidden sm:inline">Скачать список сотрудников</span>
+                  <span className="sm:hidden">Список сотрудников</span>
                 </Button>
               </CardContent>
             </Card>
           </TabsContent>
 
-          
+
 
           {user?.role === 'admin' && (
             <>
@@ -900,7 +901,7 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
 
     <RoleManagement
       open={showRoleManagement}
-      onOpenChange={setShowRoleManagement}
+      onOpenChange={showRoleManagement}
     />
   </>
   );
