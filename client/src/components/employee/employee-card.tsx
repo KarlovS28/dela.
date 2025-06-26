@@ -946,7 +946,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
           </Card>
 
           {/* Actions */}
-          {canEdit && (
+          {canEdit && !employee.isArchived && (
             <Card>
               <CardHeader>
                 <CardTitle>Действия</CardTitle>
@@ -966,6 +966,31 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
                     disabled={archiveEmployee.isPending}
                   >
                     {archiveEmployee.isPending ? "Увольнение..." : "Увольнение"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Actions for archived employees */}
+          {canEdit && employee.isArchived && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Документы</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-4">
+                  <Button
+                    onClick={() => window.open(`/api/docx/responsibility-act/${employee.id}`, '_blank')}
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Акт мат. ответственности
+                  </Button>
+                  <Button
+                    onClick={() => window.open(`/api/docx/termination-checklist/${employee.id}`, '_blank')}
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Обходной лист
                   </Button>
                 </div>
               </CardContent>

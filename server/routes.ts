@@ -1303,13 +1303,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.sheet_add_aoa(wb, [['Список закрепленной техники'], [`ФИО: ${employee.fullName}`], ['']], { origin: 'A1' });
+      XLSX.utils.sheet_add_aoa(ws, [['Список закрепленной техники'], [`ФИО: ${employee.fullName}`], ['']], { origin: 'A1' });
       XLSX.utils.book_append_sheet(wb, ws, 'Техника сотрудника');
 
       const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
 
-      const safeFileName = employee.fullName.replace(/[^a-zA-Zа-яА-Я0-9]/g, '_');
-      res.setHeader('Content-Disposition', `attachment; filename=equipment-${safeFileName}.xlsx`);
+      const safeFileName = employee.fullName.replace(/[^a-zA-Zа-яА-Я0-9\s]/g, '').replace(/\s+/g, '_');
+      res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(`equipment_${safeFileName}.xlsx`)}`);
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.send(buffer);
     } catch (error) {
@@ -2060,6 +2060,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(logs);
     } catch (error) {
       console.error("Get audit logs error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Экспорт истории изменений
+  app.get('/api/export/audit-logs', requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const logs = await storage.getAuditLogs(1000);
+
+      const data = logs.map((log, index) => ({
+        '№ п/п': index + 1,
+        'Дата и время': new Date(log.createdAt).toLocaleString('ru-RU'),
+        'Пользователь': log.user.fullName,
+        'Email пользователя': log.user.email,
+        'Роль': log.user.role,
+        'Действие': log.action,
+        'Тип объекта': log.entityType,
+        'ID объекта': log.entityId,
+        'Описание': log.description,
+        'Старые значения': log.oldValues || '',
+        'Новые значения': log.newValues || ''
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'История изменений');
+
+      const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+      res.setHeader('Content-Disposition', 'attachment; filename=audit-logs.xlsx');
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.send(buffer);
+    } catch (error) {
+      console.error("Export audit logs error:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });

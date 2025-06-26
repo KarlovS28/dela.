@@ -485,6 +485,7 @@ export class MemStorage implements IStorage {
 import { db } from "./db";
 import { eq, and, or, isNull, ne, like, inArray, desc } from "drizzle-orm";
 import * as schema from "@shared/schema";
+import { auditLog } from "@shared/schema";
 
 export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
@@ -878,7 +879,7 @@ export class DatabaseStorage implements IStorage {
         description: `Обновлено оборудование: ${equipmentItem.name}`
       });
 
-      // Уведомляем других пользователей
+            // Уведомляем других пользователей
       await this.notifyUsersAboutChange(
         userId,
         'Изменение оборудования',
@@ -986,6 +987,35 @@ export class DatabaseStorage implements IStorage {
       .update(schema.notifications)
       .set({ isRead: true })
       .where(eq(schema.notifications.userId, userId));
+  }
+
+  private async logAuditAction(
+    userId: number,
+    action: string,
+    entityType: string,
+    entityId: number,
+    oldValues: string | null,
+    newValues: string | null,
+    description: string
+  ): Promise<void> {
+    try {
+      await db.insert(auditLog).values({
+        userId,
+        action,
+        entityType,
+        entityId,
+        oldValues,
+        newValues,
+        description,
+      });
+    } catch (error) {
+      // Проверяем, существует ли таблица audit_log
+      if (error instanceof Error && error.message.includes('relation "audit_log" does not exist')) {
+        console.warn('Audit log table does not exist, skipping audit logging');
+        return;
+      }
+      throw error;
+    }
   }
 
   // Методы для работы с аудитом

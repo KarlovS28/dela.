@@ -15,7 +15,7 @@ import { UserManagement } from "@/components/admin/user-management";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { canImportExport, canViewArchive } from "@/lib/auth-utils";
-import { Download, Upload, FileText, FileSpreadsheet, Archive, Shield, User, Settings, UserCheck } from "lucide-react";
+import { Download, Upload, FileText, FileSpreadsheet, Archive, Shield, User, Settings, UserCheck, Activity, Camera } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiRequest } from "@/lib/queryClient";
 import { Warehouse } from "@/components/warehouse/warehouse";
@@ -23,8 +23,9 @@ import { DecommissionedEquipment } from "@/components/decommissioned/decommissio
 import { RoleManagement } from "@/components/admin/role-management";
 import { RegistrationRequests } from "@/components/admin/registration-requests";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, "Введите текущий пароль"),
@@ -36,6 +37,23 @@ const passwordSchema = z.object({
 });
 
 type PasswordFormData = z.infer<typeof passwordSchema>;
+
+interface AuditLog {
+  id: number;
+  action: string;
+  entityType: string;
+  entityId: number;
+  oldValues?: string;
+  newValues?: string;
+  description: string;
+  createdAt: string;
+  user: {
+    id: number;
+    fullName: string;
+    email: string;
+    role: string;
+  };
+}
 
 interface PersonalCabinetProps {
   open: boolean;
@@ -278,10 +296,11 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
     }
 
     // Проверка типа файла
-    if (!file.type.startsWith('image/')) {
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/svg+xml'];
+    if (!allowedTypes.includes(file.type)) {
       toast({
         title: "Ошибка",
-        description: "Файл должен быть изображением",
+        description: "Поддерживаются только файлы JPG, PNG, SVG",
         variant: "destructive",
       });
       return;
@@ -298,6 +317,77 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
   const canManageData = canImportExport(user.role);
   const canViewArchive = user.role === 'admin' || user.role === 'sysadmin' || user.role === 'office-manager';
 
+  // Получение истории изменений для администраторов
+  const { data: auditLogs = [], isLoading: isLoadingLogs } = useQuery<AuditLog[]>({
+    queryKey: ["/api/audit-logs"],
+    queryFn: async () => {
+      const response = await fetch("/api/audit-logs", {
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to fetch audit logs");
+      return response.json();
+    },
+    enabled: user?.role === 'admin',
+    refetchInterval: 30000,
+  });
+
+  // Экспорт истории изменений
+  const handleExportAuditLogs = async () => {
+    try {
+      setIsExporting(true);
+      const response = await fetch('/api/export/audit-logs', {
+        method: 'GET',
+        credentials: 'include'
+      });
+
+      if (!response.ok) throw new Error('Ошибка экспорта');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `история_изменений_${new Date().toLocaleDateString('ru-RU')}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Экспорт завершен",
+        description: "Файл истории изменений загружен",
+      });
+    } catch (error) {
+      toast({
+        title: "Ошибка экспорта",
+        description: "Не удалось экспортировать историю изменений",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const actionLabels: Record<string, string> = {
+    create: "Создание",
+    update: "Изменение",
+    delete: "Удаление",
+    archive: "Архивирование"
+  };
+
+  const entityLabels: Record<string, string> = {
+    employee: "Сотрудник",
+    equipment: "Оборудование",
+    user: "Пользователь",
+    department: "Отдел"
+  };
+
+  const actionColors: Record<string, string> = {
+    create: "bg-green-100 text-green-800",
+    update: "bg-blue-100 text-blue-800",
+    delete: "bg-red-100 text-red-800",
+    archive: "bg-orange-100 text-orange-800"
+  };
+
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -307,7 +397,7 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
         </DialogHeader>
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className={`grid w-full ${user?.role === 'admin' ? 'grid-cols-5' : 'grid-cols-3'}`}>
+          <TabsList className={`grid w-full ${user?.role === 'admin' ? 'grid-cols-6' : 'grid-cols-3'}`}>
             <TabsTrigger value="profile" className="flex items-center gap-2">
               <User className="h-4 w-4" />
               Профиль
@@ -327,6 +417,10 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
 
             {user?.role === 'admin' && (
               <>
+                <TabsTrigger value="audit" className="flex items-center gap-2">
+                  <Activity className="h-4 w-4" />
+                  История
+                </TabsTrigger>
                 <TabsTrigger value="roles" className="flex items-center gap-2">
                   <Shield className="h-4 w-4" />
                   Роли
@@ -370,7 +464,7 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/jpg,image/png,image/svg+xml"
                   onChange={handlePhotoUpload}
                   className="hidden"
                 />
@@ -641,6 +735,73 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
 
           {user?.role === 'admin' && (
             <>
+              <TabsContent value="audit">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Activity className="h-5 w-5" />
+                        История изменений
+                      </div>
+                      <Button
+                        onClick={handleExportAuditLogs}
+                        disabled={isExporting}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        {isExporting ? "Экспорт..." : "Скачать Excel"}
+                      </Button>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {isLoadingLogs ? (
+                      <div className="flex items-center justify-center h-32">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                      </div>
+                    ) : auditLogs.length > 0 ? (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Дата</TableHead>
+                            <TableHead>Пользователь</TableHead>
+                            <TableHead>Действие</TableHead>
+                            <TableHead>Объект</TableHead>
+                            <TableHead>Описание</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {auditLogs.slice(0, 50).map((log) => (
+                            <TableRow key={log.id}>
+                              <TableCell className="text-xs">
+                                {new Date(log.createdAt).toLocaleString('ru-RU')}
+                              </TableCell>
+                              <TableCell className="text-xs">
+                                {log.user.fullName}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="secondary" className={actionColors[log.action]}>
+                                  {actionLabels[log.action] || log.action}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-xs">
+                                {entityLabels[log.entityType] || log.entityType}
+                              </TableCell>
+                              <TableCell className="text-xs">
+                                {log.description}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    ) : (
+                      <p className="text-center text-muted-foreground py-8">
+                        История изменений пуста
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
               <TabsContent value="roles">
                 <div className="space-y-6">
                   <RoleManagement />

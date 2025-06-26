@@ -119,6 +119,13 @@ CREATE TABLE IF NOT EXISTS "audit_log" (
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 
+-- Add foreign key for audit_log
+DO $$ BEGIN
+ ALTER TABLE "audit_log" ADD CONSTRAINT "audit_log_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+
 -- Foreign key constraints
 DO $$ BEGIN
  ALTER TABLE "employees" ADD CONSTRAINT "employees_department_id_departments_id_fk" FOREIGN KEY ("department_id") REFERENCES "departments"("id") ON DELETE no action ON UPDATE no action;
