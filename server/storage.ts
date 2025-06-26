@@ -833,25 +833,30 @@ export class DatabaseStorage implements IStorage {
       .values(insertEquipment)
       .returning();
 
-    // Логируем создание оборудования
+    // Логируем создание оборудования (только если таблица существует)
     if (userId) {
-      await this.createAuditLog({
-        userId,
-        action: 'create',
-        entityType: 'equipment',
-        entityId: equipmentItem.id,
-        newValues: JSON.stringify(equipmentItem),
-        description: `Добавлено новое оборудование: ${equipmentItem.name}`
-      });
+      try {
+        await this.createAuditLog({
+          userId,
+          action: 'create',
+          entityType: 'equipment',
+          entityId: equipmentItem.id,
+          newValues: JSON.stringify(equipmentItem),
+          description: `Добавлено новое оборудование: ${equipmentItem.name}`
+        });
 
-      // Уведомляем других пользователей
-      await this.notifyUsersAboutChange(
-        userId,
-        'Новое оборудование',
-        `Добавлено оборудование: ${equipmentItem.name}`,
-        'equipment_create',
-        equipmentItem.id
-      );
+        // Уведомляем других пользователей
+        await this.notifyUsersAboutChange(
+          userId,
+          'Новое оборудование',
+          `Добавлено оборудование: ${equipmentItem.name}`,
+          'equipment_create',
+          equipmentItem.id
+        );
+      } catch (error) {
+        // Игнорируем ошибки аудита, чтобы не блокировать основную функциональность
+        console.warn('Failed to create audit log:', error);
+      }
     }
 
     return equipmentItem;
@@ -867,26 +872,31 @@ export class DatabaseStorage implements IStorage {
       .where(eq(equipment.id, id))
       .returning();
 
-    // Логируем изменение оборудования
+    // Логируем изменение оборудования (только если таблица существует)
     if (userId && oldEquipment) {
-      await this.createAuditLog({
-        userId,
-        action: 'update',
-        entityType: 'equipment',
-        entityId: equipmentItem.id,
-        oldValues: JSON.stringify(oldEquipment),
-        newValues: JSON.stringify(equipmentItem),
-        description: `Обновлено оборудование: ${equipmentItem.name}`
-      });
+      try {
+        await this.createAuditLog({
+          userId,
+          action: 'update',
+          entityType: 'equipment',
+          entityId: equipmentItem.id,
+          oldValues: JSON.stringify(oldEquipment),
+          newValues: JSON.stringify(equipmentItem),
+          description: `Обновлено оборудование: ${equipmentItem.name}`
+        });
 
-            // Уведомляем других пользователей
-      await this.notifyUsersAboutChange(
-        userId,
-        'Изменение оборудования',
-        `Обновлено оборудование: ${equipmentItem.name}`,
-        'equipment_update',
-        equipmentItem.id
-      );
+        // Уведомляем других пользователей
+        await this.notifyUsersAboutChange(
+          userId,
+          'Изменение оборудования',
+          `Обновлено оборудование: ${equipmentItem.name}`,
+          'equipment_update',
+          equipmentItem.id
+        );
+      } catch (error) {
+        // Игнорируем ошибки аудита, чтобы не блокировать основную функциональность
+        console.warn('Failed to create audit log:', error);
+      }
     }
 
     return equipmentItem;
@@ -1020,37 +1030,55 @@ export class DatabaseStorage implements IStorage {
 
   // Методы для работы с аудитом
   async createAuditLog(auditData: schema.InsertAuditLog) {
-    const [created] = await db
-      .insert(schema.auditLog)
-      .values(auditData)
-      .returning();
-    return created;
+    try {
+      const [created] = await db
+        .insert(schema.auditLog)
+        .values(auditData)
+        .returning();
+      return created;
+    } catch (error) {
+      // Проверяем, существует ли таблица audit_log
+      if (error instanceof Error && error.message.includes('relation "audit_log" does not exist')) {
+        console.warn('Audit log table does not exist, skipping audit logging');
+        return null;
+      }
+      throw error;
+    }
   }
 
   async getAuditLogs(limit: number = 100) {
-    const logs = await db
-      .select({
-        id: schema.auditLog.id,
-        action: schema.auditLog.action,
-        entityType: schema.auditLog.entityType,
-        entityId: schema.auditLog.entityId,
-        oldValues: schema.auditLog.oldValues,
-        newValues: schema.auditLog.newValues,
-        description: schema.auditLog.description,
-        createdAt: schema.auditLog.createdAt,
-        user: {
-          id: users.id,
-          fullName: users.fullName,
-          email: users.email,
-          role: users.role
-        }
-      })
-      .from(schema.auditLog)
-      .leftJoin(users, eq(schema.auditLog.userId, users.id))
-      .orderBy(desc(schema.auditLog.createdAt))
-      .limit(limit);
+    try {
+      const logs = await db
+        .select({
+          id: schema.auditLog.id,
+          action: schema.auditLog.action,
+          entityType: schema.auditLog.entityType,
+          entityId: schema.auditLog.entityId,
+          oldValues: schema.auditLog.oldValues,
+          newValues: schema.auditLog.newValues,
+          description: schema.auditLog.description,
+          createdAt: schema.auditLog.createdAt,
+          user: {
+            id: users.id,
+            fullName: users.fullName,
+            email: users.email,
+            role: users.role
+          }
+        })
+        .from(schema.auditLog)
+        .leftJoin(users, eq(schema.auditLog.userId, users.id))
+        .orderBy(desc(schema.auditLog.createdAt))
+        .limit(limit);
 
-    return logs;
+      return logs;
+    } catch (error) {
+      // Проверяем, существует ли таблица audit_log
+      if (error instanceof Error && error.message.includes('relation "audit_log" does not exist')) {
+        console.warn('Audit log table does not exist, returning empty array');
+        return [];
+      }
+      throw error;
+    }
   }
 
   // Служебный метод для отправки уведомлений всем пользователям о изменениях

@@ -536,9 +536,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Размер файла не должен превышать 5MB" });
       }
 
-      // Проверка типа файла
-      if (!req.file.mimetype.startsWith('image/')) {
-        return res.status(400).json({ message: "Файл должен быть изображением" });
+      // Проверка типа файла - поддерживаем JPG, PNG, SVG
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/svg+xml'];
+      if (!allowedTypes.includes(req.file.mimetype)) {
+        return res.status(400).json({ message: "Поддерживаются только файлы JPG, PNG, SVG" });
       }
 
       // В реальном приложении здесь была бы загрузка в облачное хранилище

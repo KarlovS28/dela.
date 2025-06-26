@@ -734,22 +734,23 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
             </Card>
           )}
 
-          {/* Equipment Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                Закрепленное имущество ({employee.equipment?.length || 0})
-                {canEditEquipment && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setShowAddEquipment(!showAddEquipment)}
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                )}
-              </CardTitle>
-            </CardHeader>
+          {/* Equipment Section - только для активных сотрудников */}
+          {!employee.isArchived && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  Закрепленное имущество ({employee.equipment?.length || 0})
+                  {canEditEquipment && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowAddEquipment(!showAddEquipment)}
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  )}
+                </CardTitle>
+              </CardHeader>
             <CardContent>
               {showAddEquipment && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded">
@@ -944,6 +945,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
               )}
             </CardContent>
           </Card>
+          )}
 
           {/* Actions */}
           {canEdit && !employee.isArchived && (
@@ -972,7 +974,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
             </Card>
           )}
 
-          {/* Actions for archived employees */}
+          {/* Actions for archived employees - только документы, без списка техники */}
           {canEdit && employee.isArchived && (
             <Card>
               <CardHeader>

@@ -82,28 +82,29 @@ CREATE TABLE IF NOT EXISTS "role_permissions" (
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 
--- Registration requests table
-CREATE TABLE IF NOT EXISTS "registration_requests" (
-	"id" serial PRIMARY KEY NOT NULL,
-	"email" text NOT NULL,
-	"password" text NOT NULL,
-	"full_name" text NOT NULL,
-	"role" text NOT NULL,
-	"status" text DEFAULT 'pending' NOT NULL,
-	"created_at" timestamp DEFAULT now() NOT NULL,
-	"updated_at" timestamp DEFAULT now() NOT NULL
-);
-
 -- Notifications table
 CREATE TABLE IF NOT EXISTS "notifications" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" integer NOT NULL,
 	"title" text NOT NULL,
 	"message" text NOT NULL,
-	"type" text NOT NULL,
-	"related_id" integer,
+	"type" text DEFAULT 'info' NOT NULL,
 	"is_read" boolean DEFAULT false NOT NULL,
+	"related_id" integer,
 	"created_at" timestamp DEFAULT now() NOT NULL
+);
+
+-- Registration requests table
+CREATE TABLE IF NOT EXISTS "registration_requests" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"email" text NOT NULL,
+	"password" text NOT NULL,
+	"full_name" text NOT NULL,
+	"role" text DEFAULT 'accountant' NOT NULL,
+	"status" text DEFAULT 'pending' NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "registration_requests_email_unique" UNIQUE("email")
 );
 
 -- Audit log table
@@ -115,7 +116,7 @@ CREATE TABLE IF NOT EXISTS "audit_log" (
 	"entity_id" integer NOT NULL,
 	"old_values" text,
 	"new_values" text,
-	"description" text NOT NULL,
+	"description" text,
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 
