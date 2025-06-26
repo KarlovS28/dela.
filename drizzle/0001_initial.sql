@@ -116,9 +116,15 @@ CREATE TABLE IF NOT EXISTS "audit_log" (
 	"entity_id" integer NOT NULL,
 	"old_values" text,
 	"new_values" text,
-	"description" text,
+	"description" text NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
+
+DO $$ BEGIN
+ ALTER TABLE "audit_log" ADD CONSTRAINT "audit_log_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
 
 -- Add foreign key for audit_log
 DO $$ BEGIN

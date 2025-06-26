@@ -43,23 +43,23 @@ export interface IStorage {
   getEmployees(): Promise<Employee[]>;
   getEmployee(id: number): Promise<EmployeeWithEquipment | undefined>;
   getArchivedEmployees(): Promise<EmployeeWithEquipment[]>;
-  createEmployee(employee: InsertEmployee): Promise<Employee>;
+  createEmployee(employee: InsertEmployee, userId?: number): Promise<Employee>;
   updateEmployee(id: number, employee: Partial<InsertEmployee>): Promise<Employee>;
   deleteEmployee(id: number): Promise<void>;
-  archiveEmployee(id: number): Promise<Employee>;
+  archiveEmployee(id: number, userId?: number): Promise<Employee>;
 
   // Equipment operations
   getEquipment(): Promise<Equipment[]>;
   getEquipmentByEmployee(employeeId: number): Promise<Equipment[]>;
-  createEquipment(equipment: InsertEquipment): Promise<Equipment>;
-  updateEquipment(id: number, equipment: Partial<InsertEquipment>): Promise<Equipment>;
+  createEquipment(equipment: InsertEquipment, userId?: number): Promise<Equipment>;
+  updateEquipment(id: number, equipment: Partial<InsertEquipment>, userId?: number): Promise<Equipment>;
   deleteEquipment(id: number): Promise<void>;
 
   getUsers(): Promise<User[]>;
   updateUserRole(id: number, role: string): Promise<User | undefined>;
   updateUserPassword(id: number, newPassword: string): Promise<User | undefined>;
   deleteUser(id: number): Promise<void>;
-  updateUserPhoto(id: number, photoUrl: string): Promise<User | undefined>;
+  updateUserPhoto(id: number, photoUrl: string, userId?: number): Promise<User | undefined>;
 
   // Role management
   getRoles(): Promise<Role[]>;
@@ -94,6 +94,15 @@ export interface IStorage {
   createAuditLog(auditData: any): Promise<any>;
   getAuditLogs(limit?: number): Promise<any[]>;
   notifyUsersAboutChange(excludeUserId: number, title: string, message: string, type: string, relatedId?: number): Promise<void>;
+  logAudit(
+    userId: number,
+    action: string,
+    entityType: string,
+    entityId: number,
+    description: string,
+    oldValues?: any,
+    newValues?: any
+  ): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -121,6 +130,15 @@ export class MemStorage implements IStorage {
   async createAuditLog(auditData: any): Promise<any> { throw new Error("Not implemented"); }
   async getAuditLogs(limit?: number): Promise<any[]> { return []; }
   async notifyUsersAboutChange(excludeUserId: number, title: string, message: string, type: string, relatedId?: number): Promise<void> { throw new Error("Not implemented"); }
+  async logAudit(
+    userId: number,
+    action: string,
+    entityType: string,
+    entityId: number,
+    description: string,
+    oldValues?: any,
+    newValues?: any
+  ): Promise<void> { throw new Error("Not implemented"); }
   private users: Map<number, User>;
   private departments: Map<number, Department>;
   private employees: Map<number, Employee>;
@@ -479,6 +497,21 @@ export class MemStorage implements IStorage {
     const updatedEquipment = { ...equipment, isDecommissioned: true, employeeId: null };
     this.equipment.set(id, updatedEquipment);
     return updatedEquipment;
+  }
+  async logAudit(
+    userId: number,
+    action: string,
+    entityType: string,
+    entityId: number,
+    description: string,
+    oldValues?: any,
+    newValues?: any
+  ): Promise<void> {
+    console.log("Audit log table does not exist, skipping audit logging");
+  }
+  async getAuditLogs(limit?: number): Promise<any[]> {
+    console.log("Audit log table does not exist, returning empty array");
+    return [];
   }
 }
 
@@ -845,7 +878,7 @@ export class DatabaseStorage implements IStorage {
           description: `Добавлено новое оборудование: ${equipmentItem.name}`
         });
 
-        // Уведомляем других пользователей
+        // Уведомлять других пользователей
         await this.notifyUsersAboutChange(
           userId,
           'Новое оборудование',
@@ -1187,6 +1220,30 @@ export class DatabaseStorage implements IStorage {
 
         return user || undefined;
     }
+
+    async logAudit(
+        userId: number,
+        action: string,
+        entityType: string,
+        entityId: number,
+        description: string,
+        oldValues?: any,
+        newValues?: any
+      ): Promise<void> {
+        try {
+          await db.insert(auditLog).values({
+            userId,
+            action,
+            entityType,
+            entityId,
+            description,
+            oldValues: oldValues ? JSON.stringify(oldValues) : null,
+            newValues: newValues ? JSON.stringify(newValues) : null,
+          });
+        } catch (error) {
+          console.error("Error logging audit:", error);
+        }
+      }
 }
 
 class DatabaseStorageWithInit extends DatabaseStorage {
