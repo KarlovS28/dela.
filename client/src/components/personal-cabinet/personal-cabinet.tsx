@@ -2,7 +2,13 @@ import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -318,7 +324,7 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
   if (!user) return null;
 
   const canManageData = canImportExport(user.role);
-  const canViewArchive = user.role === 'admin' || user.role === 'sysadmin' || user.role === 'office-manager';
+  const canViewArchive = user?.role === 'admin' || user?.role === 'sysadmin' || user?.role === 'office-manager';
 
   // Получение истории изменений для администраторов
   const { data: auditLogs = [], isLoading: isLoadingLogs } = useQuery<AuditLog[]>({
