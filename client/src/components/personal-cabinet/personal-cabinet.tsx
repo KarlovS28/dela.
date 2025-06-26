@@ -430,13 +430,13 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-7xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Личный кабинет</DialogTitle>
         </DialogHeader>
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className={`grid w-full ${user?.role === 'admin' ? 'grid-cols-5' : user?.role === 'accountant' ? 'grid-cols-4' : 'grid-cols-3'}`}>
+          <TabsList className={`grid w-full ${user?.role === 'admin' ? 'grid-cols-5' : 'grid-cols-3'}`}>
             <TabsTrigger value="profile" className="flex items-center gap-2">
               <User className="h-4 w-4" />
               Профиль
@@ -452,12 +452,7 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
               Список сотрудников
             </TabsTrigger>
 
-            {user?.role === 'accountant' && (
-              <TabsTrigger value="archive" className="flex items-center gap-2">
-                <Archive className="h-4 w-4" />
-                Архив
-              </TabsTrigger>
-            )}
+            
 
             {user?.role === 'admin' && (
               <>
@@ -687,8 +682,16 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
             </CardContent>
           </Card>
 
-          {/* Archive Access - только для бухгалтера */}
-          {user?.role === 'accountant' && (
+          {/* Archive Access - для администраторов, бухгалтеров и офис-менеджеров */}
+          {canViewArchive && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Архив</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-4">
+                  Здесь отображается информация об уволенных сотрудниках
+                </p>
                 <Button
                   onClick={() => setShowArchivedEmployees(true)}
                   variant="outline"
@@ -697,7 +700,9 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
                   <Archive className="w-4 h-4 mr-2" />
                   Архив уволенных сотрудников
                 </Button>
-              )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Role Management for Admin */}
           {user?.role === 'admin' && (
@@ -792,11 +797,7 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
             </Card>
           </TabsContent>
 
-          {user?.role === 'accountant' && (
-            <TabsContent value="archive">
-              <ArchivedEmployees />
-            </TabsContent>
-          )}
+          
 
           {user?.role === 'admin' && (
             <>
