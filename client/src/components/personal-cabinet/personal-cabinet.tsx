@@ -297,10 +297,13 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
 
     // Проверка типа файла
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/svg+xml'];
-    if (!allowedTypes.includes(file.type)) {
+    const fileName = file.name.toLowerCase();
+    const hasValidExtension = fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png') || fileName.endsWith('.svg');
+    
+    if (!allowedTypes.includes(file.type) && !hasValidExtension) {
       toast({
         title: "Ошибка",
-        description: "Поддерживаются только файлы JPG, PNG, SVG",
+        description: "Поддерживаются только файлы JPG, JPEG, PNG, SVG",
         variant: "destructive",
       });
       return;
@@ -464,7 +467,7 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/jpeg,image/jpg,image/png,image/svg+xml"
+                  accept=".jpg,.jpeg,.png,.svg,image/jpeg,image/jpg,image/png,image/svg+xml"
                   onChange={handlePhotoUpload}
                   className="hidden"
                 />

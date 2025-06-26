@@ -538,8 +538,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Проверка типа файла - поддерживаем JPG, PNG, SVG
       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/svg+xml'];
-      if (!allowedTypes.includes(req.file.mimetype)) {
-        return res.status(400).json({ message: "Поддерживаются только файлы JPG, PNG, SVG" });
+      const fileName = req.file.originalname.toLowerCase();
+      const hasValidExtension = fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png') || fileName.endsWith('.svg');
+      
+      if (!allowedTypes.includes(req.file.mimetype) && !hasValidExtension) {
+        return res.status(400).json({ message: "Поддерживаются только файлы JPG, JPEG, PNG, SVG" });
       }
 
       // В реальном приложении здесь была бы загрузка в облачное хранилище
