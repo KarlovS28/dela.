@@ -12,3 +12,4 @@ export default defineConfig({
     url: "postgresql://dela:123456789@localhost:5432/dela",
   },
 });
+
