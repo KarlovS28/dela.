@@ -58,8 +58,8 @@ app.use((req, res, next) => {
 
   // Use environment port or fallback to 5000
   // this serves both the API and the client.
-  const port = process.env.PORT || 5000;
-  server.listen(port, "0.0.0.0", () => {
+  const port = process.env.PORT || 3000;
+  server.listen(port, "127.0.0.1", () => {
     log(`serving on port ${port}`);
   });
 })();

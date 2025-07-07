@@ -299,7 +299,7 @@
   
   .export-buttons {
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 1.75rem;
   }
   
   .employee-card {
@@ -347,7 +347,29 @@
     width: 90px;
     height: 90px;
   }
-  
+
+  /* iPhone 14/15/16 (обычные) */
+  @media only screen and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) {
+    body {
+      padding-top: 47px; /* Отступ под Dynamic Island */
+    }
+  }
+
+  /* iPhone 14 Pro/15 Pro */
+  @media only screen and (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) {
+    body {
+      padding-top: 47px;
+    }
+  }
+
+  /* iPhone 14 Pro Max/15 Pro Max */
+  @media only screen and (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) {
+    body {
+      padding-top: 47px;
+    }
+  }
+
+
   /* Адаптивные сетки */
   .grid.grid-cols-1.md\\:grid-cols-2 {
     grid-template-columns: 1fr;
@@ -458,7 +480,7 @@
   
   /* Компактные формы */
   .form-group {
-    margin-bottom: 1rem;
+    margin-bottom: 5rem;
   }
   
   .form-label {
@@ -533,7 +555,7 @@
   }
   
   .department-grid {
-    grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(80px, 9fr));
     gap: 0.25rem;
   }
   
@@ -575,7 +597,7 @@
   }
   
   .data-table {
-    font-size: 0.625rem;
+    font-size: 0.1rem;
   }
 }
 
