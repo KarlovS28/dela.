@@ -183,11 +183,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/departments', requireAuth, async (req, res) => {
     try {
       const departments = await storage.getDepartmentsWithEmployees();
-      
+
       // Проверяем разрешение на просмотр паспортных данных
       const userId = req.session.userId!;
       const canViewPassport = await storage.userHasPermission(userId, 'documents.view_passport');
-      
+
       if (!canViewPassport) {
         // Скрываем паспортные данные у всех сотрудников
         const sanitizedDepartments = departments.map(dept => ({
@@ -289,11 +289,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/employees/archived', requireAuth, requireRole(['admin', 'accountant']), async (req, res) => {
     try {
       const archivedEmployees = await storage.getArchivedEmployees();
-      
+
       // Проверяем разрешение на просмотр паспортных данных
       const userId = req.session.userId!;
       const canViewPassport = await storage.userHasPermission(userId, 'documents.view_passport');
-      
+
       if (!canViewPassport) {
         // Скрываем паспортные данные
         const sanitizedEmployees = archivedEmployees.map(emp => ({
@@ -330,7 +330,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Проверяем разрешение на просмотр паспортных данных
       const userId = req.session.userId!;
       const canViewPassport = await storage.userHasPermission(userId, 'documents.view_passport');
-      
+
       if (!canViewPassport) {
         // Скрываем паспортные данные, если нет разрешения
         const sanitizedEmployee = {
@@ -376,8 +376,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Sysadmin and office-manager can only update basic fields, no personal data
         const allowedFields = ['fullName', 'position', 'departmentId', 'photoUrl'];
         const filteredData = Object.keys(updateData)
-          .filter(key => allowedFields.includes(key))
-          .reduce((obj, key) => ({ ...obj, [key]: updateData[key] }), {});
+            .filter(key => allowedFields.includes(key))
+            .reduce((obj, key) => ({ ...obj, [key]: updateData[key] }), {});
 
         const employee = await storage.updateEmployee(id, filteredData, req.session.userId);
         res.json(employee);
@@ -540,7 +540,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/svg+xml'];
       const fileName = req.file.originalname.toLowerCase();
       const hasValidExtension = fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png') || fileName.endsWith('.svg');
-      
+
       if (!allowedTypes.includes(req.file.mimetype) && !hasValidExtension) {
         return res.status(400).json({ message: "Поддерживаются только файлы JPG, JPEG, PNG, SVG" });
       }
@@ -664,18 +664,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const departmentMap = new Map(departments.map(d => [d.id, d.name]));
 
       const data = employees
-        .filter(emp => !emp.isArchived)
-        .map(employee => ({
-          'ФИО': employee.fullName,
-          'Серия паспорта': employee.passportSeries || '',
-          'Номер паспорта': employee.passportNumber || '',
-          'Кем выдан': employee.passportIssuedBy || '',
-          'Дата выдачи': employee.passportDate || '',
-          'Адрес прописки': employee.address || '',
-          'Должность': employee.position,
-          'Грейд': employee.grade,
-          'Отдел': departmentMap.get(employee.departmentId!) || ''
-        }));
+          .filter(emp => !emp.isArchived)
+          .map(employee => ({
+            'ФИО': employee.fullName,
+            'Серия паспорта': employee.passportSeries || '',
+            'Номер паспорта': employee.passportNumber || '',
+            'Кем выдан': employee.passportIssuedBy || '',
+            'Дата выдачи': employee.passportDate || '',
+            'Адрес прописки': employee.address || '',
+            'Должность': employee.position,
+            'Грейд': employee.grade,
+            'Отдел': departmentMap.get(employee.departmentId!) || ''
+          }));
 
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
@@ -699,13 +699,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const departmentMap = new Map(departments.map(d => [d.id, d.name]));
 
       const data = employees
-        .filter(emp => !emp.isArchived)
-        .map(employee => ({
-          'ФИО': employee.fullName,
-          'Должность': employee.position,
-          'Грейд': employee.grade,
-          'Отдел': departmentMap.get(employee.departmentId!) || ''
-        }));
+          .filter(emp => !emp.isArchived)
+          .map(employee => ({
+            'ФИО': employee.fullName,
+            'Должность': employee.position,
+            'Грейд': employee.grade,
+            'Отдел': departmentMap.get(employee.departmentId!) || ''
+          }));
 
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
@@ -1001,8 +1001,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               characteristics: row['Характеристики'] ? String(row['Характеристики']).trim() : undefined,
               cost: row['Стоимость'] ? String(row['Стоимость']).trim() : '0',
               category: row['Категория'] && String(row['Категория']).trim().toLowerCase().includes('мебель')
-                ? 'Мебель' as const
-                : 'Техника' as const,
+                  ? 'Мебель' as const
+                  : 'Техника' as const,
               employeeId: null, // На склад
             };
 
@@ -1201,9 +1201,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           // Если ФИО пустое, но есть оборудование - привязываем к последнему сотруднику
           else if ((!row['ФИО'] || String(row['ФИО']).trim() === '') &&
-            row['Наименование имущества'] &&
-            row['Инвентарный номер'] &&
-            lastEmployeeId) {
+              row['Наименование имущества'] &&
+              row['Инвентарный номер'] &&
+              lastEmployeeId) {
 
             const inventoryNumber = String(row['Инвентарный номер']).trim();
 
@@ -1214,8 +1214,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 characteristics: row['Характеристики'] ? String(row['Характеристики']).trim() : undefined,
                 cost: row['Стоимость'] || row['Стоимость имущества'] ? String(row['Стоимость'] || row['Стоимость имущества']).trim() : '0',
                 category: row['Категория'] && String(row['Категория']).trim().toLowerCase().includes('мебель')
-                  ? 'Мебель' as const
-                  : 'Техника' as const,
+                    ? 'Мебель' as const
+                    : 'Техника' as const,
                 employeeId: lastEmployeeId,
               };
 
@@ -1413,7 +1413,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             new Paragraph({
               children: [
                 new TextRun({
-                  text: `Общество с ограниченной ответственностью «МассПроект», далее именуемый "Работодатель", в лице директора Скородедова Филиппа Игоревича, действующего на основании Устава, c одной стороны и ${employee.gender === 'Ж' ? 'гражданка' : 'гражданин'} ${employee.fullName || '_____________________________'} (паспортные данные ${employee.passportSeries || '______'} № ${employee.passportNumber || '________'} выдан ${employee.passportDate || '__.__._____ '} ${employee.passportIssuedBy || '_____________________________________________________'}, зарегистрированный по адресу: ${employee.address || '________________________________________________________________'}, именуемый в дальнейшем "Работник", с другой стороны, составили настоящий акт о следующем:`,
+                  text: `Общество с ограниченной ответственностью «____________», далее именуемый "Работодатель", в лице директора ____________ _________ ___________, действующего на основании Устава, c одной стороны и ${employee.gender === 'Ж' ? 'гражданка' : 'гражданин'} ${employee.fullName || '_____________________________'} (паспортные данные ${employee.passportSeries || '______'} № ${employee.passportNumber || '________'} выдан ${employee.passportDate || '__.__._____ '} ${employee.passportIssuedBy || '_____________________________________________________'}, зарегистрированный по адресу: ${employee.address || '________________________________________________________________'}, именуемый в дальнейшем "Работник", с другой стороны, составили настоящий акт о следующем:`,
                   size: 22,
                 }),
               ],
@@ -1432,7 +1432,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               alignment: AlignmentType.JUSTIFIED,
             }),
 
-            // Таблица с материальными ценностями
+            // --- Таблица оборудования ---
             new Table({
               width: {
                 size: 100,
@@ -1443,113 +1443,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 new TableRow({
                   children: [
                     new TableCell({
-                      children: [new Paragraph({
-                        children: [new TextRun({ text: "№ п/п", bold: true, size: 20 })],
-                        alignment: AlignmentType.CENTER,
-                        spacing: { line: 240 }
-                      })],
-                      width: { size: 10, type: WidthType.PERCENTAGE },
+                      children: [new Paragraph({ text: "№", alignment: AlignmentType.CENTER, spacing: { line: 240 } })],
                     }),
                     new TableCell({
-                      children: [new Paragraph({
-                        children: [new TextRun({ text: "Наименование материальных ценностей", bold: true, size: 20 })],
-                        alignment: AlignmentType.CENTER,
-                        spacing: { line: 240 }
-                      })],
-                      width: { size: 55, type: WidthType.PERCENTAGE },
+                      children: [new Paragraph({ text: "Наименование имущества", alignment: AlignmentType.CENTER, spacing: { line: 240 } })],
                     }),
                     new TableCell({
-                      children: [new Paragraph({
-                        children: [new TextRun({ text: "Инвентаризационный номер", bold: true, size: 20 })],
-                        alignment: AlignmentType.CENTER,
-                        spacing: { line: 240 }
-                      })],
-                      width: { size: 20, type: WidthType.PERCENTAGE },
+                      children: [new Paragraph({ text: "Инв. № / колич.", alignment: AlignmentType.CENTER, spacing: { line: 240 } })],
                     }),
                     new TableCell({
-                      children: [new Paragraph({
-                        children: [new TextRun({ text: "Сумма, руб.", bold: true, size: 20 })],
-                        alignment: AlignmentType.CENTER,
-                        spacing: { line: 240 }
-                      })],
-                      width: { size: 15, type: WidthType.PERCENTAGE },
+                      children: [new Paragraph({ text: "Сумма, руб", alignment: AlignmentType.CENTER, spacing: { line: 240 } })],
                     }),
                   ],
                 }),
-                // Строки с оборудованием (всегда 18 строк согласно шаблону)
-                ...Array.from({ length: 18 }, (_, index) => {
-                  const item = employee.equipment && employee.equipment[index];
+
+                // --- Динамические строки по фактическому количеству имущества ---
+                ...Array.from({ length: employee.equipment ? employee.equipment.length : 0 }, (_, index) => {
+                  const item = employee.equipment[index];
                   return new TableRow({
                     children: [
+                      // №
                       new TableCell({
-                        children: [new Paragraph({
-                          children: [new TextRun({ text: (index + 1).toString(), size: 18 })],
-                          alignment: AlignmentType.CENTER,
-                          spacing: { line: 240 }
-                        })],
+                        children: [
+                          new Paragraph({
+                            children: [new TextRun({ text: (index + 1).toString(), size: 18 })],
+                            alignment: AlignmentType.CENTER,
+                            spacing: { line: 240 },
+                          }),
+                        ],
                       }),
+                      // Наименование
                       new TableCell({
-                        children: [new Paragraph({
-                          children: [new TextRun({ text: item?.name || "", size: 18 })],
-                          spacing: { line: 240 }
-                        })],
+                        children: [
+                          new Paragraph({
+                            children: [new TextRun({ text: item.name || "", size: 18 })],
+                            spacing: { line: 240 },
+                          }),
+                        ],
                       }),
+                      // Инвентарный номер / количество
                       new TableCell({
-                        children: [new Paragraph({
-                          children: [new TextRun({ text: item?.inventoryNumber || "", size: 18 })],
-                          alignment: AlignmentType.CENTER,
-                          spacing: { line: 240 }
-                        })],
+                        children: [
+                          new Paragraph({
+                            children: [new TextRun({ text: item.inventoryNumber || "", size: 18 })],
+                            alignment: AlignmentType.CENTER,
+                            spacing: { line: 240 },
+                          }),
+                        ],
                       }),
+                      // Сумма (всегда в формате 0,00)
                       new TableCell({
-                        children: [new Paragraph({
-                          children: [new TextRun({ text: item?.cost || "", size: 18 })],
-                          alignment: AlignmentType.RIGHT,
-                          spacing: { line: 240 }
-                        })],
+                        children: [
+                          new Paragraph({
+                            children: [
+                              new TextRun({
+                                text: item.cost ? parseFloat(item.cost).toFixed(2) : "0.00",
+                                size: 18,
+                              }),
+                            ],
+                            alignment: AlignmentType.RIGHT,
+                            spacing: { line: 240 },
+                          }),
+                        ],
                       }),
                     ],
                   });
                 }),
-                // Итоговая строка
+
+                // --- Итоговая строка ---
                 new TableRow({
                   children: [
                     new TableCell({
-                      children: [new Paragraph({
-                        children: [new TextRun({ text: "", size: 18 })],
-                        alignment: AlignmentType.CENTER,
-                        spacing: { line: 240 }
-                      })],
+                      children: [new Paragraph({ children: [new TextRun({ text: "", size: 18 })], alignment: AlignmentType.CENTER, spacing: { line: 240 } })],
                     }),
                     new TableCell({
-                      children: [new Paragraph({
-                        children: [new TextRun({ text: "Итого:", bold: true, size: 18 })],
-                        alignment: AlignmentType.RIGHT,
-                        spacing: { line: 240 }
-                      })],
+                      children: [new Paragraph({ children: [new TextRun({ text: "Итого:", bold: true, size: 18 })], alignment: AlignmentType.RIGHT, spacing: { line: 240 } })],
                     }),
                     new TableCell({
-                      children: [new Paragraph({
-                        children: [new TextRun({ text: "", size: 18 })],
-                        alignment: AlignmentType.CENTER,
-                        spacing: { line: 240 }
-                      })],
+                      children: [new Paragraph({ children: [new TextRun({ text: "", size: 18 })], alignment: AlignmentType.CENTER, spacing: { line: 240 } })],
                     }),
                     new TableCell({
-                      children: [new Paragraph({
-                        children: [new TextRun({
-                          text: employee.equipment?.reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0).toFixed(2) || "0.00",
-                          bold: true,
-                          size: 18
-                        })],
-                        alignment: AlignmentType.RIGHT,
-                        spacing: { line: 240 }
-                      })],
+                      children: [
+                        new Paragraph({
+                          children: [
+                            new TextRun({
+                              text: employee.equipment
+                                  ? employee.equipment.reduce((acc, item) => acc + (parseFloat(item.cost) || 0), 0).toFixed(2)
+                                  : "0.00",
+                              bold: true,
+                              size: 18,
+                            }),
+                          ],
+                          alignment: AlignmentType.RIGHT,
+                          spacing: { line: 240 },
+                        }),
+                      ],
                     }),
                   ],
                 }),
               ],
             }),
+
 
             // Пункты акта
             new Paragraph({
@@ -1608,7 +1602,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }),
             new Paragraph({
               children: [new TextRun({
-                text: `________________(Скородедов Ф.И.)                            ________________(${employee.fullName.split(' ')[0]} ${employee.fullName.split(' ')[1]?.charAt(0) || ''}.${employee.fullName.split(' ')[2]?.charAt(0) || ''}.`,
+                text: `________________(__________.__.__)                            ________________(${employee.fullName.split(' ')[0]} ${employee.fullName.split(' ')[1]?.charAt(0) || ''}.${employee.fullName.split(' ')[2]?.charAt(0) || ''}.`,
                 size: 20
               })],
               spacing: { line: 240 },

@@ -1,4 +1,4 @@
-/* 
+/*
  * Кастомные стили для системы управления сотрудниками "dela."
  * Этот файл можно редактировать для изменения внешнего вида приложения
  */
@@ -10,21 +10,21 @@
   --primary-hover: hsl(222.2, 84%, 10%);
   --secondary-color: hsl(210, 40%, 96%);
   --accent-color: hsl(210, 40%, 90%);
-  
+
   /* Цвета текста */
   --text-primary: hsl(222.2, 84%, 4.9%);
   --text-secondary: hsl(215.4, 16.3%, 46.9%);
   --text-muted: hsl(215.4, 16.3%, 56.9%);
-  
+
   /* Цвета фона */
   --background-main: hsl(0, 0%, 100%);
   --background-card: hsl(0, 0%, 100%);
   --background-muted: hsl(210, 40%, 98%);
-  
+
   /* Границы */
   --border-color: hsl(214.3, 31.8%, 91.4%);
   --border-radius: 0.5rem;
-  
+
   /* Тени */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
@@ -37,15 +37,15 @@
   --primary-hover: hsl(210, 40%, 90%);
   --secondary-color: hsl(217.2, 32.6%, 17.5%);
   --accent-color: hsl(217.2, 32.6%, 25%);
-  
+
   --text-primary: hsl(210, 40%, 98%);
   --text-secondary: hsl(215, 20.2%, 65.1%);
   --text-muted: hsl(215, 20.2%, 55%);
-  
+
   --background-main: hsl(222.2, 84%, 4.9%);
   --background-card: hsl(222.2, 84%, 8%);
   --background-muted: hsl(217.2, 32.6%, 17.5%);
-  
+
   --border-color: hsl(217.2, 32.6%, 17.5%);
 }
 
@@ -296,24 +296,24 @@
     grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
     gap: 0.875rem;
   }
-  
+
   .export-buttons {
     flex-direction: column;
     gap: 1.75rem;
   }
-  
+
   .employee-card {
     padding: 1rem;
     border-radius: 0.75rem;
   }
-  
+
   .modal-content {
     margin: 0.75rem;
     max-height: calc(100vh - 1.5rem);
     width: calc(100vw - 1.5rem);
     border-radius: 1rem;
   }
-  
+
   /* Touch-friendly элементы */
   .data-table th,
   .data-table td {
@@ -321,14 +321,14 @@
     font-size: 0.875rem;
     min-height: 44px;
   }
-  
+
   .form-input {
     padding: 0.75rem;
     font-size: 1rem;
     min-height: 48px;
     border-radius: 0.5rem;
   }
-  
+
   .btn-primary,
   .btn-secondary {
     padding: 0.75rem 1rem;
@@ -336,13 +336,13 @@
     min-height: 48px;
     border-radius: 0.5rem;
   }
-  
+
   .department-header {
     flex-direction: column;
     gap: 0.75rem;
     align-items: flex-start;
   }
-  
+
   .employee-photo {
     width: 90px;
     height: 90px;
@@ -375,12 +375,12 @@
     grid-template-columns: 1fr;
     gap: 1rem;
   }
-  
+
   /* Улучшенная навигация */
   .header {
     padding: 1rem 0.75rem;
   }
-  
+
   /* Больше пространства для кликов */
   .clickable-area {
     min-height: 48px;
@@ -397,32 +397,32 @@
     grid-template-columns: repeat(auto-fill, minmax(75px, 1fr));
     gap: 0.75rem;
   }
-  
+
   .page-title {
     font-size: 1.5rem;
     margin-bottom: 1.25rem;
   }
-  
+
   .section-title {
     font-size: 1.25rem;
     margin-bottom: 1rem;
   }
-  
+
   .employee-photo {
     width: 75px;
     height: 75px;
   }
-  
+
   .export-section {
     padding: 1.25rem;
   }
-  
+
   /* Компактные карточки */
   .card {
     padding: 1rem;
     margin: 0.5rem 0;
   }
-  
+
   /* Адаптация таблиц */
   .table-responsive {
     overflow-x: auto;
@@ -436,53 +436,53 @@
     grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
     gap: 0.5rem;
   }
-  
+
   .page-title {
     font-size: 1.375rem;
     margin-bottom: 1rem;
   }
-  
+
   .section-title {
     font-size: 1.125rem;
     margin-bottom: 0.75rem;
   }
-  
+
   .employee-photo {
     width: 65px;
     height: 65px;
   }
-  
+
   .data-table th,
   .data-table td {
     padding: 0.5rem 0.25rem;
     font-size: 0.75rem;
   }
-  
+
   .table-hide-mobile {
     display: none;
   }
-  
+
   .modal-content {
     margin: 0.5rem;
     max-height: calc(100vh - 1rem);
     width: calc(100vw - 1rem);
     padding: 1rem;
   }
-  
+
   .flex.gap-4 {
     flex-direction: column;
     gap: 0.75rem;
   }
-  
+
   .flex.gap-2 {
     gap: 0.5rem;
   }
-  
+
   /* Компактные формы */
   .form-group {
     margin-bottom: 5rem;
   }
-  
+
   .form-label {
     font-size: 0.875rem;
     margin-bottom: 0.5rem;
@@ -495,53 +495,53 @@
     grid-template-columns: repeat(auto-fill, minmax(55px, 1fr));
     gap: 0.375rem;
   }
-  
+
   .page-title {
     font-size: 1.25rem;
     margin-bottom: 0.875rem;
   }
-  
+
   .section-title {
     font-size: 1rem;
     margin-bottom: 0.625rem;
   }
-  
+
   .employee-photo {
     width: 55px;
     height: 55px;
   }
-  
+
   .data-table th,
   .data-table td {
     padding: 0.375rem 0.125rem;
     font-size: 0.625rem;
   }
-  
+
   .modal-content {
     margin: 0.25rem;
     max-height: calc(100vh - 0.5rem);
     width: calc(100vw - 0.5rem);
     padding: 0.75rem;
   }
-  
+
   .btn-primary,
   .btn-secondary {
     padding: 0.625rem 0.875rem;
     font-size: 0.875rem;
     min-height: 44px;
   }
-  
+
   .form-input {
     padding: 0.625rem;
     font-size: 0.875rem;
     min-height: 44px;
   }
-  
+
   /* Очень компактные элементы */
   .employee-card {
     padding: 0.75rem;
   }
-  
+
   .export-section {
     padding: 1rem;
   }
@@ -553,49 +553,49 @@
     padding-left: 0.5rem;
     padding-right: 0.5rem;
   }
-  
+
   .department-grid {
     grid-template-columns: repeat(auto-fill, minmax(80px, 9fr));
     gap: 0.25rem;
   }
-  
+
   .employee-photo {
     width: 50px;
     height: 50px;
   }
-  
+
   .page-title {
     font-size: 1.125rem;
     margin-bottom: 0.75rem;
   }
-  
+
   .section-title {
     font-size: 0.875rem;
     margin-bottom: 0.5rem;
   }
-  
+
   .modal-content {
     margin: 0.125rem;
     padding: 0.5rem;
   }
-  
+
   .btn-primary,
   .btn-secondary {
     padding: 0.5rem 0.75rem;
     font-size: 0.75rem;
     min-height: 40px;
   }
-  
+
   .form-input {
     padding: 0.5rem;
     font-size: 0.75rem;
     min-height: 40px;
   }
-  
+
   .employee-card {
     padding: 0.5rem;
   }
-  
+
   .data-table {
     font-size: 0.1rem;
   }
@@ -607,20 +607,20 @@
     max-height: calc(100vh - 1rem);
     overflow-y: auto;
   }
-  
+
   .department-section {
     margin-bottom: 1.5rem;
   }
-  
+
   .department-grid {
     grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
   }
-  
+
   .employee-photo {
     width: 60px;
     height: 60px;
   }
-  
+
   .page-title {
     font-size: 1.25rem;
     margin-bottom: 0.75rem;
@@ -632,17 +632,17 @@
   .container {
     padding: 0 2rem;
   }
-  
+
   .department-grid {
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: 1.5rem;
   }
-  
+
   .modal-content {
     max-width: 85vw;
     margin: 2rem auto;
   }
-  
+
   .employee-photo {
     width: 100px;
     height: 100px;
@@ -655,7 +655,7 @@
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     gap: 1.25rem;
   }
-  
+
   .modal-content {
     max-width: 90vw;
     max-height: 80vh;
@@ -669,7 +669,7 @@
     image-rendering: -webkit-optimize-contrast;
     image-rendering: crisp-edges;
   }
-  
+
   .btn-primary,
   .btn-secondary {
     border-width: 0.5px;
@@ -683,16 +683,16 @@
     padding-left: max(1rem, env(safe-area-inset-left));
     padding-right: max(1rem, env(safe-area-inset-right));
   }
-  
+
   .container {
     padding-left: max(0.75rem, env(safe-area-inset-left));
     padding-right: max(0.75rem, env(safe-area-inset-right));
   }
-  
+
   .modal-content {
     margin-bottom: max(1rem, env(safe-area-inset-bottom));
   }
-  
+
   @media (max-width: 480px) {
     .container {
       padding-left: max(0.5rem, env(safe-area-inset-left));
@@ -708,23 +708,23 @@
     min-width: 44px;
     touch-action: manipulation;
   }
-  
+
   input, select, textarea {
     min-height: 44px;
     touch-action: manipulation;
   }
-  
+
   .employee-avatar {
     min-height: 44px;
     min-width: 44px;
   }
-  
+
   /* Увеличенные отступы для касаний */
   .btn-primary,
   .btn-secondary {
     margin: 0.25rem;
   }
-  
+
   .form-input {
     margin: 0.125rem 0;
   }

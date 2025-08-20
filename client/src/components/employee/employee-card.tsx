@@ -739,7 +739,7 @@ export function EmployeeCard({ employeeId, open, onOpenChange }: EmployeeCardPro
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                  Закрепленное имущество ({employee.equipment?.length || 0})
+                  Закрепленное имущество
                   {canEditEquipment && (
                     <Button
                       size="sm"

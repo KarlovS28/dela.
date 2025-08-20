@@ -7,6 +7,7 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
+    DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,11 +16,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/use-auth";
 import { ArchivedEmployees } from "@/components/employee/archived-employees";
+import { ExcelExport } from "@/components/export/excel-export";
+import { UserManagement } from "@/components/admin/user-management";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { canImportExport } from "@/lib/auth-utils";
-import { Download, Upload, FileSpreadsheet, Archive, Shield, User, UserCheck, Activity, Camera } from "lucide-react";
+import { canImportExport, canViewArchive } from "@/lib/auth-utils";
+import { Download, Upload, FileText, FileSpreadsheet, Archive, Shield, User, Settings, UserCheck, Activity, Camera } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { apiRequest } from "@/lib/queryClient";
 import { Warehouse } from "@/components/warehouse/warehouse";
 import { DecommissionedEquipment } from "@/components/decommissioned/decommissioned-equipment";
 import { RoleManagement } from "@/components/admin/role-management";
@@ -45,11 +49,15 @@ interface AuditLog {
     action: string;
     entityType: string;
     entityId: number;
+    oldValues?: string;
+    newValues?: string;
     description: string;
     createdAt: string;
     user: {
         id: number;
         fullName: string;
+        email: string;
+        role: string;
     };
 }
 
@@ -67,6 +75,7 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
     const [showDecommissioned, setShowDecommissioned] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
+    const [showUserManagement, setShowUserManagement] = useState(false);
     const [showRoleManagement, setShowRoleManagement] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -81,13 +90,18 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
     });
 
     const getRoleDisplayName = (role: string) => {
-        const roles: Record<string, string> = {
-            admin: "Администратор",
-            sysadmin: "Системный администратор",
-            accountant: "Бухгалтер",
-            "office-manager": "Офис-менеджер",
-        };
-        return roles[role] || role;
+        switch (role) {
+            case "admin":
+                return "Администратор";
+            case "sysadmin":
+                return "Системный администратор";
+            case "accountant":
+                return "Бухгалтер";
+            case "office-manager":
+                return "Офис-менеджер";
+            default:
+                return role;
+        }
     };
 
     const onPasswordSubmit = async (data: PasswordFormData) => {
@@ -98,10 +112,85 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
         passwordForm.reset();
     };
 
+    const handleResponsibilityTemplateUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            const formData = new FormData();
+            formData.append("template", file);
+            try {
+                const response = await fetch("/api/templates/responsibility-act", {
+                    method: "POST",
+                    credentials: "include",
+                    body: formData,
+                });
+                if (response.ok) {
+                    toast({
+                        title: "Шаблон загружен",
+                        description: "Шаблон акта материальной ответственности успешно загружен",
+                    });
+                } else {
+                    throw new Error("Ошибка загрузки");
+                }
+            } catch (error) {
+                toast({
+                    title: "Ошибка",
+                    description: "Не удалось загрузить шаблон",
+                    variant: "destructive",
+                });
+            }
+        }
+    };
+
+    const handleChecklistTemplateUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            const formData = new FormData();
+            formData.append("template", file);
+            try {
+                const response = await fetch("/api/templates/termination-checklist", {
+                    method: "POST",
+                    credentials: "include",
+                    body: formData,
+                });
+                if (response.ok) {
+                    toast({
+                        title: "Шаблон загружен",
+                        description: "Шаблон обходного листа успешно загружен",
+                    });
+                } else {
+                    throw new Error("Ошибка загрузки");
+                }
+            } catch (error) {
+                toast({
+                    title: "Ошибка",
+                    description: "Не удалось загрузить шаблон",
+                    variant: "destructive",
+                });
+            }
+        }
+    };
+
     const handleExportInventory = async () => {
         try {
             setIsExporting(true);
-            // ... ваш код экспорта
+            const response = await fetch('/api/export/inventory-full', {
+                method: 'GET',
+                credentials: 'include'
+            });
+            if (!response.ok) throw new Error('Ошибка экспорта');
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'инвентаризация.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            toast({
+                title: "Экспорт завершен",
+                description: "Файл инвентаризации загружен",
+            });
         } catch (error) {
             toast({
                 title: "Ошибка экспорта",
@@ -114,12 +203,51 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
     };
 
     const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        // ... ваш код импорта
+        const file = event.target.files?.[0];
+        if (!file) return;
+        try {
+            setIsImporting(true);
+            const formData = new FormData();
+            formData.append('file', file);
+            const response = await fetch('/api/import/employees', {
+                method: 'POST',
+                credentials: 'include',
+                body: formData
+            });
+            const result = await response.json();
+            queryClient.invalidateQueries({ queryKey: ['/api/departments'] });
+            toast({
+                title: "Импорт завершен",
+                description: result.message,
+            });
+            if (result.errors && result.errors.length > 0) {
+                console.warn("Ошибки импорта:", result.errors);
+            }
+        } catch (error) {
+            toast({
+                title: "Ошибка импорта",
+                description: "Не удалось импортировать файл",
+                variant: "destructive",
+            });
+        } finally {
+            setIsImporting(false);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+        }
     };
 
     const updateProfilePhoto = useMutation({
         mutationFn: async (formData: FormData) => {
-            // ... ваш код загрузки фото
+            const response = await fetch(`/api/users/${user?.id}/photo`, {
+                method: "POST",
+                credentials: "include",
+                body: formData,
+            });
+            if (!response.ok) {
+                throw new Error("Failed to upload photo");
+            }
+            return response.json();
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
@@ -129,6 +257,7 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
             });
         },
         onError: (error) => {
+            console.error("Photo upload error:", error);
             toast({
                 title: "Ошибка",
                 description: "Не удалось загрузить фото",
@@ -141,25 +270,113 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
     });
 
     const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        // ... ваш код обработки фото
+        const file = event.target.files?.[0];
+        if (!file || !user) return;
+        if (file.size > 5 * 1024 * 1024) {
+            toast({
+                title: "Ошибка",
+                description: "Размер файла не должен превышать 5MB",
+                variant: "destructive",
+            });
+            return;
+        }
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/svg+xml'];
+        const fileName = file.name.toLowerCase();
+        const hasValidExtension = fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png') || fileName.endsWith('.svg');
+        if (!allowedTypes.includes(file.type) && !hasValidExtension) {
+            toast({
+                title: "Ошибка",
+                description: "Поддерживаются только файлы JPG, JPEG, PNG, SVG",
+                variant: "destructive",
+            });
+            return;
+        }
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append("photo", file);
+        updateProfilePhoto.mutate(formData);
     };
+
+    if (!user) return null;
+
+    const canManageData = canImportExport(user.role);
+    const canViewArchive = user?.role === 'admin' || user?.role === 'sysadmin' || user?.role === 'office-manager';
 
     const { data: auditLogs = [], isLoading: isLoadingLogs } = useQuery<AuditLog[]>({
         queryKey: ["/api/audit-logs"],
         queryFn: async () => {
-            const response = await fetch("/api/audit-logs", { credentials: "include" });
+            const response = await fetch("/api/audit-logs", {
+                credentials: "include",
+            });
             if (!response.ok) throw new Error("Failed to fetch audit logs");
             return response.json();
         },
         enabled: user?.role === 'admin',
+        refetchInterval: 30000,
     });
 
     const handleExportAuditLogs = async () => {
-        // ... ваш код экспорта логов
+        try {
+            setIsExporting(true);
+            const response = await fetch('/api/export/audit-logs', {
+                method: 'GET',
+                credentials: 'include'
+            });
+            if (!response.ok) throw new Error('Ошибка экспорта');
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `история_изменений_${new Date().toLocaleDateString('ru-RU')}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            toast({
+                title: "Экспорт завершен",
+                description: "Файл истории изменений загружен",
+            });
+        } catch (error) {
+            toast({
+                title: "Ошибка экспорта",
+                description: "Не удалось экспортировать историю изменений",
+                variant: "destructive",
+            });
+        } finally {
+            setIsExporting(false);
+        }
     };
 
     const handleExportEmployeesList = async () => {
-        // ... ваш код экспорта сотрудников
+        try {
+            setIsExporting(true);
+            const response = await fetch('/api/export/employees-with-equipment', {
+                method: 'GET',
+                credentials: 'include'
+            });
+            if (!response.ok) throw new Error('Ошибка экспорта');
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `список_сотрудников_${new Date().toLocaleDateString('ru-RU')}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            toast({
+                title: "Экспорт завершен",
+                description: "Список сотрудников загружен",
+            });
+        } catch (error) {
+            toast({
+                title: "Ошибка экспорта",
+                description: "Не удалось экспортировать список сотрудников",
+                variant: "destructive",
+            });
+        } finally {
+            setIsExporting(false);
+        }
     };
 
     const actionLabels: Record<string, string> = {
@@ -183,32 +400,25 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
         archive: "bg-orange-100 text-orange-800"
     };
 
-    if (!user) return null;
-
-    const canManageData = canImportExport(user.role);
-    const isAdmin = user?.role === 'admin';
-
     return (
         <>
             <Dialog open={open} onOpenChange={onOpenChange}>
-                <DialogContent className="w-[95vw] max-w-none h-[100dvh] sm:h-auto sm:max-w-7xl sm:max-h-[95dvh] overflow-y-auto p-2 sm:p-6">
+                <DialogContent className="w-[95vw] max-w-none h-[100dvh] sm:max-w-7xl sm:max-h-[95vh] overflow-y-auto p-4 sm:p-6">
                     <DialogHeader>
                         <DialogTitle className="text-xl sm:text-2xl">Личный кабинет</DialogTitle>
                     </DialogHeader>
 
                     <Tabs defaultValue="profile" className="w-full">
-                        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-3 sm:grid-cols-5' : 'grid-cols-2 sm:grid-cols-3'} gap-1`}>
+                        <TabsList className={`grid w-full ${user?.role === 'admin' ? 'grid-cols-3 sm:grid-cols-9' : 'grid-cols-2 sm:grid-cols-3'} gap-3`}>
                             <TabsTrigger value="profile" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
                                 <User className="h-3 w-3 sm:h-4 sm:w-4" />
                                 Профиль
                             </TabsTrigger>
-
                             <TabsTrigger value="employees-list" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
                                 <Download className="h-3 w-3 sm:h-4 sm:w-4" />
                                 Сотрудники
                             </TabsTrigger>
-
-                            {isAdmin && (
+                            {user?.role === 'admin' && (
                                 <>
                                     <TabsTrigger value="audit" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
                                         <Activity className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -231,7 +441,7 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
                                 <CardHeader className="p-4 sm:p-6">
                                     <CardTitle className="text-lg sm:text-xl">Личные данные</CardTitle>
                                 </CardHeader>
-                                <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+                                <CardContent className="p-4 sm:p-6 pt-0">
                                     <div className="flex flex-col sm:flex-row items-center gap-4">
                                         <div className="relative">
                                             <Avatar className="h-16 w-16 sm:h-20 sm:w-20">
@@ -256,7 +466,7 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
                                             <input
                                                 ref={fileInputRef}
                                                 type="file"
-                                                accept="image/*"
+                                                accept=".jpg,.jpeg,.png,.svg,image/jpeg,image/jpg,image/png,image/svg+xml"
                                                 onChange={handlePhotoUpload}
                                                 className="hidden"
                                             />
@@ -271,7 +481,7 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
                                     </div>
                                 </CardContent>
                                 <CardContent className="p-4 sm:p-6 pt-0">
-                                    <div className="grid grid-cols-1 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
                                             <Label className="text-sm font-medium">ФИО</Label>
                                             <Input value={user.fullName} disabled className="mt-1" />
@@ -361,9 +571,7 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
                                                 {isExporting ? "Экспорт..." : "Инвентаризация"}
                                             </Button>
                                         </div>
-
                                         <Separator />
-
                                         <div>
                                             <h4 className="text-sm font-medium mb-2">Импорт</h4>
                                             <div className="space-y-2">
@@ -432,7 +640,7 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
                                 </CardContent>
                             </Card>
 
-                            {(user?.role === 'admin' || user?.role === 'sysadmin' || user?.role === 'office-manager') && (
+                            {canViewArchive && (
                                 <Card>
                                     <CardHeader className="p-4 sm:p-6">
                                         <CardTitle className="text-lg sm:text-xl">Архив</CardTitle>
@@ -453,14 +661,14 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
                                 </Card>
                             )}
 
-                            {isAdmin && (
+                            {user?.role === 'admin' && (
                                 <Card>
                                     <CardHeader className="p-4 sm:p-6">
                                         <CardTitle className="text-lg sm:text-xl">Управление ролями</CardTitle>
                                     </CardHeader>
                                     <CardContent className="p-4 sm:p-6 pt-0">
                                         <p className="text-muted-foreground text-sm mb-4">
-                                            Создание ролей и управление правами доступа
+                                            Создание новых ролей и управление правами доступа пользователей
                                         </p>
                                         <Button
                                             onClick={() => setShowRoleManagement(true)}
@@ -468,7 +676,7 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
                                             className="w-full"
                                         >
                                             <Shield className="w-4 h-4 mr-2" />
-                                            Управление ролями
+                                            Открыть управление ролями
                                         </Button>
                                     </CardContent>
                                 </Card>
@@ -482,21 +690,22 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
                                 </CardHeader>
                                 <CardContent className="p-4 sm:p-6 pt-0 space-y-4">
                                     <p className="text-muted-foreground text-sm">
-                                        Скачайте список всех сотрудников с указанием ФИО, отдела и закрепленной техники.
+                                        Скачайте актуальный список всех сотрудников с указанием ФИО, отдела, грейда и закрепленной техники.
                                     </p>
                                     <Button
                                         onClick={handleExportEmployeesList}
                                         disabled={isExporting}
-                                        className="w-full sm:w-auto"
+                                        className="flex items-center gap-2 min-h-[44px] w-full sm:w-auto text-sm sm:text-base"
                                     >
-                                        <Download className="w-4 h-4 mr-2" />
-                                        {isExporting ? "Экспорт..." : "Скачать список"}
+                                        <Download className="w-4 h-4" />
+                                        <span className="hidden sm:inline">Скачать список сотрудников</span>
+                                        <span className="sm:hidden">Список сотрудников</span>
                                     </Button>
                                 </CardContent>
                             </Card>
                         </TabsContent>
 
-                        {isAdmin && (
+                        {user?.role === 'admin' && (
                             <>
                                 <TabsContent value="audit">
                                     <Card>
@@ -511,37 +720,36 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
                                                     disabled={isExporting}
                                                     variant="outline"
                                                     size="sm"
-                                                    className="hidden sm:flex"
                                                 >
                                                     <Download className="w-4 h-4 mr-2" />
-                                                    Excel
+                                                    {isExporting ? "Экспорт..." : "Скачать Excel"}
                                                 </Button>
                                             </CardTitle>
                                         </CardHeader>
-                                        <CardContent className="p-0">
-                                            <div className="overflow-x-auto">
-                                                {isLoadingLogs ? (
-                                                    <div className="flex items-center justify-center h-32">
-                                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                                                    </div>
-                                                ) : auditLogs.length > 0 ? (
-                                                    <Table className="min-w-[800px] sm:min-w-full">
+                                        <CardContent>
+                                            {isLoadingLogs ? (
+                                                <div className="flex items-center justify-center h-32">
+                                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                                </div>
+                                            ) : auditLogs.length > 0 ? (
+                                                <div className="overflow-x-auto">
+                                                    <Table>
                                                         <TableHeader>
                                                             <TableRow>
-                                                                <TableHead className="whitespace-nowrap">Дата</TableHead>
-                                                                <TableHead className="hidden sm:table-cell">Пользователь</TableHead>
+                                                                <TableHead>Дата</TableHead>
+                                                                <TableHead>Пользователь</TableHead>
                                                                 <TableHead>Действие</TableHead>
-                                                                <TableHead className="hidden md:table-cell">Объект</TableHead>
+                                                                <TableHead>Объект</TableHead>
                                                                 <TableHead>Описание</TableHead>
                                                             </TableRow>
                                                         </TableHeader>
                                                         <TableBody>
-                                                            {auditLogs.slice(0, 20).map((log) => (
+                                                            {auditLogs.slice(0, 50).map((log) => (
                                                                 <TableRow key={log.id}>
-                                                                    <TableCell className="whitespace-nowrap text-xs sm:text-sm">
+                                                                    <TableCell className="text-xs">
                                                                         {new Date(log.createdAt).toLocaleString('ru-RU')}
                                                                     </TableCell>
-                                                                    <TableCell className="hidden sm:table-cell text-xs sm:text-sm">
+                                                                    <TableCell className="text-xs">
                                                                         {log.user.fullName}
                                                                     </TableCell>
                                                                     <TableCell>
@@ -549,32 +757,31 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
                                                                             {actionLabels[log.action] || log.action}
                                                                         </Badge>
                                                                     </TableCell>
-                                                                    <TableCell className="hidden md:table-cell text-xs sm:text-sm">
+                                                                    <TableCell className="text-xs">
                                                                         {entityLabels[log.entityType] || log.entityType}
                                                                     </TableCell>
-                                                                    <TableCell className="text-xs sm:text-sm">
+                                                                    <TableCell className="text-xs">
                                                                         {log.description}
                                                                     </TableCell>
                                                                 </TableRow>
                                                             ))}
                                                         </TableBody>
                                                     </Table>
-                                                ) : (
-                                                    <p className="text-center text-muted-foreground py-8">
-                                                        История изменений пуста
-                                                    </p>
-                                                )}
-                                            </div>
+                                                </div>
+                                            ) : (
+                                                <p className="text-center text-muted-foreground py-8">
+                                                    История изменений пуста
+                                                </p>
+                                            )}
                                         </CardContent>
                                     </Card>
                                 </TabsContent>
-
                                 <TabsContent value="roles">
-                                    <div className="space-y-4 sm:space-y-6">
+                                    <div className="space-y-6">
                                         <RoleManagement />
+                                        <UserManagement />
                                     </div>
                                 </TabsContent>
-
                                 <TabsContent value="register">
                                     <RegistrationRequests />
                                 </TabsContent>
