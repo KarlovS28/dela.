@@ -498,61 +498,6 @@ export function PersonalCabinet({ open, onOpenChange }: PersonalCabinetProps) {
                                 </CardContent>
                             </Card>
 
-                            <Card>
-                                <CardHeader className="p-4 sm:p-6">
-                                    <CardTitle className="text-lg sm:text-xl">Смена пароля</CardTitle>
-                                </CardHeader>
-                                <CardContent className="p-4 sm:p-6 pt-0">
-                                    <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-3 sm:space-y-4">
-                                        <div>
-                                            <Label htmlFor="currentPassword" className="text-sm">Текущий пароль</Label>
-                                            <Input
-                                                id="currentPassword"
-                                                type="password"
-                                                className="mt-1"
-                                                {...passwordForm.register("currentPassword")}
-                                            />
-                                            {passwordForm.formState.errors.currentPassword && (
-                                                <p className="text-xs text-destructive mt-1">
-                                                    {passwordForm.formState.errors.currentPassword.message}
-                                                </p>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="newPassword" className="text-sm">Новый пароль</Label>
-                                            <Input
-                                                id="newPassword"
-                                                type="password"
-                                                className="mt-1"
-                                                {...passwordForm.register("newPassword")}
-                                            />
-                                            {passwordForm.formState.errors.newPassword && (
-                                                <p className="text-xs text-destructive mt-1">
-                                                    {passwordForm.formState.errors.newPassword.message}
-                                                </p>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="confirmPassword" className="text-sm">Подтвердите пароль</Label>
-                                            <Input
-                                                id="confirmPassword"
-                                                type="password"
-                                                className="mt-1"
-                                                {...passwordForm.register("confirmPassword")}
-                                            />
-                                            {passwordForm.formState.errors.confirmPassword && (
-                                                <p className="text-xs text-destructive mt-1">
-                                                    {passwordForm.formState.errors.confirmPassword.message}
-                                                </p>
-                                            )}
-                                        </div>
-                                        <Button type="submit" className="w-full sm:w-auto">
-                                            Сохранить пароль
-                                        </Button>
-                                    </form>
-                                </CardContent>
-                            </Card>
-
                             {canManageData && (
                                 <Card>
                                     <CardHeader className="p-4 sm:p-6">

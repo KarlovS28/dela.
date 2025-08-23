@@ -23,19 +23,34 @@ export function EmployeeAvatar({ employee, size = "md", onClick }: EmployeeAvata
       .slice(0, 2);
   };
 
-  return (
-    <div className="flex flex-col items-center cursor-pointer group" onClick={onClick}>
-      <div className="relative">
-        <Avatar className={`${sizeClasses[size]} border-4 border-primary group-hover:border-primary/80 transition-all duration-200 group-hover:scale-105`}>
-          <AvatarImage 
-            src={employee.photoUrl || `https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face`} 
-            alt={employee.fullName}
-          />
-          <AvatarFallback className="bg-primary/10 text-primary font-medium">
-            {getInitials(employee.fullName)}
-          </AvatarFallback>
-        </Avatar>
-      </div>
+    return (
+        <div className="flex flex-col items-center cursor-pointer group" onClick={onClick}>
+            <div className="relative">
+                <Avatar className={`${sizeClasses[size]} border-2 border-primary group-hover:border-primary/60 transition-all duration-200 group-hover:scale-105`}>
+                    <AvatarImage
+                        src={
+                            employee.photoUrl
+                                ? (employee.photoUrl.startsWith('http') ||
+                                    employee.photoUrl.startsWith('data:') ||
+                                    employee.photoUrl.startsWith('blob:')
+                                        ? employee.photoUrl
+                                        : `/images/employees/${employee.photoUrl}`
+                                )
+                                : (employee.gender === 'Ж'
+                                        ? '/imege/dsr.png'
+                                        : employee.gender === 'М'
+                                            ? '/imege/dsg.png'
+                                            : '/imege/dsg.png' // или любой другой дефолтный
+                                )
+                        }
+                        alt={employee.fullName}
+                        className="object-cover w-18 h-18"
+                    />
+                    <AvatarFallback className="bg-primary/5 text-primary text-sm font-medium w-18 h-18">
+                        {getInitials(employee.fullName)}
+                    </AvatarFallback>
+                </Avatar>
+            </div>
       
       {size !== "lg" && (
         <div className="mt-3 text-center">
