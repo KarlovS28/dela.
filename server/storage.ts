@@ -95,13 +95,13 @@ export interface IStorage {
   getAuditLogs(limit?: number): Promise<any[]>;
   notifyUsersAboutChange(excludeUserId: number, title: string, message: string, type: string, relatedId?: number): Promise<void>;
   logAudit(
-    userId: number,
-    action: string,
-    entityType: string,
-    entityId: number,
-    description: string,
-    oldValues?: any,
-    newValues?: any
+      userId: number,
+      action: string,
+      entityType: string,
+      entityId: number,
+      description: string,
+      oldValues?: any,
+      newValues?: any
   ): Promise<void>;
 }
 
@@ -128,17 +128,29 @@ export class MemStorage implements IStorage {
   async markNotificationAsRead(notificationId: number, userId: number): Promise<void> { throw new Error("Not implemented"); }
   async markAllNotificationsAsRead(userId: number): Promise<void> { throw new Error("Not implemented"); }
   async createAuditLog(auditData: any): Promise<any> { throw new Error("Not implemented"); }
-  async getAuditLogs(limit?: number): Promise<any[]> { return []; }
-  async notifyUsersAboutChange(excludeUserId: number, title: string, message: string, type: string, relatedId?: number): Promise<void> { throw new Error("Not implemented"); }
+
+  // УДАЛЕНЫ ДУБЛИРУЮЩИЕСЯ МЕТОДЫ - оставлена только одна реализация каждого
+  async getAuditLogs(limit?: number): Promise<any[]> {
+    console.log("Audit log table does not exist, returning empty array");
+    return [];
+  }
+
+  async notifyUsersAboutChange(excludeUserId: number, title: string, message: string, type: string, relatedId?: number): Promise<void> {
+    throw new Error("Not implemented");
+  }
+
   async logAudit(
-    userId: number,
-    action: string,
-    entityType: string,
-    entityId: number,
-    description: string,
-    oldValues?: any,
-    newValues?: any
-  ): Promise<void> { throw new Error("Not implemented"); }
+      userId: number,
+      action: string,
+      entityType: string,
+      entityId: number,
+      description: string,
+      oldValues?: any,
+      newValues?: any
+  ): Promise<void> {
+    console.log("Audit log table does not exist, skipping audit logging");
+  }
+
   private users: Map<number, User>;
   private departments: Map<number, Department>;
   private employees: Map<number, Employee>;
@@ -165,7 +177,7 @@ export class MemStorage implements IStorage {
     // Create default departments
     const defaultDepartments = [
       "Администрация",
-      "Менеджмент", 
+      "Менеджмент",
       "Аккаунтинг",
       "Дизайн",
       "3D & motion",
@@ -297,13 +309,13 @@ export class MemStorage implements IStorage {
 
     for (const dept of departments) {
       const deptEmployees = Array.from(this.employees.values())
-        .filter(emp => emp.departmentId === dept.id && !emp.isArchived);
+          .filter(emp => emp.departmentId === dept.id && !emp.isArchived);
 
       const employeesWithEquipment = await Promise.all(
-        deptEmployees.map(async emp => ({
-          ...emp,
-          equipment: await this.getEquipmentByEmployee(emp.id)
-        }))
+          deptEmployees.map(async emp => ({
+            ...emp,
+            equipment: await this.getEquipmentByEmployee(emp.id)
+          }))
       );
 
       result.push({
@@ -349,16 +361,16 @@ export class MemStorage implements IStorage {
     const archivedEmployees = Array.from(this.employees.values()).filter(emp => emp.isArchived);
 
     const employeesWithEquipment = await Promise.all(
-      archivedEmployees.map(async emp => {
-        const equipment = await this.getEquipmentByEmployee(emp.id);
-        const department = emp.departmentId ? this.departments.get(emp.departmentId) : undefined;
+        archivedEmployees.map(async emp => {
+          const equipment = await this.getEquipmentByEmployee(emp.id);
+          const department = emp.departmentId ? this.departments.get(emp.departmentId) : undefined;
 
-        return {
-          ...emp,
-          equipment,
-          department
-        };
-      })
+          return {
+            ...emp,
+            equipment,
+            department
+          };
+        })
     );
 
     return employeesWithEquipment;
@@ -403,7 +415,7 @@ export class MemStorage implements IStorage {
     this.employees.delete(id);
     // Also delete associated equipment
     const equipmentToDelete = Array.from(this.equipment.values())
-      .filter(eq => eq.employeeId === id);
+        .filter(eq => eq.employeeId === id);
     equipmentToDelete.forEach(eq => this.equipment.delete(eq.id));
   }
 
@@ -418,7 +430,7 @@ export class MemStorage implements IStorage {
 
   async getEquipmentByEmployee(employeeId: number): Promise<Equipment[]> {
     return Array.from(this.equipment.values())
-      .filter(eq => eq.employeeId === employeeId);
+        .filter(eq => eq.employeeId === employeeId);
   }
 
   async createEquipment(insertEquipment: InsertEquipment): Promise<Equipment> {
@@ -498,21 +510,6 @@ export class MemStorage implements IStorage {
     this.equipment.set(id, updatedEquipment);
     return updatedEquipment;
   }
-  async logAudit(
-    userId: number,
-    action: string,
-    entityType: string,
-    entityId: number,
-    description: string,
-    oldValues?: any,
-    newValues?: any
-  ): Promise<void> {
-    console.log("Audit log table does not exist, skipping audit logging");
-  }
-  async getAuditLogs(limit?: number): Promise<any[]> {
-    console.log("Audit log table does not exist, returning empty array");
-    return [];
-  }
 }
 
 import { db } from "./db";
@@ -536,10 +533,10 @@ export class DatabaseStorage implements IStorage {
     if (!role) return undefined;
 
     const rolePerms = await db
-      .select({ permission: permissions })
-      .from(rolePermissions)
-      .leftJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
-      .where(eq(rolePermissions.roleId, id));
+        .select({ permission: permissions })
+        .from(rolePermissions)
+        .leftJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+        .where(eq(rolePermissions.roleId, id));
 
     return {
       ...role,
@@ -552,10 +549,10 @@ export class DatabaseStorage implements IStorage {
     if (!role) return undefined;
 
     const rolePerms = await db
-      .select({ permission: permissions })
-      .from(rolePermissions)
-      .leftJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
-      .where(eq(rolePermissions.roleId, role.id));
+        .select({ permission: permissions })
+        .from(rolePermissions)
+        .leftJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+        .where(eq(rolePermissions.roleId, role.id));
 
     return {
       ...role,
@@ -605,29 +602,29 @@ export class DatabaseStorage implements IStorage {
   // Role-Permission management
   async assignPermissionToRole(roleId: number, permissionId: number): Promise<RolePermission> {
     const [rolePermission] = await db
-      .insert(rolePermissions)
-      .values({ roleId, permissionId })
-      .returning();
+        .insert(rolePermissions)
+        .values({ roleId, permissionId })
+        .returning();
     return rolePermission;
   }
 
   async removePermissionFromRole(roleId: number, permissionId: number): Promise<void> {
     await db
-      .delete(rolePermissions)
-      .where(
-        and(
-          eq(rolePermissions.roleId, roleId),
-          eq(rolePermissions.permissionId, permissionId)
-        )
-      );
+        .delete(rolePermissions)
+        .where(
+            and(
+                eq(rolePermissions.roleId, roleId),
+                eq(rolePermissions.permissionId, permissionId)
+            )
+        );
   }
 
   async getRolePermissions(roleId: number): Promise<Permission[]> {
     const rolePerms = await db
-      .select({ permission: permissions })
-      .from(rolePermissions)
-      .leftJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
-      .where(eq(rolePermissions.roleId, roleId));
+        .select({ permission: permissions })
+        .from(rolePermissions)
+        .leftJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+        .where(eq(rolePermissions.roleId, roleId));
 
     return rolePerms.map(rp => rp.permission).filter(Boolean) as Permission[];
   }
@@ -636,9 +633,9 @@ export class DatabaseStorage implements IStorage {
   async userHasPermission(userId: number, permissionName: string): Promise<boolean> {
     try {
       const user = await db.select()
-        .from(users)
-        .where(eq(users.id, userId))
-        .limit(1);
+          .from(users)
+          .where(eq(users.id, userId))
+          .limit(1);
 
       if (!user[0]) return false;
 
@@ -647,11 +644,11 @@ export class DatabaseStorage implements IStorage {
 
       // Проверяем разрешения через роль
       const userPermissions = await db
-        .select({ permission: permissions })
-        .from(roles)
-        .innerJoin(rolePermissions, eq(roles.id, rolePermissions.roleId))
-        .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
-        .where(eq(roles.name, user[0].role));
+          .select({ permission: permissions })
+          .from(roles)
+          .innerJoin(rolePermissions, eq(roles.id, rolePermissions.roleId))
+          .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+          .where(eq(roles.name, user[0].role));
 
       return userPermissions.some(p => p.permission.name === permissionName);
     } catch (error) {
@@ -676,9 +673,9 @@ export class DatabaseStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const hashedPassword = await bcrypt.hash(insertUser.password, 10);
     const [user] = await db
-      .insert(users)
-      .values({ ...insertUser, password: hashedPassword })
-      .returning();
+        .insert(users)
+        .values({ ...insertUser, password: hashedPassword })
+        .returning();
     return user;
   }
 
@@ -702,19 +699,19 @@ export class DatabaseStorage implements IStorage {
     return allDepartments.map(dept => ({
       ...dept,
       employees: allEmployees
-        .filter(emp => emp.departmentId === dept.id)
-        .map(emp => ({
-          ...emp,
-          equipment: allEquipment.filter(equipmentItem => equipmentItem.employeeId === emp.id)
-        }))
+          .filter(emp => emp.departmentId === dept.id)
+          .map(emp => ({
+            ...emp,
+            equipment: allEquipment.filter(equipmentItem => equipmentItem.employeeId === emp.id)
+          }))
     }));
   }
 
   async createDepartment(insertDepartment: InsertDepartment): Promise<Department> {
     const [department] = await db
-      .insert(departments)
-      .values(insertDepartment)
-      .returning();
+        .insert(departments)
+        .values(insertDepartment)
+        .returning();
     return department;
   }
 
@@ -727,9 +724,9 @@ export class DatabaseStorage implements IStorage {
     if (!employee) return undefined;
 
     const employeeEquipment = await db.select().from(equipment).where(eq(equipment.employeeId, id));
-    const [department] = employee.departmentId 
-      ? await db.select().from(departments).where(eq(departments.id, employee.departmentId))
-      : [undefined];
+    const [department] = employee.departmentId
+        ? await db.select().from(departments).where(eq(departments.id, employee.departmentId))
+        : [undefined];
 
     return {
       ...employee,
@@ -740,9 +737,9 @@ export class DatabaseStorage implements IStorage {
 
   async createEmployee(insertEmployee: InsertEmployee, userId?: number): Promise<Employee> {
     const [employee] = await db
-      .insert(employees)
-      .values(insertEmployee)
-      .returning();
+        .insert(employees)
+        .values(insertEmployee)
+        .returning();
 
     // Логируем создание сотрудника
     if (userId) {
@@ -757,11 +754,11 @@ export class DatabaseStorage implements IStorage {
 
       // Уведомляем других пользователей
       await this.notifyUsersAboutChange(
-        userId,
-        'Новый сотрудник',
-        `Добавлен новый сотрудник: ${employee.fullName}`,
-        'employee_create',
-        employee.id
+          userId,
+          'Новый сотрудник',
+          `Добавлен новый сотрудник: ${employee.fullName}`,
+          'employee_create',
+          employee.id
       );
     }
 
@@ -773,10 +770,10 @@ export class DatabaseStorage implements IStorage {
     const oldEmployee = await this.getEmployee(id);
 
     const [employee] = await db
-      .update(employees)
-      .set(updateData)
-      .where(eq(employees.id, id))
-      .returning();
+        .update(employees)
+        .set(updateData)
+        .where(eq(employees.id, id))
+        .returning();
 
     // Логируем изменение сотрудника
     if (userId && oldEmployee) {
@@ -792,11 +789,11 @@ export class DatabaseStorage implements IStorage {
 
       // Уведомляем других пользователей
       await this.notifyUsersAboutChange(
-        userId,
-        'Изменение данных сотрудника',
-        `Обновлены данные сотрудника: ${employee.fullName}`,
-        'employee_update',
-        employee.id
+          userId,
+          'Изменение данных сотрудника',
+          `Обновлены данные сотрудника: ${employee.fullName}`,
+          'employee_update',
+          employee.id
       );
     }
 
@@ -816,16 +813,16 @@ export class DatabaseStorage implements IStorage {
 
     // Перемещаем оборудование на склад (убираем привязку к сотруднику)
     await db
-      .update(equipment)
-      .set({ employeeId: null })
-      .where(eq(equipment.employeeId, id));
+        .update(equipment)
+        .set({ employeeId: null })
+        .where(eq(equipment.employeeId, id));
 
     // Архивируем сотрудника
     const [employee] = await db
-      .update(employees)
-      .set({ isArchived: true })
-      .where(eq(employees.id, id))
-      .returning();
+        .update(employees)
+        .set({ isArchived: true })
+        .where(eq(employees.id, id))
+        .returning();
 
     // Логируем архивирование
     if (userId) {
@@ -841,11 +838,11 @@ export class DatabaseStorage implements IStorage {
 
       // Уведомляем других пользователей
       await this.notifyUsersAboutChange(
-        userId,
-        'Сотрудник архивирован',
-        `Сотрудник ${employee.fullName} был архивирован`,
-        'employee_archive',
-        employee.id
+          userId,
+          'Сотрудник архивирован',
+          `Сотрудник ${employee.fullName} был архивирован`,
+          'employee_archive',
+          employee.id
       );
     }
 
@@ -862,9 +859,9 @@ export class DatabaseStorage implements IStorage {
 
   async createEquipment(insertEquipment: InsertEquipment, userId?: number): Promise<Equipment> {
     const [equipmentItem] = await db
-      .insert(equipment)
-      .values(insertEquipment)
-      .returning();
+        .insert(equipment)
+        .values(insertEquipment)
+        .returning();
 
     // Логируем создание оборудования (только если таблица существует)
     if (userId) {
@@ -880,11 +877,11 @@ export class DatabaseStorage implements IStorage {
 
         // Уведомлять других пользователей
         await this.notifyUsersAboutChange(
-          userId,
-          'Новое оборудование',
-          `Добавлено оборудование: ${equipmentItem.name}`,
-          'equipment_create',
-          equipmentItem.id
+            userId,
+            'Новое оборудование',
+            `Добавлено оборудование: ${equipmentItem.name}`,
+            'equipment_create',
+            equipmentItem.id
         );
       } catch (error) {
         // Игнорируем ошибки аудита, чтобы не блокировать основную функциональность
@@ -900,10 +897,10 @@ export class DatabaseStorage implements IStorage {
     const [oldEquipment] = await db.select().from(equipment).where(eq(equipment.id, id));
 
     const [equipmentItem] = await db
-      .update(equipment)
-      .set(updateData)
-      .where(eq(equipment.id, id))
-      .returning();
+        .update(equipment)
+        .set(updateData)
+        .where(eq(equipment.id, id))
+        .returning();
 
     // Логируем изменение оборудования (только если таблица существует)
     if (userId && oldEquipment) {
@@ -920,11 +917,11 @@ export class DatabaseStorage implements IStorage {
 
         // Уведомляем других пользователей
         await this.notifyUsersAboutChange(
-          userId,
-          'Изменение оборудования',
-          `Обновлено оборудование: ${equipmentItem.name}`,
-          'equipment_update',
-          equipmentItem.id
+            userId,
+            'Изменение оборудования',
+            `Обновлено оборудование: ${equipmentItem.name}`,
+            'equipment_update',
+            equipmentItem.id
         );
       } catch (error) {
         // Игнорируем ошибки аудита, чтобы не блокировать основную функциональность
@@ -956,20 +953,20 @@ export class DatabaseStorage implements IStorage {
 
   async updateUserRole(id: number, role: string): Promise<User | undefined> {
     const [user] = await db
-      .update(users)
-      .set({ role })
-      .where(eq(users.id, id))
-      .returning();
+        .update(users)
+        .set({ role })
+        .where(eq(users.id, id))
+        .returning();
     return user || undefined;
   }
 
   async updateUserPassword(id: number, newPassword: string): Promise<User | undefined> {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     const [user] = await db
-      .update(users)
-      .set({ password: hashedPassword })
-      .where(eq(users.id, id))
-      .returning();
+        .update(users)
+        .set({ password: hashedPassword })
+        .where(eq(users.id, id))
+        .returning();
     return user || undefined;
   }
 
@@ -989,57 +986,57 @@ export class DatabaseStorage implements IStorage {
 
   async decommissionEquipment(id: number): Promise<Equipment> {
     const [equipmentItem] = await db
-      .update(equipment)
-      .set({ isDecommissioned: true, employeeId: null })
-      .where(eq(equipment.id, id))
-      .returning();
+        .update(equipment)
+        .set({ isDecommissioned: true, employeeId: null })
+        .where(eq(equipment.id, id))
+        .returning();
     return equipmentItem;
   }
 
   // Методы для работы с уведомлениями
   async getNotifications(userId: number) {
     return await db
-      .select()
-      .from(schema.notifications)
-      .where(eq(schema.notifications.userId, userId))
-      .orderBy(desc(schema.notifications.createdAt));
+        .select()
+        .from(schema.notifications)
+        .where(eq(schema.notifications.userId, userId))
+        .orderBy(desc(schema.notifications.createdAt));
   }
 
   async createNotification(notification: schema.InsertNotification) {
     const [created] = await db
-      .insert(schema.notifications)
-      .values(notification)
-      .returning();
+        .insert(schema.notifications)
+        .values(notification)
+        .returning();
     return created;
   }
 
   async markNotificationAsRead(notificationId: number, userId: number) {
     await db
-      .update(schema.notifications)
-      .set({ isRead: true })
-      .where(
-        and(
-          eq(schema.notifications.id, notificationId),
-          eq(schema.notifications.userId, userId)
-        )
-      );
+        .update(schema.notifications)
+        .set({ isRead: true })
+        .where(
+            and(
+                eq(schema.notifications.id, notificationId),
+                eq(schema.notifications.userId, userId)
+            )
+        );
   }
 
   async markAllNotificationsAsRead(userId: number) {
     await db
-      .update(schema.notifications)
-      .set({ isRead: true })
-      .where(eq(schema.notifications.userId, userId));
+        .update(schema.notifications)
+        .set({ isRead: true })
+        .where(eq(schema.notifications.userId, userId));
   }
 
   private async logAuditAction(
-    userId: number,
-    action: string,
-    entityType: string,
-    entityId: number,
-    oldValues: string | null,
-    newValues: string | null,
-    description: string
+      userId: number,
+      action: string,
+      entityType: string,
+      entityId: number,
+      oldValues: string | null,
+      newValues: string | null,
+      description: string
   ): Promise<void> {
     try {
       await db.insert(auditLog).values({
@@ -1065,9 +1062,9 @@ export class DatabaseStorage implements IStorage {
   async createAuditLog(auditData: schema.InsertAuditLog) {
     try {
       const [created] = await db
-        .insert(schema.auditLog)
-        .values(auditData)
-        .returning();
+          .insert(schema.auditLog)
+          .values(auditData)
+          .returning();
       return created;
     } catch (error) {
       // Проверяем, существует ли таблица audit_log
@@ -1082,26 +1079,26 @@ export class DatabaseStorage implements IStorage {
   async getAuditLogs(limit: number = 100) {
     try {
       const logs = await db
-        .select({
-          id: schema.auditLog.id,
-          action: schema.auditLog.action,
-          entityType: schema.auditLog.entityType,
-          entityId: schema.auditLog.entityId,
-          oldValues: schema.auditLog.oldValues,
-          newValues: schema.auditLog.newValues,
-          description: schema.auditLog.description,
-          createdAt: schema.auditLog.createdAt,
-          user: {
-            id: users.id,
-            fullName: users.fullName,
-            email: users.email,
-            role: users.role
-          }
-        })
-        .from(schema.auditLog)
-        .leftJoin(users, eq(schema.auditLog.userId, users.id))
-        .orderBy(desc(schema.auditLog.createdAt))
-        .limit(limit);
+          .select({
+            id: schema.auditLog.id,
+            action: schema.auditLog.action,
+            entityType: schema.auditLog.entityType,
+            entityId: schema.auditLog.entityId,
+            oldValues: schema.auditLog.oldValues,
+            newValues: schema.auditLog.newValues,
+            description: schema.auditLog.description,
+            createdAt: schema.auditLog.createdAt,
+            user: {
+              id: users.id,
+              fullName: users.fullName,
+              email: users.email,
+              role: users.role
+            }
+          })
+          .from(schema.auditLog)
+          .leftJoin(users, eq(schema.auditLog.userId, users.id))
+          .orderBy(desc(schema.auditLog.createdAt))
+          .limit(limit);
 
       return logs;
     } catch (error) {
@@ -1116,11 +1113,11 @@ export class DatabaseStorage implements IStorage {
 
   // Служебный метод для отправки уведомлений всем пользователям о изменениях
   async notifyUsersAboutChange(
-    excludeUserId: number,
-    title: string,
-    message: string,
-    type: string,
-    relatedId?: number
+      excludeUserId: number,
+      title: string,
+      message: string,
+      type: string,
+      relatedId?: number
   ) {
     const allUsers = await this.getUsers();
     const usersToNotify = allUsers.filter(user => user.id !== excludeUserId);
@@ -1139,111 +1136,111 @@ export class DatabaseStorage implements IStorage {
   // Методы для работы с запросами на регистрацию
   async createRegistrationRequest(data: { email: string; password: string; fullName: string; role: string }) {
     const [request] = await db
-      .insert(schema.registrationRequests)
-      .values({
-        email: data.email,
-        password: data.password,
-        fullName: data.fullName,
-        role: data.role,
-        status: 'pending',
-      })
-      .returning();
+        .insert(schema.registrationRequests)
+        .values({
+          email: data.email,
+          password: data.password,
+          fullName: data.fullName,
+          role: data.role,
+          status: 'pending',
+        })
+        .returning();
     return request;
   }
 
   async getRegistrationRequests() {
     return await db
-      .select()
-      .from(schema.registrationRequests)
-      .orderBy(desc(schema.registrationRequests.createdAt));
+        .select()
+        .from(schema.registrationRequests)
+        .orderBy(desc(schema.registrationRequests.createdAt));
   }
 
   async getRegistrationRequestById(id: number) {
     const [request] = await db
-      .select()
-      .from(schema.registrationRequests)
-      .where(eq(schema.registrationRequests.id, id));
+        .select()
+        .from(schema.registrationRequests)
+        .where(eq(schema.registrationRequests.id, id));
     return request;
   }
 
   async getRegistrationRequestByEmail(email: string) {
     const [request] = await db
-      .select()
-      .from(schema.registrationRequests)
-      .where(eq(schema.registrationRequests.email, email));
+        .select()
+        .from(schema.registrationRequests)
+        .where(eq(schema.registrationRequests.email, email));
     return request;
   }
 
   async updateRegistrationRequestStatus(id: number, status: 'pending' | 'approved' | 'rejected'){
     const [request] = await db
-      .update(schema.registrationRequests)
-      .set({ 
-        status,
-        updatedAt: new Date(),
-      })
-      .where(eq(schema.registrationRequests.id, id))
-      .returning();
+        .update(schema.registrationRequests)
+        .set({
+          status,
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.registrationRequests.id, id))
+        .returning();
     return request;
   }
 
-    async updateUserPhoto(id: number, photoUrl: string, userId?: number): Promise<User | undefined> {
-        // Получаем старые данные для аудита
-        const oldUser = await this.getUser(id);
+  async updateUserPhoto(id: number, photoUrl: string, userId?: number): Promise<User | undefined> {
+    // Получаем старые данные для аудита
+    const oldUser = await this.getUser(id);
 
-        const [user] = await db
-            .update(users)
-            .set({ photoUrl })
-            .where(eq(users.id, id))
-            .returning();
+    const [user] = await db
+        .update(users)
+        .set({ photoUrl })
+        .where(eq(users.id, id))
+        .returning();
 
-        // Логируем изменение фото пользователя
-        if (userId && oldUser) {
-            await this.createAuditLog({
-                userId,
-                action: 'update',
-                entityType: 'user',
-                entityId: user.id,
-                oldValues: JSON.stringify(oldUser),
-                newValues: JSON.stringify(user),
-                description: `Обновлено фото пользователя: ${user.fullName}`
-            });
+    // Логируем изменение фото пользователя
+    if (userId && oldUser) {
+      await this.createAuditLog({
+        userId,
+        action: 'update',
+        entityType: 'user',
+        entityId: user.id,
+        oldValues: JSON.stringify(oldUser),
+        newValues: JSON.stringify(user),
+        description: `Обновлено фото пользователя: ${user.fullName}`
+      });
 
-            // Уведомляем других пользователей (можно не уведомлять об изменении фото)
-            // await this.notifyUsersAboutChange(
-            //     userId,
-            //     'Изменение фото пользователя',
-            //     `Обновлено фото пользователя: ${user.fullName}`,
-            //     'user_update',
-            //     user.id
-            // );
-        }
-
-        return user || undefined;
+      // Уведомляем других пользователей (можно не уведомлять об изменении фото)
+      // await this.notifyUsersAboutChange(
+      //     userId,
+      //     'Изменение фото пользователя',
+      //     `Обновлено фото пользователя: ${user.fullName}`,
+      //     'user_update',
+      //     user.id
+      // );
     }
 
-    async logAudit(
-        userId: number,
-        action: string,
-        entityType: string,
-        entityId: number,
-        description: string,
-        oldValues?: any,
-        newValues?: any
-      ): Promise<void> {
-        try {
-          await db.insert(auditLog).values({
-            userId,
-            action,
-            entityType,
-            entityId,
-            description,
-            oldValues: oldValues ? JSON.stringify(oldValues) : null,
-            newValues: newValues ? JSON.stringify(newValues) : null,
-          });
-        } catch (error) {
-          console.error("Error logging audit:", error);
-        }
-      }
+    return user || undefined;
+  }
+
+  async logAudit(
+      userId: number,
+      action: string,
+      entityType: string,
+      entityId: number,
+      description: string,
+      oldValues?: any,
+      newValues?: any
+  ): Promise<void> {
+    try {
+      await db.insert(auditLog).values({
+        userId,
+        action,
+        entityType,
+        entityId,
+        description,
+        oldValues: oldValues ? JSON.stringify(oldValues) : null,
+        newValues: newValues ? JSON.stringify(newValues) : null,
+      });
+    } catch (error) {
+      console.error("Error logging audit:", error);
+    }
+  }
 }
 
 class DatabaseStorageWithInit extends DatabaseStorage {

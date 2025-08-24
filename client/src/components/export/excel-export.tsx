@@ -45,11 +45,11 @@ export function ExcelExport() {
       const a = document.createElement('a');
       a.href = url;
 
-      const filename = type === 'inventory' 
-        ? 'инвентаризация.xlsx' 
-        : type === 'employees' 
-        ? 'сотрудники.xlsx' 
-        : 'сотрудники-публичные.xlsx';
+      const filename = type === 'inventory'
+          ? 'инвентаризация.xlsx'
+          : type === 'employees'
+              ? 'сотрудники.xlsx'
+              : 'сотрудники-публичные.xlsx';
 
       a.download = filename;
       document.body.appendChild(a);
@@ -174,106 +174,106 @@ export function ExcelExport() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileSpreadsheet className="h-5 w-5" />
-          Экспорт данных Excel
-        </CardTitle>
-        <CardDescription>
-          Экспорт данных сотрудников и оборудования в формате Excel
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid gap-4 md:grid-cols-3">
-          <Button
-            onClick={() => handleExport('inventory')}
-            disabled={isExporting === 'inventory'}
-            className="w-full"
-          >
-            <Download className="mr-2 h-4 w-4" />
-            {isExporting === 'inventory' ? 'Экспорт...' : 'Инвентаризация'}
-          </Button>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileSpreadsheet className="h-5 w-5" />
+            Экспорт данных Excel
+          </CardTitle>
+          <CardDescription>
+            Экспорт данных сотрудников и оборудования в формате Excel
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-3">
+            <Button
+                onClick={() => handleExport('inventory')}
+                disabled={isExporting === 'inventory'}
+                className="w-full"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              {isExporting === 'inventory' ? 'Экспорт...' : 'Инвентаризация'}
+            </Button>
 
-          <Button
-            onClick={() => handleExport('employees')}
-            disabled={isExporting === 'employees'}
-            className="w-full"
-          >
-            <Download className="mr-2 h-4 w-4" />
-            {isExporting === 'employees' ? 'Экспорт...' : 'Данные сотрудников'}
-          </Button>
+            <Button
+                onClick={() => handleExport('employees')}
+                disabled={isExporting === 'employees'}
+                className="w-full"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              {isExporting === 'employees' ? 'Экспорт...' : 'Данные сотрудников'}
+            </Button>
 
-          <Button
-            onClick={() => handleExport('employees-public')}
-            disabled={isExporting === 'employees-public'}
-            className="w-full"
-          >
-            <Download className="mr-2 h-4 w-4" />
-            {isExporting === 'employees-public' ? 'Экспорт...' : 'Без личных данных'}
-          </Button>
-        </div>
-
-        <div className="text-sm text-muted-foreground space-y-1">
-          <p><strong>Инвентаризация:</strong> ФИО, наименование имущества, инвентарный номер, стоимость (поддержка нескольких единиц имущества на сотрудника)</p>
-          <p><strong>Данные сотрудников:</strong> ФИО, паспортные данные, должность, грейд, отдел, документы о приеме, акт мат. ответственности</p>
-          <p><strong>Без личных данных:</strong> ФИО, должность, грейд, отдел</p>
-        </div>
-
-        <Separator className="my-6" />
-
-        {/* Секция импорта */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <Upload className="h-5 w-5" />
-            Импорт данных Excel
-          </h3>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            {/* Импорт сотрудников */}
-            <div className="space-y-2">
-              <Label htmlFor="employee-upload">Импорт сотрудников</Label>
-              <Input
-                id="employee-upload"
-                type="file"
-                accept=".xlsx,.xls"
-                ref={fileInputRef}
-                onChange={handleImportEmployees}
-                disabled={isImporting === 'employees'}
-                className="cursor-pointer"
-              />
-              <p className="text-xs text-muted-foreground">
-                Загрузите Excel файл с данными сотрудников. Поддерживаемые поля: ФИО, Должность, Грейд, Отдел, Серия паспорта, Номер паспорта, Кем выдан, Дата выдачи паспорта, Адрес прописки, Номер приказа о приеме, Дата приказа о приеме, Номер акта мат. ответственности, Дата акта мат. ответственности, Наименование имущества, Инвентарный номер, Характеристики, Стоимость ответственности, Дата акта мат. ответственности, Наименование имущества, Инвентарный номер, Стоимость. Поддерживается добавление нескольких единиц имущества для одного сотрудника.
-              </p>
-            </div>
-
-            {/* Импорт оборудования - доступен для админов, сисадминов и офис-менеджеров */}
-            {user && ['admin', 'sysadmin', 'office-manager'].includes(user.role) && (
-              <div className="space-y-2">
-                <Label htmlFor="equipment-upload">Импорт оборудования</Label>
-                <Input
-                  id="equipment-upload"
-                  type="file"
-                  accept=".xlsx,.xls"
-                  ref={equipmentFileInputRef}
-                  onChange={handleImportEquipment}
-                  disabled={isImporting === 'equipment'}
-                  className="cursor-pointer"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Загрузите Excel файл с данными оборудования. Поддерживаемые поля: ФИО сотрудника, Наименование имущества, Инвентарный номер, Стоимость имущества
-                </p>
-              </div>
-            )}
+            <Button
+                onClick={() => handleExport('employees-public')}
+                disabled={isExporting === 'employees-public'}
+                className="w-full"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              {isExporting === 'employees-public' ? 'Экспорт...' : 'Без личных данных'}
+            </Button>
           </div>
 
-          {(isImporting) && (
-            <div className="text-center text-sm text-muted-foreground">
-              {isImporting === 'employees' ? 'Импорт сотрудников...' : 'Импорт оборудования...'}
+          <div className="text-sm text-muted-foreground space-y-1">
+            <p><strong>Инвентаризация:</strong> ФИО, наименование имущества, инвентарный номер, стоимость (поддержка нескольких единиц имущества на сотрудника)</p>
+            <p><strong>Данные сотрудников:</strong> ФИО, паспортные данные, должность, грейд, отдел, документы о приеме, акт мат. ответственности</p>
+            <p><strong>Без личных данных:</strong> ФИО, должность, грейд, отдел</p>
+          </div>
+
+          <Separator className="my-6" />
+
+          {/* Секция импорта */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <Upload className="h-5 w-5" />
+              Импорт данных Excel
+            </h3>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {/* Импорт сотрудников */}
+              <div className="space-y-2">
+                <Label htmlFor="employee-upload">Импорт сотрудников</Label>
+                <Input
+                    id="employee-upload"
+                    type="file"
+                    accept=".xlsx,.xls"
+                    ref={fileInputRef}
+                    onChange={handleImportEmployees}
+                    disabled={isImporting === 'employees'}
+                    className="cursor-pointer"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Загрузите Excel файл с данными сотрудников. Поддерживаемые поля: ФИО, Должность, Грейд, Отдел, Серия паспорта, Номер паспорта, Кем выдан, Дата выдачи паспорта, Адрес прописки, Номер приказа о приеме, Дата приказа о приеме, Номер акта мат. ответственности, Дата акта мат. ответственности, Наименование имущества, Инвентарный номер, Характеристики, Стоимость ответственности, Дата акта мат. ответственности, Наименование имущества, Инвентарный номер, Стоимость. Поддерживается добавление нескольких единиц имущества для одного сотрудника.
+                </p>
+              </div>
+
+              {/* Импорт оборудования - доступен для админов, сисадминов и офис-менеджеров */}
+              {user && ['admin', 'sysadmin', 'office-manager'].includes(user.role) && (
+                  <div className="space-y-2">
+                    <Label htmlFor="equipment-upload">Импорт оборудования</Label>
+                    <Input
+                        id="equipment-upload"
+                        type="file"
+                        accept=".xlsx,.xls"
+                        ref={equipmentFileInputRef}
+                        onChange={handleImportEquipment}
+                        disabled={isImporting === 'equipment'}
+                        className="cursor-pointer"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Загрузите Excel файл с данными оборудования. Поддерживаемые поля: ФИО сотрудника, Наименование имущества, Инвентарный номер, Стоимость имущества
+                    </p>
+                  </div>
+              )}
             </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+
+            {(isImporting) && (
+                <div className="text-center text-sm text-muted-foreground">
+                  {isImporting === 'employees' ? 'Импорт сотрудников...' : 'Импорт оборудования...'}
+                </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
   );
 }
